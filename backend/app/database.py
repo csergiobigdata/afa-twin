@@ -13,16 +13,18 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-os.makedirs(DATA_DIR, exist_ok=True)
-
-# Fotos de aeronave/perfil/inspeção NÃO ficam em disco (ver models.MediaAsset)
-# - hospedagens de nuvem serverless não garantem disco persistente entre
-# chamadas. O único uso de disco local remanescente é o arquivo do SQLite
-# no piloto local (substituível por Postgres via AFA_TWIN_DATABASE_URL).
 DB_PATH = os.path.join(DATA_DIR, "afa_twin.db")
 
 # Permite sobrescrever via variável de ambiente quando migrar para nuvem.
 DATABASE_URL = os.environ.get("AFA_TWIN_DATABASE_URL", f"sqlite:///{DB_PATH}")
+
+# Só cria o diretório local quando ele de fato vai ser usado (SQLite do
+# piloto). Hospedagens "serverless" (ex.: Vercel) rodam a função num sistema
+# de arquivos somente leitura fora de /tmp - tentar criar esse diretório ali
+# (mesmo sem nunca usá-lo, já que a nuvem usa Postgres via
+# AFA_TWIN_DATABASE_URL) derrubava a função inteira na importação do módulo.
+if DATABASE_URL.startswith("sqlite"):
+    os.makedirs(DATA_DIR, exist_ok=True)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
