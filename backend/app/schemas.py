@@ -75,8 +75,8 @@ class AircraftUpdate(BaseModel):
 class AircraftOut(AircraftBase, ORMModel):
     id: int
     created_at: dt.datetime
-    photo_filename: Optional[str] = None
-    photo_animated_filename: Optional[str] = None
+    photo_url: Optional[str] = None
+    photo_animated_url: Optional[str] = None
     health_index: Optional[float] = None
     risk_level: Optional[str] = None
     availability_pct: Optional[float] = None
@@ -172,7 +172,7 @@ class PersonUpdate(BaseModel):
 
 class PersonOut(PersonBase, ORMModel):
     id: int
-    photo_filename: Optional[str] = None
+    photo_url: Optional[str] = None
     created_at: dt.datetime
 
 
@@ -381,7 +381,7 @@ class InspectionFindingBase(BaseModel):
 
 class InspectionFindingOut(InspectionFindingBase, ORMModel):
     id: int
-    photo_filename: str
+    photo_url: str
     recorded_at: dt.datetime
 
 

@@ -5,25 +5,18 @@ Ponto de entrada da API (FastAPI).
 Executar: uvicorn app.main:app --reload --port 8000
 Documentação interativa: http://localhost:8000/docs
 """
-import mimetypes
 import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 
-# Garante o content-type correto para as ilustrações de exemplo em SVG
-# servidas em /media (o mapeamento de .svg nem sempre vem registrado por
-# padrão em instalações Windows do Python).
-mimetypes.add_type("image/svg+xml", ".svg")
-
-from .database import Base, engine, SessionLocal, UPLOADS_DIR, INSPECTION_UPLOADS_DIR, PEOPLE_UPLOADS_DIR
+from .database import Base, engine, SessionLocal
 from . import seed
 from .routers import (
     aircraft, people, components, assignments, maintenance, checklists, flightlogs,
     dashboard, auth, inspections, diagnostics, planning, notifications, groups,
-    lookups, audit,
+    lookups, audit, media,
 )
 
 app = FastAPI(
@@ -54,10 +47,12 @@ app.add_middleware(
 # desligada por padrão. O controle de acesso principal já é o login (só o
 # Gestor cria contas, não há autocadastro) - ver docs/06-implantacao-nuvem.md.
 # Se AFA_TWIN_ACCESS_KEY estiver definida, toda chamada a /api/* (exceto
-# /api/health) deve enviar o cabeçalho X-AFA-TWIN-Key com o mesmo valor,
-# útil para esconder a API de varreduras/bots quando publicada num host
-# público antes mesmo de tentar logar. O frontend envia esse cabeçalho
-# automaticamente quando publicado com a variável VITE_ACCESS_KEY definida.
+# /api/health e /api/media/*) deve enviar o cabeçalho X-AFA-TWIN-Key com o
+# mesmo valor, útil para esconder a API de varreduras/bots quando publicada
+# num host público antes mesmo de tentar logar. O frontend envia esse
+# cabeçalho automaticamente quando publicado com VITE_ACCESS_KEY definida.
+# /api/media/* fica sempre fora dessa trava porque tags <img src="..."> do
+# navegador não conseguem enviar cabeçalhos customizados.
 _ACCESS_KEY = os.environ.get("AFA_TWIN_ACCESS_KEY", "").strip()
 
 
@@ -68,6 +63,7 @@ async def optional_access_key_gate(request: Request, call_next):
         and request.method != "OPTIONS"
         and request.url.path.startswith("/api")
         and request.url.path != "/api/health"
+        and not request.url.path.startswith("/api/media/")
     ):
         if request.headers.get("x-afa-twin-key") != _ACCESS_KEY:
             return JSONResponse(
@@ -103,12 +99,8 @@ app.include_router(groups.router)
 app.include_router(groups.aircraft_groups_router)
 app.include_router(lookups.router)
 app.include_router(audit.router)
+app.include_router(media.router)
 app.include_router(dashboard.router)
-
-# Fotos reais anexadas a aeronaves, pessoas e registros de inspeção fotográfica.
-app.mount("/media/aircraft", StaticFiles(directory=UPLOADS_DIR), name="aircraft-media")
-app.mount("/media/inspections", StaticFiles(directory=INSPECTION_UPLOADS_DIR), name="inspection-media")
-app.mount("/media/people", StaticFiles(directory=PEOPLE_UPLOADS_DIR), name="people-media")
 
 
 @app.get("/api/health", tags=["infra"])

@@ -141,14 +141,12 @@ afa-twin/
       planning.py                  # disponibilidade da frota / análise prospectiva de manutenção
       seed.py                       # dados de demonstração
       routers/                       # um arquivo por recurso da API (inclui groups, lookups, audit)
-    requirements.txt
-    requirements-cloud.txt          # driver Postgres adicional para deploy em nuvem (docs/06)
-    Dockerfile                      # imagem de produção do backend (docs/06)
+    requirements.txt                # já inclui o driver Postgres (psycopg), usado em nuvem
+    Dockerfile                      # alternativa em container p/ Render/Railway/Fly (docs/06, seção 5)
     data/
       afa_twin.db                    # banco local (gerado em tempo de execução)
-      uploads/aircraft/                # fotos reais das aeronaves (estática + animada)
-      uploads/inspections/              # fotos da Inspeção Fotográfica
-      uploads/people/                    # fotos de perfil dos usuários
+                                       # fotos (aeronave/perfil/inspeção) NÃO ficam em disco - ver
+                                       # models.MediaAsset, guardadas dentro do próprio banco
   frontend/
     src/
       api/                        # cliente HTTP + tipos TypeScript + hook de cadastros auxiliares
@@ -156,10 +154,12 @@ afa-twin/
       components/                  # layout, badges, ilustrações, pôsteres de aeronaves, gerenciador de catálogos
       pages/                        # telas da aplicação
     vite.config.ts                 # inclui configuração do PWA
-    netlify.toml / vercel.json      # configuração de deploy do frontend estático (docs/06)
+    netlify.toml                    # configuração de deploy do frontend estático (docs/06)
     public/icons/                   # ícones do aplicativo instalável
     public/aircraft-art/             # ilustrações "pôster" (estática + animada) de exemplo por modelo
-  tools/                       # scripts de apoio (Playwright): capturas de tela e geração do manual em PDF
+  tools/
+    deploy_cloud.py                # publica GitHub + Neon + Vercel + Netlify automaticamente (docs/06)
+    capture-screens.mjs, make-pdf.mjs  # geração do manual do usuário em PDF (Playwright)
 ```
 
 ## 8. Identidade visual

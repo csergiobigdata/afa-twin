@@ -1,11 +1,11 @@
+import mimetypes
 import os
-import uuid
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from .. import models, schemas, security
-from ..database import get_db, INSPECTION_UPLOADS_DIR
+from ..database import get_db
 
 router = APIRouter(
     prefix="/api/inspections", tags=["inspeção fotográfica"],
@@ -57,15 +57,16 @@ def create_finding(
     content = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(content) > MAX_UPLOAD_BYTES:
         raise HTTPException(400, "Arquivo excede o limite de 6MB.")
-    filename = f"{uuid.uuid4().hex}{ext}"
-    with open(os.path.join(INSPECTION_UPLOADS_DIR, filename), "wb") as fh:
-        fh.write(content)
+    content_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
+    asset = models.MediaAsset(content_type=content_type, data=content)
+    db.add(asset)
+    db.flush()
 
     finding = models.InspectionFinding(
         aircraft_id=aircraft_id, component_id=component_id, defect_type=defect_type,
         location=location, severity=severity, extent=extent, probable_cause=probable_cause,
         amm_reference=amm_reference, notes=notes, recorded_by_id=recorded_by_id,
-        photo_filename=filename,
+        photo_asset_id=asset.id,
     )
     db.add(finding)
     db.commit()
@@ -78,12 +79,9 @@ def delete_finding(finding_id: int, db: Session = Depends(get_db)):
     f = db.get(models.InspectionFinding, finding_id)
     if not f:
         raise HTTPException(404, "Registro de inspeção não encontrado")
-    path = os.path.join(INSPECTION_UPLOADS_DIR, f.photo_filename)
-    if os.path.exists(path):
-        try:
-            os.remove(path)
-        except OSError:
-            pass
+    asset = db.get(models.MediaAsset, f.photo_asset_id)
     db.delete(f)
+    if asset:
+        db.delete(asset)
     db.commit()
     return None

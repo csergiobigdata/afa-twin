@@ -5,8 +5,14 @@ AFA-TWIN — orquestrador de publicação em nuvem gratuita.
 Cria/atualiza, de ponta a ponta, via API (sem navegador):
   1. Repositório GitHub (código-fonte, público)          -> github.com/<voce>/afa-twin
   2. Banco Postgres gratuito no Neon                       -> projeto "afa-twin"
-  3. Backend (API) no Render, a partir do Dockerfile        -> afa-twin-api.onrender.com
-  4. Frontend (estático, já compilado) no Netlify            -> afa-twin.netlify.app
+  3. Backend (API) no Vercel, funções Python (FastAPI)       -> afa-twin-api.vercel.app
+  4. Frontend (estático, já compilado) no Netlify              -> afa-twin.netlify.app
+
+Vercel (não Render) hospeda o backend: o Render passou a exigir cartão
+cadastrado mesmo no plano gratuito nesta conta, e o Vercel Hobby não exige -
+ver docs/06-implantacao-nuvem.md, seção 4. Por rodar como função sem
+servidor, o backend guarda uploads de foto no próprio banco (MediaAsset,
+ver backend/app/models.py) em vez de disco local.
 
 Uso:
   Defina as 4 variáveis de ambiente abaixo (tokens gerados nos respectivos
@@ -16,7 +22,7 @@ Uso:
 
 Variáveis de ambiente esperadas:
   GITHUB_TOKEN     - Personal Access Token do GitHub (escopo "repo")
-  RENDER_API_KEY   - API Key do Render (Account Settings -> API Keys)
+  VERCEL_TOKEN     - Personal Access Token do Vercel (Account Settings -> Tokens)
   NEON_API_KEY     - API Key do Neon (Account -> API Keys)
   NETLIFY_TOKEN    - Personal Access Token do Netlify (User settings -> Applications)
 
@@ -24,8 +30,10 @@ Nenhum token é impresso no console nem gravado em nenhum arquivo do repositóri
 O script é seguro para rodar mais de uma vez (reaproveita recursos já criados
 quando possível, em vez de duplicar).
 """
+import base64
 import json
 import os
+import secrets
 import subprocess
 import sys
 import time
@@ -35,13 +43,18 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent  # .../afa-twin
+BACKEND_DIR = ROOT / "backend"
 FRONTEND_DIR = ROOT / "frontend"
 DIST_DIR = FRONTEND_DIR / "dist"
 
 GITHUB_REPO_NAME = "afa-twin"
 NEON_PROJECT_NAME = "afa-twin"
-RENDER_SERVICE_NAME = "afa-twin-api"
+VERCEL_PROJECT_NAME = "afa-twin-api"
 NETLIFY_SITE_NAME = "afa-twin"
+
+# Diretórios/arquivos do backend que não fazem parte do código-fonte a
+# publicar (banco local, ambiente virtual, cache de bytecode).
+BACKEND_EXCLUDE_DIRS = {"data", ".venv", "__pycache__"}
 
 
 def die(msg: str) -> None:
@@ -56,7 +69,7 @@ def need_env(name: str) -> str:
     return v
 
 
-def http(method: str, url: str, token: str | None = None, body: dict | bytes | None = None,
+def http(method: str, url: str, token: str | None = None, body: dict | list | bytes | None = None,
          headers: dict | None = None, token_scheme: str = "Bearer"):
     hdrs = {"User-Agent": "afa-twin-deploy-script"}
     if headers:
@@ -71,7 +84,7 @@ def http(method: str, url: str, token: str | None = None, body: dict | bytes | N
         data = body
     req = urllib.request.Request(url, data=data, headers=hdrs, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=120) as resp:
             raw = resp.read()
             status = resp.status
     except urllib.error.HTTPError as e:
@@ -144,7 +157,7 @@ def push_code(owner: str, token: str) -> None:
         ".venv/", "backend/.venv/", "__pycache__/", "**/__pycache__/",
         "backend/data/afa_twin.db", "backend/data/uploads/",
         "frontend/node_modules/", "frontend/dist/",
-        "tools/node_modules/", "tools/shots/",
+        "tools/node_modules/", "tools/shots/", "tools/afa-twin-frontend.zip",
         ".env", ".env.*", "*.pyc",
     ]
     existing = gitignore.read_text().splitlines() if gitignore.exists() else []
@@ -229,93 +242,88 @@ def ensure_neon_database(api_key: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 3. Render — backend (Docker)
+# 3. Vercel — backend (funções Python / FastAPI, sem servidor)
 # ---------------------------------------------------------------------------
 
-def ensure_render_service(api_key: str, github_repo_url: str, database_url: str) -> tuple[str, str]:
-    step("Render: verificando/criando o serviço de backend")
-    status, owners = http("GET", "https://api.render.com/v1/owners", token=api_key)
-    if status != 200:
-        die(f"Falha ao listar workspaces do Render (status {status}): {owners}")
-    if not owners:
-        die("Nenhum workspace encontrado na conta Render.")
-    owner_id = owners[0]["owner"]["id"]
-
-    status, services = http("GET", f"https://api.render.com/v1/services?name={RENDER_SERVICE_NAME}&limit=20",
-                             token=api_key)
-    existing = None
+def ensure_vercel_project(token: str) -> str:
+    step("Vercel: verificando/criando o projeto do backend")
+    status, proj = http("GET", f"https://api.vercel.com/v10/projects/{VERCEL_PROJECT_NAME}", token=token)
     if status == 200:
-        for item in services:
-            if item["service"]["name"] == RENDER_SERVICE_NAME:
-                existing = item["service"]
-                break
+        print(f"  Projeto já existe: {proj['id']}")
+        return proj["id"]
 
-    import secrets
-    secret_key = secrets.token_hex(32)
-
-    if existing:
-        service_id = existing["id"]
-        service_url = existing.get("serviceDetails", {}).get("url") or f"https://{RENDER_SERVICE_NAME}.onrender.com"
-        print(f"  Serviço já existe: {service_url}")
-    else:
-        body = {
-            "type": "web_service",
-            "name": RENDER_SERVICE_NAME,
-            "ownerId": owner_id,
-            "repo": github_repo_url,
-            "branch": "main",
-            "rootDir": "backend",
-            "autoDeploy": "no",
-            "plan": "free",
-            "region": "oregon",
-            "envVars": [
-                {"key": "AFA_TWIN_DATABASE_URL", "value": database_url},
-                {"key": "AFA_TWIN_SECRET_KEY", "value": secret_key},
-                {"key": "AFA_TWIN_ALLOWED_ORIGINS", "value": "*"},
-            ],
-            "serviceDetails": {
-                "runtime": "docker",
-                "envSpecificDetails": {"dockerfilePath": "./Dockerfile", "dockerContext": "."},
-                "healthCheckPath": "/api/health",
-            },
-        }
-        status, created = http("POST", "https://api.render.com/v1/services", token=api_key, body=body)
-        if status not in (200, 201):
-            die(f"Falha ao criar o serviço no Render (status {status}): {created}")
-        service_id = created["service"]["id"]
-        service_url = created["service"].get("serviceDetails", {}).get("url") \
-            or f"https://{RENDER_SERVICE_NAME}.onrender.com"
-        print(f"  Serviço criado: {service_url}")
-
-    return service_id, service_url.rstrip("/")
-
-
-def trigger_render_deploy(api_key: str, service_id: str) -> None:
-    step("Render: iniciando o deploy (build da imagem Docker)")
-    status, deploy = http("POST", f"https://api.render.com/v1/services/{service_id}/deploys", token=api_key, body={})
+    status, created = http("POST", "https://api.vercel.com/v11/projects", token=token,
+                            body={"name": VERCEL_PROJECT_NAME, "framework": "fastapi"})
     if status not in (200, 201):
-        die(f"Falha ao iniciar deploy no Render (status {status}): {deploy}")
-    deploy_id = deploy["id"]
-    print("  Build iniciado. Acompanhando (pode levar alguns minutos)...")
-    for _ in range(40):  # ~10 minutos
-        time.sleep(15)
-        status, d = http("GET", f"https://api.render.com/v1/services/{service_id}/deploys/{deploy_id}", token=api_key)
-        current = d.get("status", "desconhecido")
-        print(f"    status: {current}")
-        if current in ("live",):
+        die(f"Falha ao criar o projeto no Vercel (status {status}): {created}")
+    print(f"  Projeto criado: {created['id']}")
+    return created["id"]
+
+
+def set_vercel_env(token: str, project_id: str, env: dict[str, str]) -> None:
+    step("Vercel: configurando variáveis de ambiente")
+    body = [
+        {"key": k, "value": v, "type": "encrypted", "target": ["production", "preview", "development"]}
+        for k, v in env.items()
+    ]
+    status, result = http("POST", f"https://api.vercel.com/v10/projects/{project_id}/env?upsert=true",
+                           token=token, body=body)
+    if status not in (200, 201):
+        die(f"Falha ao configurar variáveis de ambiente no Vercel (status {status}): {result}")
+    print(f"  {len(env)} variável(is) configurada(s).")
+
+
+def _collect_backend_files() -> list[dict]:
+    files = []
+    for path in BACKEND_DIR.rglob("*"):
+        if not path.is_file():
+            continue
+        rel_parts = path.relative_to(BACKEND_DIR).parts
+        if rel_parts[0] in BACKEND_EXCLUDE_DIRS:
+            continue
+        if any(part == "__pycache__" for part in rel_parts):
+            continue
+        rel_path = "/".join(rel_parts)
+        content = path.read_bytes()
+        files.append({
+            "file": rel_path,
+            "data": base64.b64encode(content).decode("ascii"),
+            "encoding": "base64",
+        })
+    return files
+
+
+def deploy_to_vercel(token: str, project_id: str, files: list[dict]) -> str:
+    step("Vercel: publicando o backend (build da função Python)")
+    body = {
+        "name": VERCEL_PROJECT_NAME,
+        "project": project_id,
+        "target": "production",
+        "projectSettings": {"framework": "fastapi"},
+        "files": files,
+    }
+    status, deployment = http("POST", "https://api.vercel.com/v13/deployments", token=token, body=body)
+    if status not in (200, 201):
+        die(f"Falha ao criar o deploy no Vercel (status {status}): {deployment}")
+    deployment_id = deployment["id"]
+    print("  Build iniciado. Acompanhando (pode levar 1-2 minutos)...")
+    final_url = deployment.get("url")
+    for _ in range(40):  # ~6-7 minutos
+        time.sleep(10)
+        status, d = http("GET", f"https://api.vercel.com/v13/deployments/{deployment_id}", token=token)
+        state = d.get("readyState", "UNKNOWN")
+        print(f"    status: {state}")
+        if state == "READY":
+            aliases = d.get("alias") or []
+            final_url = aliases[0] if aliases else d.get("url")
             print("  Deploy concluído com sucesso.")
-            return
-        if current in ("build_failed", "update_failed", "canceled", "deactivated"):
-            die(f"Deploy do backend falhou (status: {current}). Verifique o painel do Render para o log completo.")
+            return f"https://{final_url}"
+        if state in ("ERROR", "CANCELED"):
+            die(f"Deploy do backend falhou no Vercel (status: {state}). "
+                f"Verifique o painel do Vercel (Deployments) para o log completo.")
     print("  [aviso] Deploy ainda em andamento após o tempo de espera do script - "
-          "confira o painel do Render para o status final.")
-
-
-def update_render_env(api_key: str, service_id: str, key: str, value: str) -> None:
-    status, _ = http("PUT", f"https://api.render.com/v1/services/{service_id}/env-vars/{key}",
-                      token=api_key, body={"value": value})
-    if status not in (200, 201):
-        die(f"Falha ao atualizar variável {key} no Render (status {status})")
+          "confira o painel do Vercel para o status final.")
+    return f"https://{final_url}" if final_url else ""
 
 
 # ---------------------------------------------------------------------------
@@ -335,7 +343,6 @@ def build_frontend() -> None:
 def write_redirects(backend_url: str) -> None:
     content = (
         f"/api/*    {backend_url}/api/:splat    200\n"
-        f"/media/*  {backend_url}/media/:splat  200\n"
         f"/*        /index.html                 200\n"
     )
     (DIST_DIR / "_redirects").write_text(content)
@@ -385,7 +392,7 @@ def deploy_to_netlify(token: str, site_id: str, zip_path: Path) -> None:
 
 def main() -> None:
     github_token = need_env("GITHUB_TOKEN")
-    render_key = need_env("RENDER_API_KEY")
+    vercel_token = need_env("VERCEL_TOKEN")
     neon_key = need_env("NEON_API_KEY")
     netlify_token = need_env("NETLIFY_TOKEN")
 
@@ -394,8 +401,16 @@ def main() -> None:
 
     database_url = ensure_neon_database(neon_key)
 
-    service_id, backend_url = ensure_render_service(render_key, repo_html_url, database_url)
-    trigger_render_deploy(render_key, service_id)
+    project_id = ensure_vercel_project(vercel_token)
+    secret_key = secrets.token_hex(32)
+    set_vercel_env(vercel_token, project_id, {
+        "AFA_TWIN_DATABASE_URL": database_url,
+        "AFA_TWIN_SECRET_KEY": secret_key,
+        "AFA_TWIN_ALLOWED_ORIGINS": "*",
+    })
+    backend_files = _collect_backend_files()
+    print(f"  {len(backend_files)} arquivo(s) do backend preparados para publicação.")
+    backend_url = deploy_to_vercel(vercel_token, project_id, backend_files)
 
     build_frontend()
     write_redirects(backend_url)
@@ -403,9 +418,9 @@ def main() -> None:
     site_id, frontend_url = ensure_netlify_site(netlify_token)
     deploy_to_netlify(netlify_token, site_id, zip_path)
 
-    update_render_env(render_key, service_id, "AFA_TWIN_ALLOWED_ORIGINS", frontend_url)
+    set_vercel_env(vercel_token, project_id, {"AFA_TWIN_ALLOWED_ORIGINS": frontend_url})
     print("\n  Origem liberada no backend atualizada para o frontend publicado; refazendo o deploy...")
-    trigger_render_deploy(render_key, service_id)
+    backend_url = deploy_to_vercel(vercel_token, project_id, backend_files)
 
     print("\n" + "=" * 70)
     print("PUBLICAÇÃO CONCLUÍDA")

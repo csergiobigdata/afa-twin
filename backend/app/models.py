@@ -12,7 +12,7 @@ import enum
 import datetime as dt
 
 from sqlalchemy import (
-    String, Integer, Float, Boolean, Text, ForeignKey, DateTime, Enum as SAEnum
+    String, Integer, Float, Boolean, Text, ForeignKey, DateTime, LargeBinary, Enum as SAEnum
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,6 +21,27 @@ from .database import Base
 
 def now_utc() -> dt.datetime:
     return dt.datetime.now(dt.timezone.utc)
+
+
+# --------------------------------------------------------------------------
+# Arquivos enviados (fotos de aeronave, de perfil, de inspeção fotográfica).
+#
+# Guardados como dado binário dentro do próprio banco (coluna LargeBinary),
+# em vez de arquivo em disco: hospedagens de nuvem "serverless" (ex.: Vercel)
+# rodam a API em funções efêmeras sem disco persistente entre chamadas, então
+# um arquivo salvo em uma chamada pode não existir mais na próxima. Guardar
+# no banco (SQLite localmente, Postgres em nuvem) elimina essa dependência de
+# disco, ao custo de consumir uma fração do limite de armazenamento do banco
+# gratuito (ver docs/03-modelo-de-dados.md, seção 3, e docs/06, seção 5.2).
+# --------------------------------------------------------------------------
+
+class MediaAsset(Base):
+    __tablename__ = "media_assets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    content_type: Mapped[str] = mapped_column(String(100))
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
 
 # --------------------------------------------------------------------------
@@ -155,10 +176,18 @@ class Aircraft(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
     # Foto real da aeronave (upload) - imagem estática e uma variação animada
-    # (gif/webp) para inspeção visual de detalhes. Nomes de arquivo apenas;
-    # servidos estaticamente em /media/aircraft/<arquivo>. Ver routers/aircraft.py.
-    photo_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    photo_animated_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # (gif/webp) para inspeção visual de detalhes. Guardadas como MediaAsset
+    # (ver acima) e servidas em /api/media/<id>. Ver routers/aircraft.py.
+    photo_asset_id: Mapped[int | None] = mapped_column(ForeignKey("media_assets.id"), nullable=True)
+    photo_animated_asset_id: Mapped[int | None] = mapped_column(ForeignKey("media_assets.id"), nullable=True)
+
+    @property
+    def photo_url(self) -> str | None:
+        return f"/api/media/{self.photo_asset_id}" if self.photo_asset_id else None
+
+    @property
+    def photo_animated_url(self) -> str | None:
+        return f"/api/media/{self.photo_animated_asset_id}" if self.photo_animated_asset_id else None
 
     # Fatores de entrada manual do modelo de Risco Operacional ponderado
     # (missão prevista e condições meteorológicas) - ver compute.py e
@@ -242,7 +271,7 @@ class InspectionFinding(Base):
     aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"))
     component_id: Mapped[int | None] = mapped_column(ForeignKey("components.id"), nullable=True)
 
-    photo_filename: Mapped[str] = mapped_column(String(255))
+    photo_asset_id: Mapped[int] = mapped_column(ForeignKey("media_assets.id"))
     defect_type: Mapped[DefectType] = mapped_column(SAEnum(DefectType))
     location: Mapped[str | None] = mapped_column(String(200), nullable=True)
     severity: Mapped[Criticality] = mapped_column(SAEnum(Criticality), default=Criticality.MEDIA)
@@ -257,6 +286,10 @@ class InspectionFinding(Base):
     aircraft: Mapped["Aircraft"] = relationship(back_populates="inspection_findings")
     component: Mapped["Component | None"] = relationship()
     recorded_by: Mapped["Person | None"] = relationship()
+
+    @property
+    def photo_url(self) -> str:
+        return f"/api/media/{self.photo_asset_id}"
 
 
 # --------------------------------------------------------------------------
@@ -281,7 +314,7 @@ class Person(Base):
     email: Mapped[str | None] = mapped_column(String(120), nullable=True)  # usado para envio real de alertas por e-mail
     phone_ddd: Mapped[str | None] = mapped_column(String(4), nullable=True)  # código de área (DDD)
     phone_number: Mapped[str | None] = mapped_column(String(20), nullable=True)  # número, sem o DDD
-    photo_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)  # foto de perfil (upload)
+    photo_asset_id: Mapped[int | None] = mapped_column(ForeignKey("media_assets.id"), nullable=True)  # foto de perfil
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
@@ -294,6 +327,10 @@ class Person(Base):
         if self.phone_ddd and self.phone_number:
             return f"({self.phone_ddd}) {self.phone_number}"
         return self.phone_number
+
+    @property
+    def photo_url(self) -> str | None:
+        return f"/api/media/{self.photo_asset_id}" if self.photo_asset_id else None
 
 
 class Assignment(Base):

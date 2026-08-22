@@ -13,7 +13,7 @@ export function exampleArtUrl(silhouetteKey: string, animated = false): string {
   return `/aircraft-art/${key}${animated ? "-animated" : ""}.svg`;
 }
 
-/** URL de uma foto enviada pelo usuário (servida pelo backend), ou null se não houver. */
-export function uploadedPhotoUrl(filename?: string | null): string | null {
-  return filename ? `/media/aircraft/${encodeURIComponent(filename)}` : null;
+/** URL de uma foto enviada pelo usuário (já pronta, servida pelo backend em /api/media/<id>), ou null se não houver. */
+export function uploadedPhotoUrl(url?: string | null): string | null {
+  return url || null;
 }

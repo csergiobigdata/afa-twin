@@ -19,3 +19,4 @@ tools/shots/
 .env
 .env.*
 *.pyc
+tools/afa-twin-frontend.zip

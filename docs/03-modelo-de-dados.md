@@ -34,7 +34,16 @@ erDiagram
     RESPONSIBLE_GROUP ||--o{ MAINTENANCE_ORDER : "equipe formal de"
     CHECKLIST_TEMPLATE }o..o{ MAINTENANCE_ORDER : "referencia (por tipo/modelo)"
     AUDIT_LOG }o..|| USER : "registra ação de (por nome de usuário)"
+    AIRCRAFT |o--o| MEDIA_ASSET : "foto (estática/animada)"
+    PERSON |o--o| MEDIA_ASSET : "foto de perfil"
+    INSPECTION_FINDING ||--|| MEDIA_ASSET : "foto do achado"
 
+    MEDIA_ASSET {
+        int id PK
+        string content_type "ex. image/png, image/svg+xml"
+        binary data "conteúdo do arquivo, dentro do próprio banco"
+        datetime created_at
+    }
     AIRCRAFT {
         int id PK
         string tail_number "matrícula, único"
@@ -50,8 +59,8 @@ erDiagram
         text armament_config
         enum status
         string silhouette_key
-        string photo_filename "foto real anexada (opcional)"
-        string photo_animated_filename "gif/webp animado (opcional)"
+        int photo_asset_id FK "nullable - foto real anexada (MediaAsset)"
+        int photo_animated_asset_id FK "nullable - gif/webp animado (MediaAsset)"
         enum next_mission_risk "entrada manual - fator do risco ponderado"
         enum weather_risk "entrada manual - fator do risco ponderado"
     }
@@ -59,7 +68,7 @@ erDiagram
         int id PK
         int aircraft_id FK
         int component_id FK "nullable"
-        string photo_filename
+        int photo_asset_id FK "MediaAsset"
         enum defect_type "Corrosão/Trinca/Vazamento/Desgaste/Outro"
         string location
         enum severity
@@ -95,7 +104,7 @@ erDiagram
         string email "usado para alertas por e-mail"
         string phone_ddd "DDD, para alertas por SMS/WhatsApp"
         string phone_number
-        string photo_filename "foto de perfil (opcional)"
+        int photo_asset_id FK "nullable - foto de perfil (MediaAsset)"
         bool active "nunca excluído - só inativado"
     }
     ASSIGNMENT {
@@ -251,10 +260,12 @@ classificar como a vida de um componente é controlada.
    demanda** a partir das tabelas existentes (`maintenance_orders`, `components`, `flight_logs`) - não
    possuem tabelas próprias, evitando duplicidade de dados (princípio "modelo único" do documento de
    referência). Ver `backend/app/reliability.py`, `diagnostics.py` e `planning.py`.
-7. **Foto da aeronave**: `photo_filename`/`photo_animated_filename` armazenam apenas o nome do
-   arquivo; os binários ficam em `backend/data/uploads/aircraft/` (fora do banco), servidos
-   estaticamente em `/media/aircraft/<arquivo>`. O mesmo padrão vale para `InspectionFinding.photo_filename`
-   em `backend/data/uploads/inspections/` e para `Person.photo_filename` em `backend/data/uploads/people/`.
+7. **Fotos (aeronave, perfil, inspeção fotográfica) ficam dentro do próprio banco**, não em disco:
+   `Aircraft.photo_asset_id`/`photo_animated_asset_id`, `Person.photo_asset_id` e
+   `InspectionFinding.photo_asset_id` referenciam um `MediaAsset` (id, `content_type`, `data` binário).
+   Servidas em `/api/media/<id>` (ver `backend/app/routers/media.py`). Decisão deliberada para
+   compatibilidade com hospedagem "serverless" (ex.: Vercel, usado em [docs/06](06-implantacao-nuvem.md)),
+   que não garante disco persistente entre chamadas de função - ver a nota completa em `models.py`.
 8. **Imutabilidade de Ordem de Serviço em status terminal**: uma vez `Concluída` ou `Cancelada`, a API
    rejeita qualquer alteração adicional (inclusive tentativa de exclusão, que retorna erro 405). A transição
    para `Cancelada` exige `cancelled_by_id` e `cancellation_reason` preenchidos, grava `cancelled_at`

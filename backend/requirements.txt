@@ -4,3 +4,8 @@ sqlalchemy>=2.0
 pydantic>=2.7
 python-multipart>=0.0.9
 email-validator>=2.1
+# Driver Postgres - só é usado quando AFA_TWIN_DATABASE_URL aponta para um
+# banco Postgres (ex.: Neon, em nuvem); irrelevante e inofensivo no piloto
+# local com SQLite. Mantido aqui (em vez de um arquivo separado) porque
+# hosts de deploy "zero-config" (ex.: Vercel) instalam só este arquivo.
+psycopg[binary]>=3.1

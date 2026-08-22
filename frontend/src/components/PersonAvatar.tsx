@@ -1,7 +1,7 @@
 import type { Person } from "../api/types";
 
-export function uploadedPersonPhotoUrl(filename?: string | null): string | null {
-  return filename ? `/media/people/${encodeURIComponent(filename)}` : null;
+export function uploadedPersonPhotoUrl(url?: string | null): string | null {
+  return url || null;
 }
 
 const AVATAR_COLORS = ["#1c4f9c", "#0b7a3f", "#a9662f", "#7a4a9c", "#c62828", "#0e7c86"];
@@ -20,8 +20,8 @@ function colorFor(fullName: string): string {
 
 /** Foto de perfil da pessoa, com fallback para um avatar de iniciais quando
  * nenhuma foto real foi enviada. */
-export default function PersonAvatar({ person, size = 40 }: { person: Pick<Person, "full_name" | "photo_filename">; size?: number }) {
-  const url = uploadedPersonPhotoUrl(person.photo_filename);
+export default function PersonAvatar({ person, size = 40 }: { person: Pick<Person, "full_name" | "photo_url">; size?: number }) {
+  const url = uploadedPersonPhotoUrl(person.photo_url);
   if (url) {
     return (
       <img

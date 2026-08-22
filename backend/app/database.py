@@ -13,14 +13,12 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-UPLOADS_DIR = os.path.join(DATA_DIR, "uploads", "aircraft")
-INSPECTION_UPLOADS_DIR = os.path.join(DATA_DIR, "uploads", "inspections")
-PEOPLE_UPLOADS_DIR = os.path.join(DATA_DIR, "uploads", "people")
 os.makedirs(DATA_DIR, exist_ok=True)
-os.makedirs(UPLOADS_DIR, exist_ok=True)
-os.makedirs(INSPECTION_UPLOADS_DIR, exist_ok=True)
-os.makedirs(PEOPLE_UPLOADS_DIR, exist_ok=True)
 
+# Fotos de aeronave/perfil/inspeção NÃO ficam em disco (ver models.MediaAsset)
+# - hospedagens de nuvem serverless não garantem disco persistente entre
+# chamadas. O único uso de disco local remanescente é o arquivo do SQLite
+# no piloto local (substituível por Postgres via AFA_TWIN_DATABASE_URL).
 DB_PATH = os.path.join(DATA_DIR, "afa_twin.db")
 
 # Permite sobrescrever via variável de ambiente quando migrar para nuvem.

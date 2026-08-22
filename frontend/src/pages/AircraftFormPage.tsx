@@ -95,8 +95,8 @@ export default function AircraftFormPage({ mode }: { mode: "create" | "edit" }) 
     }
   }
 
-  const currentStaticUrl = staticPreview ?? uploadedPhotoUrl(form.photo_filename) ?? exampleArtUrl(form.silhouette_key ?? "generic", false);
-  const currentAnimatedUrl = animatedPreview ?? uploadedPhotoUrl(form.photo_animated_filename) ?? exampleArtUrl(form.silhouette_key ?? "generic", true);
+  const currentStaticUrl = staticPreview ?? uploadedPhotoUrl(form.photo_url) ?? exampleArtUrl(form.silhouette_key ?? "generic", false);
+  const currentAnimatedUrl = animatedPreview ?? uploadedPhotoUrl(form.photo_animated_url) ?? exampleArtUrl(form.silhouette_key ?? "generic", true);
 
   if (loading) return <p>Carregando…</p>;
 

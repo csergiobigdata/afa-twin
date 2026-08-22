@@ -8,12 +8,10 @@ Esquadrão/base/horas são ilustrativos para fins do piloto - não representam
 dados operacionais reais ou classificados.
 """
 import datetime as dt
-import os
 
 from sqlalchemy.orm import Session
 
 from . import models, security
-from .database import INSPECTION_UPLOADS_DIR
 
 
 def _today_minus(days: int) -> dt.date:
@@ -24,14 +22,14 @@ def _today_plus(days: int) -> dt.date:
     return (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=days)).date()
 
 
-def _write_seed_photo(filename: str, svg_body: str) -> str:
-    """Grava uma imagem ilustrativa de exemplo (não é uma foto real de dano)
-    usada apenas para demonstrar o módulo de Inspeção Fotográfica no piloto."""
-    path = os.path.join(INSPECTION_UPLOADS_DIR, filename)
-    if not os.path.exists(path):
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(svg_body)
-    return filename
+def _seed_photo_asset(db: Session, svg_body: str) -> int:
+    """Cria uma imagem ilustrativa de exemplo (não é uma foto real de dano)
+    usada apenas para demonstrar o módulo de Inspeção Fotográfica no piloto -
+    guardada no banco como models.MediaAsset (ver a nota em models.py)."""
+    asset = models.MediaAsset(content_type="image/svg+xml", data=svg_body.encode("utf-8"))
+    db.add(asset)
+    db.flush()
+    return asset.id
 
 
 def seed_if_empty(db: Session) -> None:
@@ -516,7 +514,7 @@ def seed_if_empty(db: Session) -> None:
     # Imagens ilustrativas geradas para o piloto (NÃO são fotos reais de
     # dano) apenas para demonstrar o histórico visual comparável ao longo
     # do tempo por componente, descrito no documento de referência.
-    trinca_svg = _write_seed_photo("exemplo-trinca.svg", """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260">
+    trinca_asset_id = _seed_photo_asset(db, """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260">
   <rect width="400" height="260" fill="#8b93a1"/>
   <rect x="0" y="0" width="400" height="260" fill="url(#rivets)" opacity="0.15"/>
   <defs><pattern id="rivets" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -526,7 +524,7 @@ def seed_if_empty(db: Session) -> None:
   <circle cx="210" cy="90" r="26" fill="none" stroke="#ff3b3b" stroke-width="3"/>
   <text x="200" y="240" text-anchor="middle" font-family="Segoe UI, Arial" font-size="14" fill="#ffffff">Exemplo ilustrativo - trinca em painel estrutural</text>
 </svg>""")
-    corrosao_svg = _write_seed_photo("exemplo-corrosao.svg", """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260">
+    corrosao_asset_id = _seed_photo_asset(db, """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260">
   <rect width="400" height="260" fill="#9aa1ad"/>
   <ellipse cx="180" cy="130" rx="70" ry="46" fill="#a9662f" opacity="0.75"/>
   <ellipse cx="200" cy="120" rx="42" ry="26" fill="#7a4a1f" opacity="0.8"/>
@@ -540,7 +538,7 @@ def seed_if_empty(db: Session) -> None:
     db.add_all([
         models.InspectionFinding(
             aircraft_id=aircraft_objs["FAB 4824"].id, component_id=component_objs[4].id,
-            photo_filename=trinca_svg, defect_type=models.DefectType.TRINCA,
+            photo_asset_id=trinca_asset_id, defect_type=models.DefectType.TRINCA,
             location="Longarina principal da asa, próximo à nervura nº 7",
             severity=models.Criticality.CRITICA, extent="Aprox. 18mm de extensão visível",
             probable_cause="Fadiga estrutural associada à alta acumulação de horas de célula.",
@@ -550,7 +548,7 @@ def seed_if_empty(db: Session) -> None:
         ),
         models.InspectionFinding(
             aircraft_id=aircraft_objs["FAB 2464"].id, component_id=None,
-            photo_filename=corrosao_svg, defect_type=models.DefectType.CORROSAO,
+            photo_asset_id=corrosao_asset_id, defect_type=models.DefectType.CORROSAO,
             location="Revestimento inferior da fuselagem, seção de carga",
             severity=models.Criticality.MEDIA, extent="Área de aproximadamente 6x4 cm",
             probable_cause="Exposição prolongada à umidade e ciclo térmico em operações costeiras.",

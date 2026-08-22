@@ -59,8 +59,8 @@ export interface Aircraft {
   next_mission_risk: RiskLevel;
   weather_risk: RiskLevel;
   created_at: string;
-  photo_filename?: string | null;
-  photo_animated_filename?: string | null;
+  photo_url?: string | null;
+  photo_animated_url?: string | null;
   health_index?: number | null;
   risk_level?: string | null;
   availability_pct?: number | null;
@@ -103,7 +103,7 @@ export interface Person {
   email?: string | null;
   phone_ddd?: string | null;
   phone_number?: string | null;
-  photo_filename?: string | null;
+  photo_url?: string | null;
   active: boolean;
   created_at: string;
 }
@@ -221,7 +221,7 @@ export interface InspectionFinding {
   id: number;
   aircraft_id: number;
   component_id?: number | null;
-  photo_filename: string;
+  photo_url: string;
   defect_type: DefectType;
   location?: string | null;
   severity: Criticality;

@@ -103,10 +103,10 @@ Detalhes completos, incluindo como instalar como aplicativo em um tablet: [`docs
   alertas ativos da frota.
 - ✅ Aplicativo web instalável em tablets (PWA), identidade visual FAB, sem custo de infraestrutura.
 - ✅ **Manual do usuário em PDF** com telas de exemplo de cada módulo ([`docs/AFA-TWIN-Manual-do-Usuario.pdf`](docs/AFA-TWIN-Manual-do-Usuario.pdf)).
-- ✅ **Caminho documentado de implantação em nuvem gratuita** com acesso restrito aos usuários
-  definidos ([docs/06](docs/06-implantacao-nuvem.md)): Dockerfile do backend, configuração de deploy
-  estático do frontend (Netlify/Vercel), migração para Postgres gratuito e camada opcional de chave de
-  acesso extra.
+- ✅ **Publicação automatizada em nuvem gratuita** com acesso restrito aos usuários definidos
+  ([docs/06](docs/06-implantacao-nuvem.md) e [`tools/deploy_cloud.py`](tools/deploy_cloud.py)): backend
+  como função Python/FastAPI no Vercel, banco Postgres gratuito no Neon, frontend estático no Netlify,
+  e camada opcional de chave de acesso extra.
 - ⏭️ Modelos de IA/ML treinados (Weibull completo, visão computacional automática, PLN semântico) e
   integração automática com sistemas de missão/meteorologia — evolução planejada (ver
   [docs/01](docs/01-contexto-e-brainstorming.md), seção 7, e [docs/02](docs/02-arquitetura-da-solucao.md), seção 6).

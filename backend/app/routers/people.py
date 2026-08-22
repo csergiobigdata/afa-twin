@@ -1,11 +1,11 @@
+import mimetypes
 import os
-import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from .. import audit, models, schemas, security
-from ..database import get_db, PEOPLE_UPLOADS_DIR
+from ..database import get_db
 
 router = APIRouter(
     prefix="/api/people", tags=["pessoal"],
@@ -16,28 +16,26 @@ ALLOWED_PHOTO_EXT = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_UPLOAD_BYTES = 6 * 1024 * 1024
 
 
-def _save_photo(file: UploadFile) -> str:
+def _save_photo(db: Session, file: UploadFile) -> int:
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in ALLOWED_PHOTO_EXT:
         raise HTTPException(400, f"Formato não suportado. Use: {', '.join(sorted(ALLOWED_PHOTO_EXT))}")
     content = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(content) > MAX_UPLOAD_BYTES:
         raise HTTPException(400, "Arquivo excede o limite de 6MB.")
-    filename = f"{uuid.uuid4().hex}{ext}"
-    with open(os.path.join(PEOPLE_UPLOADS_DIR, filename), "wb") as f:
-        f.write(content)
-    return filename
+    content_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
+    asset = models.MediaAsset(content_type=content_type, data=content)
+    db.add(asset)
+    db.flush()
+    return asset.id
 
 
-def _delete_photo_if_exists(filename: str | None) -> None:
-    if not filename:
+def _delete_photo_if_exists(db: Session, asset_id: int | None) -> None:
+    if not asset_id:
         return
-    path = os.path.join(PEOPLE_UPLOADS_DIR, filename)
-    if os.path.exists(path):
-        try:
-            os.remove(path)
-        except OSError:
-            pass
+    asset = db.get(models.MediaAsset, asset_id)
+    if asset:
+        db.delete(asset)
 
 
 # ---------------- Meu Perfil (usuário autenticado) ----------------
@@ -74,11 +72,11 @@ def upload_my_photo(
 ):
     if not user.person:
         raise HTTPException(404, "Este usuário de acesso não está vinculado a um cadastro de pessoa.")
-    old = user.person.photo_filename
-    user.person.photo_filename = _save_photo(file)
+    old_asset_id = user.person.photo_asset_id
+    user.person.photo_asset_id = _save_photo(db, file)
+    _delete_photo_if_exists(db, old_asset_id)
     db.commit()
     db.refresh(user.person)
-    _delete_photo_if_exists(old)
     return user.person
 
 
@@ -86,8 +84,8 @@ def upload_my_photo(
 def delete_my_photo(user: models.User = Depends(security.get_current_user), db: Session = Depends(get_db)):
     if not user.person:
         raise HTTPException(404, "Este usuário de acesso não está vinculado a um cadastro de pessoa.")
-    _delete_photo_if_exists(user.person.photo_filename)
-    user.person.photo_filename = None
+    _delete_photo_if_exists(db, user.person.photo_asset_id)
+    user.person.photo_asset_id = None
     db.commit()
     db.refresh(user.person)
     return user.person
@@ -156,11 +154,11 @@ def upload_person_photo(person_id: int, file: UploadFile = File(...), db: Sessio
     p = db.get(models.Person, person_id)
     if not p:
         raise HTTPException(404, "Pessoa não encontrada")
-    old = p.photo_filename
-    p.photo_filename = _save_photo(file)
+    old_asset_id = p.photo_asset_id
+    p.photo_asset_id = _save_photo(db, file)
+    _delete_photo_if_exists(db, old_asset_id)
     db.commit()
     db.refresh(p)
-    _delete_photo_if_exists(old)
     return p
 
 
@@ -169,8 +167,8 @@ def delete_person_photo(person_id: int, db: Session = Depends(get_db)):
     p = db.get(models.Person, person_id)
     if not p:
         raise HTTPException(404, "Pessoa não encontrada")
-    _delete_photo_if_exists(p.photo_filename)
-    p.photo_filename = None
+    _delete_photo_if_exists(db, p.photo_asset_id)
+    p.photo_asset_id = None
     db.commit()
     db.refresh(p)
     return p

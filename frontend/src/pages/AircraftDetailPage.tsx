@@ -947,7 +947,7 @@ function InspectionsTab({ aircraftId, components, people }: { aircraftId: number
             const comp = components.find((c) => c.id === f.component_id);
             return (
               <div key={f.id} className="card" style={{ overflow: "hidden" }}>
-                <img src={`/media/inspections/${f.photo_filename}`} alt={f.defect_type}
+                <img src={f.photo_url} alt={f.defect_type}
                      style={{ width: "100%", height: 150, objectFit: "cover" }} />
                 <div style={{ padding: 14 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

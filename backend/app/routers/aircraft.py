@@ -1,12 +1,12 @@
+import mimetypes
 import os
-import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session, selectinload
 
 from .. import audit, models, schemas, compute, security, reliability
 from .. import notifications as notifications_service
-from ..database import get_db, UPLOADS_DIR
+from ..database import get_db
 
 router = APIRouter(
     prefix="/api/aircraft", tags=["aeronaves"],
@@ -33,28 +33,26 @@ def _to_out(a: models.Aircraft) -> schemas.AircraftOut:
     return out
 
 
-def _save_upload(file: UploadFile, allowed_ext: set[str]) -> str:
+def _save_upload(db: Session, file: UploadFile, allowed_ext: set[str]) -> int:
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in allowed_ext:
         raise HTTPException(400, f"Formato não suportado. Use um dos formatos: {', '.join(sorted(allowed_ext))}")
     content = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(content) > MAX_UPLOAD_BYTES:
         raise HTTPException(400, "Arquivo excede o limite de 6MB.")
-    filename = f"{uuid.uuid4().hex}{ext}"
-    with open(os.path.join(UPLOADS_DIR, filename), "wb") as f:
-        f.write(content)
-    return filename
+    content_type = file.content_type or mimetypes.guess_type(file.filename or "")[0] or "application/octet-stream"
+    asset = models.MediaAsset(content_type=content_type, data=content)
+    db.add(asset)
+    db.flush()
+    return asset.id
 
 
-def _delete_file_if_exists(filename: str | None) -> None:
-    if not filename:
+def _delete_asset_if_exists(db: Session, asset_id: int | None) -> None:
+    if not asset_id:
         return
-    path = os.path.join(UPLOADS_DIR, filename)
-    if os.path.exists(path):
-        try:
-            os.remove(path)
-        except OSError:
-            pass
+    asset = db.get(models.MediaAsset, asset_id)
+    if asset:
+        db.delete(asset)
 
 
 def _get_or_404(db: Session, aircraft_id: int) -> models.Aircraft:
@@ -127,8 +125,8 @@ def update_aircraft(
     models.PersonRole.GESTOR.value, models.PersonRole.ENGENHEIRO.value))])
 def delete_aircraft(aircraft_id: int, db: Session = Depends(get_db)):
     a = _get_or_404(db, aircraft_id)
-    _delete_file_if_exists(a.photo_filename)
-    _delete_file_if_exists(a.photo_animated_filename)
+    _delete_asset_if_exists(db, a.photo_asset_id)
+    _delete_asset_if_exists(db, a.photo_animated_asset_id)
     db.delete(a)
     db.commit()
     return None
@@ -139,30 +137,30 @@ def delete_aircraft(aircraft_id: int, db: Session = Depends(get_db)):
 @router.post("/{aircraft_id}/photo", response_model=schemas.AircraftOut)
 def upload_photo(aircraft_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
     a = _get_or_404(db, aircraft_id)
-    old_name = a.photo_filename
-    a.photo_filename = _save_upload(file, ALLOWED_STATIC_EXT)
+    old_asset_id = a.photo_asset_id
+    a.photo_asset_id = _save_upload(db, file, ALLOWED_STATIC_EXT)
+    _delete_asset_if_exists(db, old_asset_id)
     db.commit()
     db.refresh(a)
-    _delete_file_if_exists(old_name)
     return _to_out(a)
 
 
 @router.post("/{aircraft_id}/photo-animated", response_model=schemas.AircraftOut)
 def upload_photo_animated(aircraft_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
     a = _get_or_404(db, aircraft_id)
-    old_name = a.photo_animated_filename
-    a.photo_animated_filename = _save_upload(file, ALLOWED_ANIMATED_EXT)
+    old_asset_id = a.photo_animated_asset_id
+    a.photo_animated_asset_id = _save_upload(db, file, ALLOWED_ANIMATED_EXT)
+    _delete_asset_if_exists(db, old_asset_id)
     db.commit()
     db.refresh(a)
-    _delete_file_if_exists(old_name)
     return _to_out(a)
 
 
 @router.delete("/{aircraft_id}/photo", response_model=schemas.AircraftOut)
 def delete_photo(aircraft_id: int, db: Session = Depends(get_db)):
     a = _get_or_404(db, aircraft_id)
-    _delete_file_if_exists(a.photo_filename)
-    a.photo_filename = None
+    _delete_asset_if_exists(db, a.photo_asset_id)
+    a.photo_asset_id = None
     db.commit()
     db.refresh(a)
     return _to_out(a)
@@ -171,8 +169,8 @@ def delete_photo(aircraft_id: int, db: Session = Depends(get_db)):
 @router.delete("/{aircraft_id}/photo-animated", response_model=schemas.AircraftOut)
 def delete_photo_animated(aircraft_id: int, db: Session = Depends(get_db)):
     a = _get_or_404(db, aircraft_id)
-    _delete_file_if_exists(a.photo_animated_filename)
-    a.photo_animated_filename = None
+    _delete_asset_if_exists(db, a.photo_animated_asset_id)
+    a.photo_animated_asset_id = None
     db.commit()
     db.refresh(a)
     return _to_out(a)

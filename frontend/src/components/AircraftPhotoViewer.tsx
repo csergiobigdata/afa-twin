@@ -12,11 +12,11 @@ export default function AircraftPhotoViewer({ aircraft, label = "📷 Ver foto" 
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"static" | "animated">("static");
 
-  const hasRealPhoto = !!aircraft.photo_filename;
-  const hasRealAnimated = !!aircraft.photo_animated_filename;
+  const hasRealPhoto = !!aircraft.photo_url;
+  const hasRealAnimated = !!aircraft.photo_animated_url;
 
-  const staticUrl = uploadedPhotoUrl(aircraft.photo_filename) ?? exampleArtUrl(aircraft.silhouette_key, false);
-  const animatedUrl = uploadedPhotoUrl(aircraft.photo_animated_filename) ?? exampleArtUrl(aircraft.silhouette_key, true);
+  const staticUrl = uploadedPhotoUrl(aircraft.photo_url) ?? exampleArtUrl(aircraft.silhouette_key, false);
+  const animatedUrl = uploadedPhotoUrl(aircraft.photo_animated_url) ?? exampleArtUrl(aircraft.silhouette_key, true);
 
   const currentUrl = mode === "static" ? staticUrl : animatedUrl;
   const currentIsReal = mode === "static" ? hasRealPhoto : hasRealAnimated;

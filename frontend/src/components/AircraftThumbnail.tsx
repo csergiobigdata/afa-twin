@@ -11,7 +11,7 @@ import { exampleArtUrl, uploadedPhotoUrl } from "./aircraftArt";
 export default function AircraftThumbnail({
   aircraft, width = 64, height, rounded = 10,
 }: { aircraft: Aircraft; width?: number; height?: number; rounded?: number }) {
-  const url = uploadedPhotoUrl(aircraft.photo_filename) ?? exampleArtUrl(aircraft.silhouette_key, false);
+  const url = uploadedPhotoUrl(aircraft.photo_url) ?? exampleArtUrl(aircraft.silhouette_key, false);
   const h = height ?? Math.round(width * 0.62);
   return (
     <img

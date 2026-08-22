@@ -53,8 +53,8 @@ export default function AircraftSearchPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map((a) => {
-            const photoUrl = uploadedPhotoUrl(a.photo_filename) ?? exampleArtUrl(a.silhouette_key, false);
-            const isRealPhoto = !!a.photo_filename;
+            const photoUrl = uploadedPhotoUrl(a.photo_url) ?? exampleArtUrl(a.silhouette_key, false);
+            const isRealPhoto = !!a.photo_url;
             return (
               <Link
                 key={a.id}
