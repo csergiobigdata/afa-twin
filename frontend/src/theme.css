@@ -1,0 +1,181 @@
+/* ==========================================================================
+   AFA-TWIN - Tema visual inspirado nas cores institucionais da Força Aérea
+   Brasileira (azul, verde e amarelo do escarcéu/roldana nacional) somado
+   à semântica aeronáutica de status (verde=operacional, amarelo=atenção,
+   vermelho=crítico).
+   ========================================================================== */
+
+:root {
+  /* Paleta institucional */
+  --fab-navy-950: #060f24;
+  --fab-navy-900: #0a1f44;
+  --fab-navy-800: #102a5c;
+  --fab-navy-700: #163b7a;
+  --fab-blue-500: #1c4f9c;
+  --fab-blue-400: #2f6bc4;
+  --fab-green-700: #0b6e4f;
+  --fab-green-500: #12925f;
+  --fab-yellow-500: #ffcc29;
+  --fab-yellow-600: #e6b400;
+
+  /* Semântica de status operacional */
+  --status-ok: #1a9d5b;
+  --status-ok-bg: #e5f6ec;
+  --status-warn: #d99a00;
+  --status-warn-bg: #fff6de;
+  --status-critical: #c62828;
+  --status-critical-bg: #fdeaea;
+  --status-info: #2f6bc4;
+  --status-info-bg: #e8f0fc;
+
+  /* Superfícies (tema claro, padrão para uso em hangar/luz forte) */
+  --bg-app: #f2f4f8;
+  --bg-surface: #ffffff;
+  --bg-surface-alt: #f8f9fc;
+  --border-subtle: #dde2ea;
+  --text-primary: #101828;
+  --text-secondary: #4b5566;
+  --text-inverse: #ffffff;
+  --shadow-sm: 0 1px 2px rgba(10, 31, 68, 0.06), 0 1px 1px rgba(10, 31, 68, 0.04);
+  --shadow-md: 0 4px 14px rgba(10, 31, 68, 0.10);
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --font-sans: "Segoe UI", -apple-system, BlinkMacSystemFont, "Inter", Roboto, Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-app: #0b1220;
+    --bg-surface: #121b30;
+    --bg-surface-alt: #16213a;
+    --border-subtle: #253150;
+    --text-primary: #eef1f7;
+    --text-secondary: #9aa7c2;
+    --status-ok-bg: rgba(26, 157, 91, 0.16);
+    --status-warn-bg: rgba(217, 154, 0, 0.16);
+    --status-critical-bg: rgba(198, 40, 40, 0.18);
+    --status-info-bg: rgba(47, 107, 196, 0.18);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.45);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg-app: #0b1220;
+  --bg-surface: #121b30;
+  --bg-surface-alt: #16213a;
+  --border-subtle: #253150;
+  --text-primary: #eef1f7;
+  --text-secondary: #9aa7c2;
+  --status-ok-bg: rgba(26, 157, 91, 0.16);
+  --status-warn-bg: rgba(217, 154, 0, 0.16);
+  --status-critical-bg: rgba(198, 40, 40, 0.18);
+  --status-info-bg: rgba(47, 107, 196, 0.18);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+button, input, select, textarea { font-family: inherit; }
+
+a { color: var(--fab-blue-400); }
+
+.container { max-width: 1280px; margin: 0 auto; padding: 0 20px; }
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 10px 18px;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter .15s ease, transform .05s ease;
+  min-height: 42px;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--fab-navy-900); color: #fff; }
+.btn-primary:hover { filter: brightness(1.15); }
+.btn-accent { background: var(--fab-yellow-500); color: var(--fab-navy-950); }
+.btn-accent:hover { filter: brightness(1.05); }
+.btn-outline { background: transparent; border-color: var(--border-subtle); color: var(--text-primary); }
+.btn-outline:hover { background: var(--bg-surface-alt); }
+.btn-danger { background: var(--status-critical); color: #fff; }
+.btn-danger:hover { filter: brightness(1.1); }
+.btn-sm { padding: 6px 12px; font-size: 13px; min-height: 32px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-ok { background: var(--status-ok-bg); color: var(--status-ok); }
+.badge-warn { background: var(--status-warn-bg); color: var(--status-warn); }
+.badge-critical { background: var(--status-critical-bg); color: var(--status-critical); }
+.badge-info { background: var(--status-info-bg); color: var(--status-info); }
+.badge-neutral { background: var(--bg-surface-alt); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot-ok { background: var(--status-ok); }
+.dot-warn { background: var(--status-warn); }
+.dot-critical { background: var(--status-critical); }
+
+input[type="text"], input[type="number"], input[type="date"], input[type="email"],
+input[type="password"], input[type="tel"], select, textarea {
+  width: 100%;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14.5px;
+  min-height: 42px;
+}
+textarea { min-height: 80px; resize: vertical; }
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--fab-blue-400);
+  box-shadow: 0 0 0 3px rgba(47, 107, 196, 0.18);
+}
+label { font-size: 13px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 5px; }
+
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.field { display: flex; flex-direction: column; }
+.field-full { grid-column: 1 / -1; }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); }
+th { color: var(--text-secondary); font-size: 12.5px; text-transform: uppercase; letter-spacing: .03em; }
+tr:hover td { background: var(--bg-surface-alt); }
+
+.scroll-x { overflow-x: auto; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 8px; }

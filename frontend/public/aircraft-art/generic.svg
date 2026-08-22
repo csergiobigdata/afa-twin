@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    </linearGradient>
+  </defs>
+  <rect width="480" height="260" fill="url(#sky)"/>
+  <ellipse cx="240" cy="232" rx="140" ry="12" fill="#000" opacity="0.28"/>
+  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
+    <path d="M100 8 L106 60 L165 80 L165 88 L106 72 L106 96 L118 104 L118 108 L82 108 L82 104 L94 96 L94 72 L35 88 L35 80 L94 60 Z"/>
+    <g stroke="none">
+      <circle cx="100" cy="56" r="7" fill="#0b6e4f"/>
+      <circle cx="100" cy="56" r="4.6" fill="#ffcc29"/>
+      <circle cx="100" cy="56" r="2.5" fill="#0a1f44"/>
+    </g>
+  </g>
+  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">Aeronave cadastrada — ilustração vetorial genérica</text>
+</svg>

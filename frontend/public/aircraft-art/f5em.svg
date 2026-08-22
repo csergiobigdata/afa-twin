@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffcc29" stop-opacity="0.9"/><stop offset="100%" stop-color="#ffcc29" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="480" height="260" fill="url(#sky)"/>
+  <ellipse cx="240" cy="232" rx="140" ry="12" fill="#000" opacity="0.28"/>
+  <circle cx="226" cy="214" r="10" fill="url(#glow)"/>
+  <circle cx="254" cy="214" r="10" fill="url(#glow)"/>
+  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
+    <path d="M100 8 L106 50 L168 78 L168 86 L106 66 L106 90 L124 98 L124 102 L76 102 L76 98 L94 90 L94 66 L32 86 L32 78 L94 50 Z"/>
+    <rect x="90" y="88" width="6" height="16"/>
+    <rect x="104" y="88" width="6" height="16"/>
+    <g stroke="none">
+      <circle cx="100" cy="52" r="6.5" fill="#0b6e4f"/>
+      <circle cx="100" cy="52" r="4.2" fill="#ffcc29"/>
+      <circle cx="100" cy="52" r="2.3" fill="#0a1f44"/>
+    </g>
+  </g>
+  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">F-5EM Tiger II — ilustração vetorial</text>
+</svg>

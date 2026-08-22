@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    </linearGradient>
+  </defs>
+  <rect width="480" height="260" fill="url(#sky)"/>
+  <ellipse cx="240" cy="232" rx="140" ry="12" fill="#000" opacity="0.28"/>
+  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
+    <path d="M100 12 L104 78 L176 90 L176 97 L104 88 L104 100 L114 108 L114 112 L86 112 L86 108 L96 100 L96 88 L24 97 L24 90 L96 78 Z"/>
+    <path d="M92 100 L84 100 L88 88 L92 88 Z"/>
+    <path d="M108 100 L116 100 L112 88 L108 88 Z"/>
+    <g stroke="none">
+      <circle cx="100" cy="60" r="7" fill="#0b6e4f"/>
+      <circle cx="100" cy="60" r="4.6" fill="#ffcc29"/>
+      <circle cx="100" cy="60" r="2.5" fill="#0a1f44"/>
+    </g>
+  </g>
+  <g stroke="#0a1f44" stroke-width="2.5" stroke-linecap="round">
+    <line x1="223" y1="10" x2="257" y2="38"/>
+    <line x1="257" y1="10" x2="223" y2="38"/>
+  </g>
+  <circle cx="240" cy="24" r="4" fill="#0a1f44"/>
+  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">Embraer A-29 Super Tucano — ilustração vetorial</text>
+</svg>

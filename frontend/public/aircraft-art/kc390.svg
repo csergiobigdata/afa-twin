@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffcc29" stop-opacity="0.85"/><stop offset="100%" stop-color="#ffcc29" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="480" height="260" fill="url(#sky)"/>
+  <ellipse cx="240" cy="232" rx="150" ry="12" fill="#000" opacity="0.28"/>
+  <circle cx="220" cy="222" r="9" fill="url(#glow)"/>
+  <circle cx="260" cy="222" r="9" fill="url(#glow)"/>
+  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
+    <rect x="92" y="6" width="16" height="86" rx="8"/>
+    <rect x="12" y="44" width="176" height="10"/>
+    <path d="M92 78 L60 108 L60 112 L94 96 Z"/>
+    <path d="M108 78 L140 108 L140 112 L106 96 Z"/>
+    <rect x="86" y="90" width="8" height="18"/>
+    <rect x="106" y="90" width="8" height="18"/>
+    <g stroke="none">
+      <circle cx="100" cy="30" r="8" fill="#0b6e4f"/>
+      <circle cx="100" cy="30" r="5.2" fill="#ffcc29"/>
+      <circle cx="100" cy="30" r="2.8" fill="#0a1f44"/>
+    </g>
+  </g>
+  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">Embraer KC-390 Millennium — ilustração vetorial</text>
+</svg>

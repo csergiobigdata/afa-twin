@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+data/afa_twin.db
+data/uploads/
+.env
+.env.*

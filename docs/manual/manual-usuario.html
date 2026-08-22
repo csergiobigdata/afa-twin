@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>AFA-TWIN — Manual do Usuário</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #101828;
+    font-size: 12.5px;
+    line-height: 1.55;
+    margin: 0;
+  }
+  .navy { color: #0a1f44; }
+  .cover {
+    height: 267mm;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center;
+    background: linear-gradient(160deg, #060f24 0%, #0a1f44 55%, #1c4f9c 130%);
+    color: #fff;
+    margin: -18mm -16mm 0 -16mm;
+    padding: 18mm 16mm;
+  }
+  .cover .badge-emblem { width: 120px; height: 120px; margin-bottom: 22px; }
+  .cover h1 { font-size: 40px; margin: 0 0 6px; letter-spacing: .04em; }
+  .cover .subtitle { font-size: 16px; opacity: .9; max-width: 480px; margin-bottom: 30px; }
+  .cover .tag { font-size: 13px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3);
+                border-radius: 999px; padding: 6px 18px; margin-bottom: 60px; }
+  .cover .meta { font-size: 11.5px; opacity: .75; margin-top: 40px; }
+  .cover .planes { display: flex; gap: 20px; opacity: .85; margin-top: 10px; }
+
+  .page-break { break-before: page; }
+  h1.section-title {
+    font-size: 22px; color: #0a1f44; border-bottom: 3px solid #ffcc29; padding-bottom: 8px; margin: 0 0 4px;
+  }
+  .section-num { display: inline-block; background: #0a1f44; color: #fff; width: 30px; height: 30px; border-radius: 8px;
+                 text-align: center; line-height: 30px; font-weight: 800; margin-right: 10px; font-size: 15px; }
+  h2 { font-size: 15.5px; color: #0a1f44; margin: 22px 0 8px; }
+  h3 { font-size: 13.5px; color: #163b7a; margin: 16px 0 6px; }
+  p { margin: 6px 0; }
+  .lead { font-size: 13.5px; color: #33415c; margin-bottom: 14px; }
+  .callout {
+    background: #e8f0fc; border-left: 4px solid #2f6bc4; border-radius: 6px; padding: 10px 14px; margin: 12px 0; font-size: 12px;
+  }
+  .callout.warn { background: #fff6de; border-left-color: #d99a00; }
+  .callout.ok { background: #e5f6ec; border-left-color: #1a9d5b; }
+  .shot {
+    width: 100%; border: 1px solid #dde2ea; border-radius: 10px; box-shadow: 0 2px 10px rgba(10,31,68,.12);
+    margin: 10px 0 4px; display: block;
+  }
+  .shot-caption { font-size: 11px; color: #667085; text-align: center; margin-bottom: 14px; font-style: italic; }
+  .steps { margin: 8px 0 14px; padding-left: 20px; }
+  .steps li { margin-bottom: 5px; }
+  table.toc { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.toc td { padding: 7px 4px; border-bottom: 1px dotted #dde2ea; }
+  table.toc td.n { width: 26px; color: #0a1f44; font-weight: 800; }
+  table.toc td.p { text-align: right; color: #667085; width: 40px; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 700; }
+  .badge-ok { background: #e5f6ec; color: #1a9d5b; }
+  .badge-warn { background: #fff6de; color: #d99a00; }
+  .badge-info { background: #e8f0fc; color: #2f6bc4; }
+  .footer-note { font-size: 10.5px; color: #98a2b3; margin-top: 30px; border-top: 1px solid #eaecf0; padding-top: 10px; }
+  .two-col { display: flex; gap: 16px; }
+  .two-col > div { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ===================== CAPA ===================== -->
+<div class="cover">
+  <svg class="badge-emblem" viewBox="0 0 100 100">
+    <rect width="100" height="100" rx="20" fill="#0a1f44"/>
+    <polygon points="50,14 88,50 50,86 12,50" fill="#0b7a3f"/>
+    <polygon points="50,26 76,50 50,74 24,50" fill="#ffcc29"/>
+    <circle cx="50" cy="50" r="17" fill="#1c4f9c"/>
+    <g fill="#f4f6fb" opacity="0.9">
+      <circle cx="50" cy="40" r="1"/><circle cx="58" cy="46" r="1.3"/>
+      <circle cx="44" cy="50" r="0.9"/><circle cx="53" cy="57" r="1.1"/>
+    </g>
+    <g transform="translate(50 50) rotate(-38) translate(-50 -50)" fill="#f4f6fb" stroke="#0a1f44" stroke-width="1.4" stroke-linejoin="round">
+      <path d="M50 18 L52.3 42 L76 50 L76 53.6 L52.3 48.8 L52.3 62 L60.5 69 L60.5 72 L50 68 L39.5 72 L39.5 69 L47.7 62 L47.7 48.8 L24 53.6 L24 50 L47.7 42 Z"/>
+    </g>
+  </svg>
+  <h1>AFA-TWIN</h1>
+  <div class="subtitle">Gêmeo Digital para Apoio à Decisão em Manutenção Aeronáutica</div>
+  <div class="tag">MANUAL DO USUÁRIO — PILOTO DE TESTES</div>
+  <div class="planes">✈ 🛩️ 🚁 ✈️ 🛫</div>
+  <div class="meta">Versão do documento: 1.0 &nbsp;·&nbsp; Agosto de 2026<br>
+  Uso conjunto: pilotos, mecânicos, engenheiros e cientistas — FAB · ITA · Embraer</div>
+</div>
+
+<!-- ===================== SUMÁRIO ===================== -->
+<div class="page-break">
+<h1 class="section-title">Sumário</h1>
+<table class="toc">
+  <tr><td class="n">1</td><td>O que é o AFA-TWIN</td><td class="p">3</td></tr>
+  <tr><td class="n">2</td><td>Acessando o sistema</td><td class="p">4</td></tr>
+  <tr><td class="n">3</td><td>Painel de Apoio à Decisão</td><td class="p">5</td></tr>
+  <tr><td class="n">4</td><td>Aeronaves — Cadastro e Pesquisa Visual</td><td class="p">7</td></tr>
+  <tr><td class="n">5</td><td>Detalhe da aeronave (Componentes, Confiabilidade, Inspeção, Pessoal)</td><td class="p">9</td></tr>
+  <tr><td class="n">6</td><td>Manutenção — Ordens de Serviço e Cadastro de Manutenção</td><td class="p">13</td></tr>
+  <tr><td class="n">7</td><td>Diagnóstico Inteligente</td><td class="p">16</td></tr>
+  <tr><td class="n">8</td><td>Planejamento — Disponibilidade e Análise Prospectiva</td><td class="p">17</td></tr>
+  <tr><td class="n">9</td><td>Protocolos e Checklists</td><td class="p">18</td></tr>
+  <tr><td class="n">10</td><td>Usuários — Cadastro, Grupos e Cadastros Auxiliares</td><td class="p">19</td></tr>
+  <tr><td class="n">11</td><td>Meu Perfil</td><td class="p">22</td></tr>
+  <tr><td class="n">12</td><td>Auditoria</td><td class="p">23</td></tr>
+  <tr><td class="n">13</td><td>Uso em tablet</td><td class="p">24</td></tr>
+  <tr><td class="n">14</td><td>Perguntas frequentes</td><td class="p">25</td></tr>
+</table>
+<div class="footer-note">Este manual descreve a versão piloto de testes do AFA-TWIN. Dados de aeronaves, pessoal e
+esquadrões exibidos nas capturas de tela são ilustrativos, usados apenas para demonstração.</div>
+</div>
+
+<!-- ===================== 1. O QUE É ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">1</span>O que é o AFA-TWIN</h1>
+<p class="lead">
+O AFA-TWIN é um piloto de testes de aplicativo web (instalável também como aplicativo em tablet) para
+controle e gerenciamento de manutenção de aeronaves militares. Ele nasceu de um estudo sobre Digital
+Twin como "cérebro" de apoio à decisão em manutenção aeronáutica, e foi construído para uso conjunto
+por <strong>pilotos, mecânicos, engenheiros, cientistas e gestores</strong> da FAB, do ITA e da Embraer.
+</p>
+<h2>Objetivo principal</h2>
+<p>Reduzir o risco de desgaste não percebido de peças e apoiar o cumprimento de protocolos rigorosos de
+manutenção, através de:</p>
+<ul class="steps">
+  <li>Controle de vida útil de componentes (por horas de voo e por vigência de calendário);</li>
+  <li>Alertas automáticos de vencimento, com notificação aos responsáveis (indivíduos e equipes);</li>
+  <li>Indicadores reais de Confiabilidade (MTBF/MTTR) e um modelo de Risco Operacional ponderado;</li>
+  <li>Um Diagnóstico Inteligente que aprende com o histórico de manutenções da própria frota;</li>
+  <li>Trilha de auditoria completa de tudo que é cadastrado ou alterado.</li>
+</ul>
+<div class="callout">
+  <strong>Importante sobre os dados de exemplo:</strong> a frota, o pessoal, os esquadrões e as bases
+  exibidos nesta versão são fictícios/ilustrativos, criados apenas para demonstrar o funcionamento do
+  sistema. A única exceção é a aeronave <strong>A-29 Super Tucano "FAB 5962"</strong>, usada como
+  referência direta do estudo original do projeto.
+</div>
+<h2>Perfis de acesso</h2>
+<p>O sistema reconhece cinco perfis, cada um com uma tela inicial e permissões adequadas ao seu papel:</p>
+<table class="toc">
+  <tr><td class="n">🎖️</td><td><strong>Piloto</strong> — livro de bordo, discrepâncias, aceitação da aeronave.</td></tr>
+  <tr><td class="n">🔧</td><td><strong>Mecânico</strong> — ordens de serviço, componentes, inspeção fotográfica.</td></tr>
+  <tr><td class="n">📐</td><td><strong>Engenheiro</strong> — confiabilidade, risco operacional, análise prospectiva.</td></tr>
+  <tr><td class="n">🔬</td><td><strong>Cientista</strong> — dados agregados da frota, diagnóstico, P&amp;D.</td></tr>
+  <tr><td class="n">🗂️</td><td><strong>Gestor / Responsável Técnico</strong> — acesso completo, incluindo exclusões e auditoria.</td></tr>
+</table>
+</div>
+
+<!-- ===================== 2. ACESSO ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">2</span>Acessando o sistema</h1>
+<p class="lead">Não existe cadastro público: contas são criadas apenas pelo Gestor, no módulo Usuários.
+Isso já restringe o acesso somente às pessoas cadastradas pela sua organização.</p>
+<img class="shot" src="screens/01-login.png">
+<div class="shot-caption">Tela de login — usuário/matrícula e senha institucional. Botões de acesso rápido preenchem
+credenciais de demonstração para cada perfil.</div>
+<h2>Como entrar</h2>
+<ol class="steps">
+  <li>Acesse o endereço do AFA-TWIN no navegador (computador) ou abra o aplicativo instalado (tablet).</li>
+  <li>Informe seu usuário e senha.</li>
+  <li>Clique em <strong>Entrar</strong>.</li>
+</ol>
+<div class="callout warn">
+  <strong>Troque a senha padrão de demonstração</strong> (<code>AfaTwin@2026</code>) assim que possível,
+  em <em>Meu Perfil</em>, antes de usar o sistema com dados reais.
+</div>
+<h2>Instalando como aplicativo no tablet</h2>
+<div class="two-col">
+  <div>
+    <h3>Android (Chrome)</h3>
+    <p>Menu ⋮ → "Adicionar à tela inicial" / "Instalar aplicativo".</p>
+  </div>
+  <div>
+    <h3>iPad (Safari)</h3>
+    <p>Botão de compartilhar → "Adicionar à Tela de Início".</p>
+  </div>
+</div>
+<p>O ícone do AFA-TWIN aparecerá como um aplicativo normal, abrindo em tela cheia.</p>
+</div>
+
+<!-- ===================== 3. PAINEL ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">3</span>Painel de Apoio à Decisão</h1>
+<p class="lead">É a tela inicial após o login: um resumo executivo da frota, alertas ativos e o histórico
+recente de notificações.</p>
+<img class="shot" src="screens/02-painel.png">
+<div class="shot-caption">Painel — indicadores da frota, saúde/risco por aeronave, notificações recentes e alertas ativos.</div>
+<h2>O que você encontra aqui</h2>
+<ul class="steps">
+  <li><strong>Cartões de indicadores</strong>: total de aeronaves, disponibilidade, OS em aberto, índice médio de saúde.</li>
+  <li><strong>Tabela da frota</strong>: saúde e risco operacional de cada aeronave, com acesso direto ao detalhe.</li>
+  <li><strong>Notificações recentes</strong>: as últimas 20 notificações enviadas (e-mail/SMS/WhatsApp) aos responsáveis.</li>
+  <li><strong>Alertas de Desgaste e Manutenção</strong>: cada alerta tem um botão <span class="badge badge-warn">🔔 Notificar responsáveis</span>
+    individual, e existe um botão <span class="badge badge-info">🔔📢 Notificar todos</span> para avisar, de uma vez,
+    todos os responsáveis de todas as aeronaves com peças vencendo.</li>
+</ul>
+<img class="shot" src="screens/03-painel-grafico.png">
+<div class="shot-caption">Gráfico de categorias de manutenção preventiva, no final do Painel — alternável entre
+pizza, barras e linhas.</div>
+<div class="callout ok">
+  <strong>Dica:</strong> o gráfico mostra a distribuição dos alertas ativos por categoria (Vigência Vencida,
+  OS Crítica em Aberto, Componente Próximo do Limite, Vigência Próxima do Vencimento) — útil para identificar
+  rapidamente onde concentrar esforço de manutenção.
+</div>
+</div>
+
+<!-- ===================== 4. AERONAVES ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">4</span>Aeronaves — Cadastro e Pesquisa Visual</h1>
+<p class="lead">O módulo Aeronaves tem duas sub-telas: <strong>Cadastro</strong> (gestão administrativa) e
+<strong>Pesquisa</strong> (busca visual por foto).</p>
+<h2>4.1 Cadastro</h2>
+<img class="shot" src="screens/04-aeronaves-cadastro.png">
+<div class="shot-caption">Lista administrativa da frota — alterne entre visão em Lista ou em Grade, filtre por categoria.</div>
+<ul class="steps">
+  <li>Clique em <strong>+ Nova Aeronave</strong> para cadastrar uma nova aeronave.</li>
+  <li>Clique na matrícula para abrir o detalhe completo.</li>
+  <li>Use "📷 Ver foto" para visualizar a foto (real ou ilustrativa) sem sair da lista.</li>
+</ul>
+<h2>4.2 Pesquisa Visual</h2>
+<img class="shot" src="screens/05-aeronaves-pesquisa.png">
+<div class="shot-caption">Pesquisa visual — digite para filtrar instantaneamente, ou navegue pelas fotos e clique
+diretamente na linha para abrir o cadastro completo.</div>
+</div>
+
+<!-- ===================== 5. DETALHE AERONAVE ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">5</span>Detalhe da Aeronave</h1>
+<p class="lead">Ao abrir uma aeronave, seis abas organizam toda a informação: Visão Geral, Componentes,
+Manutenção, Confiabilidade &amp; Risco, Inspeção Fotográfica e Pessoal.</p>
+<img class="shot" src="screens/06-aeronave-detalhe-geral.png">
+<div class="shot-caption">Visão Geral — características, configuração mecânica e livro de bordo simplificado.</div>
+
+<h2>5.1 Componentes</h2>
+<img class="shot" src="screens/07-aeronave-componentes.png">
+<div class="shot-caption">Controle de desgaste por horas e vigência por calendário, com alerta e botão de
+notificação por aeronave, e histórico de manutenção por peça.</div>
+<ul class="steps">
+  <li><strong>✎ Definir vigência</strong>: informe o intervalo de manutenção preventiva (em dias) e a próxima data de vencimento.</li>
+  <li><strong>🕘 Histórico</strong>: mostra as ordens de serviço já executadas naquela peça específica, com equipe e responsável.</li>
+  <li>A barra de alerta no topo soma todas as peças vencendo <em>desta</em> aeronave, com botão de notificação direta.</li>
+</ul>
+
+<div class="page-break"></div>
+<h2>5.2 Confiabilidade &amp; Risco</h2>
+<img class="shot" src="screens/08-aeronave-confiabilidade-risco.png">
+<div class="shot-caption">MTBF/MTTR calculados a partir do histórico real de corretivas, e o modelo de Risco
+Operacional ponderado (6 fatores, pesos exatos do estudo de origem).</div>
+
+<h2>5.3 Inspeção Fotográfica</h2>
+<img class="shot" src="screens/09-aeronave-inspecao-fotografica.png">
+<div class="shot-caption">Fundação do futuro módulo de Visão Computacional: o mecânico anexa a foto de uma
+anomalia (corrosão, trinca, vazamento, desgaste) e preenche localização, severidade e causa provável.</div>
+
+<h2>5.4 Pessoal (individuais + grupos)</h2>
+<img class="shot" src="screens/10-aeronave-pessoal-grupos.png">
+<div class="shot-caption">Responsabilidade coletiva: grupos/equipes vinculados à aeronave somam-se aos vínculos individuais.</div>
+
+<div class="page-break"></div>
+<h2>5.5 Cadastrando uma nova aeronave</h2>
+<img class="shot" src="screens/11-aeronave-novo-formulario.png">
+<div class="shot-caption">Formulário completo: identificação, lotação, desempenho, foto (estática e animada) e
+configuração mecânica.</div>
+</div>
+
+<!-- ===================== 6. MANUTENÇÃO ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">6</span>Manutenção</h1>
+<p class="lead">Duas sub-telas: <strong>Ordem de Serviço</strong> (o dia a dia da manutenção) e
+<strong>Cadastro de Manutenção</strong> (catálogos de apoio).</p>
+<h2>6.1 Ordens de Serviço</h2>
+<img class="shot" src="screens/12-manutencao-os-lista.png">
+<div class="shot-caption">Lista de OS com filtro por status e prioridade.</div>
+<img class="shot" src="screens/13-manutencao-os-detalhe.png">
+<div class="shot-caption">Detalhe de uma OS: tipo, prioridade, equipe/grupo responsável, referência técnica.</div>
+<div class="callout warn">
+  <strong>Regra importante:</strong> uma Ordem de Serviço nunca é excluída. Uma vez <span class="badge badge-ok">Concluída</span>
+  ou <span class="badge badge-warn">Cancelada</span>, ela fica travada para qualquer alteração — é o registro
+  permanente do que foi feito. Cancelar uma OS exige informar o responsável pelo cancelamento; o grupo
+  responsável pela aeronave é notificado automaticamente.
+</div>
+<h2>6.2 Cadastro de Manutenção</h2>
+<img class="shot" src="screens/14-manutencao-cadastro.png">
+<div class="shot-caption">Componente Associado (padrão), Tipo de Intervalo de Manutenção e a referência fixa do
+Tipo de Manutenção — a mesma lista usada na Ordem de Serviço.</div>
+</div>
+
+<!-- ===================== 7. DIAGNÓSTICO ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">7</span>Diagnóstico Inteligente</h1>
+<p class="lead">Descreva um sintoma (uma luz de alerta, um ruído, uma vibração) e o sistema procura
+ocorrências semelhantes em toda a frota, indicando a ação mais comum usada para resolvê-las.</p>
+<img class="shot" src="screens/15-diagnostico-resultado.png">
+<div class="shot-caption">Exemplo real do sistema: busca por "a luz FUEL PRESS permanece acesa" encontrando 8
+ocorrências semelhantes na frota e a ação predominante para resolvê-las.</div>
+<div class="callout">
+  Esta é uma busca heurística por similaridade de texto sobre o histórico real de Ordens de Serviço — não é
+  um modelo de linguagem treinado. É a fundação para o módulo de IA/PLN mais avançado, previsto na evolução do projeto.
+</div>
+</div>
+
+<!-- ===================== 8. PLANEJAMENTO ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">8</span>Planejamento</h1>
+<p class="lead">Duas ferramentas de apoio estratégico, lado a lado.</p>
+<img class="shot" src="screens/16-planejamento.png">
+<div class="shot-caption">Disponibilidade da Frota projetada (7/14/30 dias) e o simulador "Análise Prospectiva
+de Manutenção" — "o que acontece se eu adiar esta inspeção?".</div>
+<ul class="steps">
+  <li><strong>Disponibilidade da Frota</strong>: projeta quantas aeronaves estarão disponíveis nos próximos dias.</li>
+  <li><strong>Análise Prospectiva</strong>: escolha uma aeronave, um componente e um número de dias de adiamento —
+    o sistema estima o impacto na saúde, no risco, na disponibilidade e um custo financeiro ilustrativo.</li>
+</ul>
+</div>
+
+<!-- ===================== 9. PROTOCOLOS ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">9</span>Protocolos e Checklists</h1>
+<p class="lead">Modelos reutilizáveis de inspeção, vinculados a um modelo de aeronave e a um documento de referência.</p>
+<img class="shot" src="screens/17-protocolos.png">
+<div class="shot-caption">Protocolos cadastrados — modelo de aeronave selecionado por listbox, com as etapas do checklist.</div>
+</div>
+
+<!-- ===================== 10. USUÁRIOS ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">10</span>Usuários</h1>
+<p class="lead">Três sub-telas: Usuários, Grupos e Cadastros Auxiliares.</p>
+<h2>10.1 Cadastro de Usuários</h2>
+<img class="shot" src="screens/18-usuarios-lista.png">
+<div class="shot-caption">Lista de usuários com avatar, contato e status.</div>
+<img class="shot" src="screens/19-usuarios-editar.png">
+<div class="shot-caption">Edição completa: todos os campos do cadastro, incluindo foto, com Especialidade,
+Esquadrão e Posto/Graduação como listbox.</div>
+<div class="callout warn">
+  Usuários não são excluídos, apenas inativados — quem inativou e quando fica registrado na Auditoria.
+</div>
+
+<div class="page-break"></div>
+<h2>10.2 Grupos e Equipes Responsáveis</h2>
+<img class="shot" src="screens/20-usuarios-grupos.png">
+<div class="shot-caption">Um grupo reúne piloto titular, piloto reserva, mecânico, engenheiro e comandante de
+esquadrão — atribuível a uma ou mais aeronaves.</div>
+
+<h2>10.3 Cadastros Auxiliares</h2>
+<img class="shot" src="screens/21-cadastros-auxiliares.png">
+<div class="shot-caption">Organização, Posto/Graduação/Cargo, Especialidade e Esquadrão/Unidade — listas
+editáveis usadas nos formulários de Usuários.</div>
+</div>
+
+<!-- ===================== 11-13 ===================== -->
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">11</span>Meu Perfil</h1>
+<p class="lead">Todo usuário edita sua própria foto, e-mail e telefone — os dados usados para receber alertas.</p>
+<img class="shot" src="screens/22-meu-perfil.png">
+<div class="shot-caption">Meu Perfil — clique no seu nome, no topo, para chegar aqui a qualquer momento.</div>
+
+<h1 class="section-title" style="margin-top:26px"><span class="section-num">12</span>Auditoria</h1>
+<p class="lead">Toda criação, alteração, inativação ou cancelamento de cadastro fica registrada: quem, quando e o quê.</p>
+<img class="shot" src="screens/23-auditoria.png">
+<div class="shot-caption">Trilha de auditoria, filtrável por tipo de cadastro.</div>
+</div>
+
+<div class="page-break">
+<h1 class="section-title"><span class="section-num">13</span>Uso em Tablet</h1>
+<p class="lead">Em telas menores, o menu lateral vira uma barra de navegação inferior, com toque otimizado
+para uso em hangar.</p>
+<div style="text-align:center; margin-top:14px;">
+  <img class="shot" src="screens/24-painel-tablet.png" style="max-width: 320px; margin: 0 auto;">
+</div>
+<div class="shot-caption" style="text-align:center">Painel em formato tablet (retrato) — mesma funcionalidade, navegação inferior.</div>
+
+<h1 class="section-title" style="margin-top:30px"><span class="section-num">14</span>Perguntas Frequentes</h1>
+<h3>Esqueci minha senha, e agora?</h3>
+<p>Solicite ao Gestor da sua organização que atualize sua senha — não há recuperação automática nesta fase piloto.</p>
+<h3>Por que uma notificação aparece como "Simulada"?</h3>
+<p>E-mail é enviado de verdade apenas quando o servidor tem SMTP configurado. SMS e WhatsApp são sempre
+simulados nesta fase (exigem contratar um serviço pago de terceiros) — mas ficam registrados no histórico
+normalmente, para você testar o fluxo completo sem custo.</p>
+<h3>Por que não consigo excluir um usuário ou uma Ordem de Serviço?</h3>
+<p>É proposital: usuários só são inativados, e ordens de serviço concluídas/canceladas ficam travadas — isso
+preserva o histórico completo para auditoria, como em qualquer sistema de manutenção aeronáutica real.</p>
+<h3>Os dados desta versão são reais?</h3>
+<p>Não. É um piloto de testes com dados fictícios/ilustrativos, exceto a aeronave A-29 "FAB 5962", citada
+como exemplo no estudo de origem do projeto.</p>
+
+<div class="footer-note">
+AFA-TWIN — Manual do Usuário · Piloto de Testes · Documento gerado automaticamente a partir da aplicação em execução.
+</div>
+</div>
+
+</body>
+</html>

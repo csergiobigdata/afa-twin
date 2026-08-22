@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    </linearGradient>
+  </defs>
+  <rect width="480" height="260" fill="url(#sky)"/>
+  <ellipse cx="240" cy="232" rx="120" ry="12" fill="#000" opacity="0.28"/>
+  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
+    <ellipse cx="100" cy="70" rx="18" ry="34"/>
+    <rect x="98" y="34" width="4" height="10"/>
+    <rect x="98" y="96" width="4" height="20"/>
+    <rect x="86" y="112" width="28" height="4"/>
+    <rect x="150" y="98" width="4" height="16"/>
+    <g stroke="none">
+      <circle cx="100" cy="66" r="9" fill="#0b6e4f"/>
+      <circle cx="100" cy="66" r="5.8" fill="#ffcc29"/>
+      <circle cx="100" cy="66" r="3.2" fill="#0a1f44"/>
+    </g>
+  </g>
+  <g>
+    <rect x="60" y="83" width="360" height="6" rx="3" fill="#0a1f44" opacity="0.8"/>
+    <animateTransform attributeName="transform" type="rotate" from="0 240 86" to="360 240 86" dur="0.35s" repeatCount="indefinite"/>
+  </g>
+  <g>
+    <rect x="326" y="196" width="36" height="5" rx="2.5" fill="#0a1f44" opacity="0.8"/>
+    <animateTransform attributeName="transform" type="rotate" from="0 344 198.5" to="360 344 198.5" dur="0.12s" repeatCount="indefinite"/>
+  </g>
+  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">Airbus H-36 Caracal — rotores em operação (ilustrativo)</text>
+</svg>

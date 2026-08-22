@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0a1f44"/>
+  <polygon points="256,58 452,256 256,454 60,256" fill="#0b7a3f"/>
+  <polygon points="256,124 386,256 256,388 126,256" fill="#ffcc29"/>
+  <circle cx="256" cy="256" r="88" fill="#1c4f9c"/>
+  <g fill="#f4f6fb" opacity="0.9">
+    <circle cx="256" cy="202" r="4.6"/>
+    <circle cx="296" cy="236" r="5.8"/>
+    <circle cx="226" cy="258" r="4"/>
+    <circle cx="272" cy="290" r="5.2"/>
+  </g>
+  <g transform="translate(256 256) rotate(-38) translate(-256 -256)" fill="#f4f6fb" stroke="#0a1f44" stroke-width="4" stroke-linejoin="round">
+    <path d="M256 92
+             L268 212
+             L396 258
+             L396 276
+             L268 250
+             L268 320
+             L318 358
+             L318 374
+             L256 352
+             L194 374
+             L194 358
+             L244 320
+             L244 250
+             L116 276
+             L116 258
+             L244 212
+             Z"/>
+  </g>
+</svg>

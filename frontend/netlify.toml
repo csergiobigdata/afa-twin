@@ -1,0 +1,31 @@
+# Configuração de deploy do frontend (estático) no Netlify (camada gratuita).
+#
+# IMPORTANT: troque "https://SUBSTITUA-PELA-URL-DO-BACKEND.onrender.com" abaixo
+# pela URL real do backend depois de publicá-lo (ex.: no Render) - ver
+# docs/06-implantacao-nuvem.md. Sem isso, as chamadas a /api e /media não
+# encontrarão a API.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Encaminha chamadas de API/mídia para o backend publicado, mantendo o
+# frontend chamando caminhos relativos ("/api/...", "/media/...") como já faz
+# em desenvolvimento - sem precisar reescrever nenhum código do cliente HTTP.
+[[redirects]]
+  from = "/api/*"
+  to = "https://SUBSTITUA-PELA-URL-DO-BACKEND.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/media/*"
+  to = "https://SUBSTITUA-PELA-URL-DO-BACKEND.onrender.com/media/:splat"
+  status = 200
+  force = true
+
+# Roteamento client-side (React Router) — qualquer outra rota cai no index.html.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

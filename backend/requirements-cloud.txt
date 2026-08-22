@@ -1,0 +1,9 @@
+# Dependências adicionais para rodar o backend em nuvem com Postgres
+# gerenciado (ex.: Neon, Supabase, Render Postgres) em vez do SQLite local
+# do piloto. Instale com:
+#   pip install -r requirements.txt -r requirements-cloud.txt
+#
+# Depois, defina AFA_TWIN_DATABASE_URL apontando para o Postgres, no formato:
+#   postgresql+psycopg://usuario:senha@host:5432/banco?sslmode=require
+-r requirements.txt
+psycopg[binary]>=3.1
