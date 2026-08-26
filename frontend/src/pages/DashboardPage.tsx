@@ -5,10 +5,12 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { api } from "../api/client";
-import type { Aircraft, DashboardSummary, Notification, NotificationChannel } from "../api/types";
+import type { DashboardSummary, Notification, NotificationChannel } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import AircraftThumbnail from "../components/AircraftThumbnail";
 import { HealthBar, RiskBadge, StatusBadge } from "../components/Badges";
+import SplashScreen from "../components/SplashScreen";
+import StatCard from "../components/StatCard";
 
 const CHART_COLORS = ["#c62828", "#d99a00", "#2f6bc4", "#0b6e4f", "#7a4a9c", "#4b5566", "#0e7c86"];
 type ChartMode = "pizza" | "barras" | "linhas";
@@ -87,17 +89,6 @@ function MaintenanceCategoryChart({ alerts }: { alerts: DashboardSummary["alerts
 
 const CHANNELS: NotificationChannel[] = ["E-mail", "SMS", "WhatsApp"];
 const CHANNEL_ICON: Record<NotificationChannel, string> = { "E-mail": "📧", "SMS": "💬", "WhatsApp": "🟢" };
-
-function StatCard({ label, value, sub, tone }: { label: string; value: string | number; sub?: string; tone?: "ok" | "warn" | "critical" | "info" }) {
-  const toneColor = tone ? `var(--status-${tone})` : "var(--text-primary)";
-  return (
-    <div className="card" style={{ padding: "18px 20px", flex: "1 1 180px" }}>
-      <div style={{ fontSize: 12.5, color: "var(--text-secondary)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".03em" }}>{label}</div>
-      <div style={{ fontSize: 30, fontWeight: 800, color: toneColor, marginTop: 6 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 4 }}>{sub}</div>}
-    </div>
-  );
-}
 
 /** Botão inline para notificar os responsáveis vinculados a uma aeronave
  * (por e-mail real, se configurado, ou SMS/WhatsApp simulados nesta fase
@@ -219,21 +210,22 @@ function NotifyAllPendingButton({ alerts, onDone }: { alerts: DashboardSummary["
 export default function DashboardPage() {
   const { personName, personRank, role } = useAuth();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [fleet, setFleet] = useState<Aircraft[]>([]);
-  const [recentNotifications, setRecentNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Uma única chamada monta a tela inteira (totais, frota e notificações
+  // recentes já vêm juntos em /dashboard/summary) - antes eram 3 chamadas
+  // em paralelo, com a de /aircraft recalculando confiabilidade/MTBF de toda
+  // a frota à toa só para preencher esta tabela.
   function reload() {
-    Promise.all([
-      api.get<DashboardSummary>("/dashboard/summary"),
-      api.get<Aircraft[]>("/aircraft"),
-      api.get<Notification[]>("/notifications?limit=8"),
-    ]).then(([s, f, n]) => { setSummary(s); setFleet(f); setRecentNotifications(n); }).finally(() => setLoading(false));
+    api.get<DashboardSummary>("/dashboard/summary").then(setSummary).finally(() => setLoading(false));
   }
   useEffect(reload, []);
 
-  if (loading) return <p>Carregando painel de apoio à decisão…</p>;
+  if (loading) return <SplashScreen fullscreen={false} />;
   if (!summary) return <p>Não foi possível carregar o painel.</p>;
+
+  const fleet = summary.fleet;
+  const recentNotifications = summary.recent_notifications;
 
   return (
     <div>

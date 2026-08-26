@@ -164,6 +164,16 @@ citada no documento como "uma funcionalidade que ainda não existe de forma inte
 que projeta o impacto de um adiamento na saúde, disponibilidade, risco e custo estimado, usando os
 dados já cadastrados.
 
+### 6.1 Novo na v0.3 — Atualização de Disponibilidade
+
+Complementando o item ⑤ acima (que projeta disponibilidade futura a partir de status/OS cadastrados),
+a v0.3 acrescenta o módulo **Atualização de Disponibilidade**: o registro do boletim diário/por turno de
+linha de voo do próprio esquadrão (código DI/DO/IN por aeronave + configuração de asas/hardpoints -
+LISO/ADA/EEXD/VENTRAL/CAA - e cargas subalares), no mesmo formato usado pela unidade. Inclui uma
+tela para colar o boletim em texto livre (ex.: "5906 - DO (EEXD TREM DE POUSO)") com reconhecimento
+heurístico revisável linha a linha antes de salvar, além do lançamento manual aeronave a aeronave. Ver
+[docs/03-modelo-de-dados.md](03-modelo-de-dados.md) (`AvailabilityUpdate`) e `backend/app/availability.py`.
+
 ## 7. Evolução ainda planejada (fora do escopo deste piloto)
 
 1. **Modelos de Machine Learning** de fato treinados para predição de falhas (substituindo a

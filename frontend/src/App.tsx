@@ -21,6 +21,7 @@ import MaintenanceCatalogPage from "./pages/MaintenanceCatalogPage";
 import ChecklistsPage from "./pages/ChecklistsPage";
 import DiagnosticsPage from "./pages/DiagnosticsPage";
 import PlanningPage from "./pages/PlanningPage";
+import AvailabilityPage from "./pages/AvailabilityPage";
 import AuditPage from "./pages/AuditPage";
 
 export default function App() {
@@ -61,6 +62,7 @@ export default function App() {
             <Route path="/manutencao/:id" element={<MaintenanceFormPage />} />
             <Route path="/diagnostico" element={<DiagnosticsPage />} />
             <Route path="/planejamento" element={<PlanningPage />} />
+            <Route path="/disponibilidade" element={<AvailabilityPage />} />
             <Route path="/protocolos" element={<ChecklistsPage />} />
             <Route path="/auditoria" element={<AuditPage />} />
           </Route>

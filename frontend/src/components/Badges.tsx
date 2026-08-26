@@ -1,4 +1,4 @@
-import type { AircraftStatus, Criticality, OrderStatus } from "../api/types";
+import type { AircraftStatus, AvailabilityCode, Criticality, OrderStatus } from "../api/types";
 
 export function StatusBadge({ status }: { status: AircraftStatus }) {
   const map: Record<AircraftStatus, string> = {
@@ -40,6 +40,14 @@ export function RiskBadge({ level }: { level?: string | null }) {
     "Crítico": "badge-critical",
   };
   return <span className={`badge ${map[level ?? ""] ?? "badge-neutral"}`}>Risco {level ?? "-"}</span>;
+}
+
+/** Código do boletim de disponibilidade (módulo Atualização de
+ * Disponibilidade) - DI/DO/IN, conforme convenção da própria unidade (ver
+ * nota em backend/app/models.py::AvailabilityCode). */
+export function AvailabilityCodeBadge({ code }: { code: AvailabilityCode }) {
+  const map: Record<AvailabilityCode, string> = { DI: "badge-ok", DO: "badge-warn", IN: "badge-critical" };
+  return <span className={`badge ${map[code] ?? "badge-neutral"}`}>{code}</span>;
 }
 
 export function HealthBar({ value }: { value?: number | null }) {

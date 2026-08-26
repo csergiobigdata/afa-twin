@@ -10,7 +10,7 @@ from .models import (
     AircraftCategory, AircraftStatus, PersonRole, ComponentCategory,
     MonitoringType, Criticality, MaintenanceType, OrderStatus, AssignmentRole,
     RiskLevel, DefectType, NotificationChannel, NotificationReason, NotificationStatus,
-    LookupCategory, AuditAction,
+    LookupCategory, AuditAction, AvailabilityCode,
 )
 
 
@@ -349,6 +349,59 @@ class FlightLogOut(FlightLogBase, ORMModel):
     id: int
 
 
+# ---------------- Atualização de Disponibilidade ----------------
+
+class AvailabilityUpdateBase(BaseModel):
+    aircraft_id: int
+    report_date: dt.date
+    code: AvailabilityCode
+    configuration: Optional[str] = Field(
+        None, description="Configuração de asas/hardpoints no momento (ex.: LISO, ADA, EEXD, VENTRAL, CAA)."
+    )
+    has_subalares: bool = False
+    reason: Optional[str] = Field(None, description="Motivo/observação, ex.: 'TREM DE POUSO', 'não aciona com UFT à diesel'.")
+
+
+class AvailabilityUpdateCreate(AvailabilityUpdateBase):
+    pass
+
+
+class AvailabilityUpdateOut(AvailabilityUpdateBase, ORMModel):
+    id: int
+    aircraft_tail_number: str
+    recorded_by_id: Optional[int] = None
+    recorded_by_name: Optional[str] = None
+    created_at: dt.datetime
+
+
+class AvailabilityBoardEntry(BaseModel):
+    """Última atualização conhecida de uma aeronave - uma linha do quadro."""
+    aircraft_id: int
+    aircraft_tail_number: str
+    aircraft_model: str
+    availability_update_id: int
+    report_date: dt.date
+    code: AvailabilityCode
+    configuration: Optional[str] = None
+    has_subalares: bool = False
+    reason: Optional[str] = None
+    created_at: dt.datetime
+
+
+class AvailabilityBoard(BaseModel):
+    """Quadro de disponibilidade da frota: última atualização de cada
+    aeronave + totais, no mesmo formato do boletim de esquadrão (Totais
+    DI/DO/IN, Configuração DI/DO, SUBALARES)."""
+    report_date: Optional[dt.date] = None
+    entries: list[AvailabilityBoardEntry]
+    di_count: int = 0
+    do_count: int = 0
+    in_count: int = 0
+    subalares_count: int = 0
+    configuration_counts: dict[str, int] = {}
+    aircraft_without_update: list[str] = []
+
+
 # ---------------- Auth ----------------
 
 class LoginRequest(BaseModel):
@@ -593,6 +646,21 @@ class AlertOut(BaseModel):
     order_id: Optional[int] = None
 
 
+class FleetSummaryItem(BaseModel):
+    """Recorte leve de uma aeronave para a tabela do Painel - evita que o
+    front precise de uma segunda chamada a GET /aircraft (que também recalcula
+    confiabilidade/MTBF de cada aeronave, desnecessário para esta visão)."""
+    id: int
+    tail_number: str
+    manufacturer: str
+    model: str
+    silhouette_key: str
+    photo_url: Optional[str] = None
+    status: AircraftStatus
+    health_index: float
+    risk_level: str
+
+
 class DashboardSummary(BaseModel):
     total_aircraft: int
     operational_aircraft: int
@@ -602,3 +670,5 @@ class DashboardSummary(BaseModel):
     average_health_index: float
     average_fleet_availability_pct: float
     alerts: list[AlertOut]
+    fleet: list[FleetSummaryItem] = []
+    recent_notifications: list[NotificationOut] = []

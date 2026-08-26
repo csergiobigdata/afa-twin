@@ -19,6 +19,8 @@ erDiagram
     AIRCRAFT ||--o{ INSPECTION_FINDING : "registra achados fotográficos"
     AIRCRAFT ||--o{ AIRCRAFT_GROUP_ASSIGNMENT : "tem grupos responsáveis"
     AIRCRAFT ||--o{ NOTIFICATION : "gera alertas sobre"
+    AIRCRAFT ||--o{ AVAILABILITY_UPDATE : "recebe boletins de"
+    PERSON ||--o{ AVAILABILITY_UPDATE : "registra"
     PERSON ||--o{ ASSIGNMENT : "assume papel em"
     PERSON ||--o{ MAINTENANCE_ORDER : "abre/responde por"
     PERSON ||--o{ FLIGHT_LOG : pilota
@@ -209,6 +211,17 @@ erDiagram
         enum role
         int person_id FK "nullable"
     }
+    AVAILABILITY_UPDATE {
+        int id PK
+        int aircraft_id FK
+        date report_date
+        enum code "DI, DO ou IN"
+        string configuration "nullable, ex. LISO/ADA/EEXD/VENTRAL/CAA"
+        bool has_subalares
+        text reason "nullable, ex. TREM DE POUSO"
+        int recorded_by_id FK "nullable"
+        datetime created_at
+    }
 ```
 
 ## 2. Enumerações de domínio
@@ -229,8 +242,9 @@ erDiagram
 | `NotificationChannel` | E-mail · SMS · WhatsApp |
 | `NotificationReason` | Mudança de Status da Aeronave · Vencimento de Peça · Manutenção Registrada · Cancelamento de Ordem de Serviço · Manual |
 | `NotificationStatus` | Enviada · Simulada · Falha no Envio |
-| `LookupCategory` | Organização · Posto/Graduação/Cargo · Especialidade · Esquadrão/Unidade · Componente Associado (padrão) · Tipo de Intervalo de Manutenção · Categoria de Alerta de Manutenção Preventiva — cada uma vira uma aba editável em Usuários → Cadastros Auxiliares (ou em Manutenção → Cadastro de Manutenção, para as duas últimas) |
+| `LookupCategory` | Organização · Posto/Graduação/Cargo · Especialidade · Esquadrão/Unidade · Componente Associado (padrão) · Tipo de Intervalo de Manutenção · Categoria de Alerta de Manutenção Preventiva · Configuração de Disponibilidade (asas/hardpoints) — cada uma vira uma aba editável em Usuários → Cadastros Auxiliares (ou em Manutenção → Cadastro de Manutenção, para as três últimas) |
 | `AuditAction` | Criação · Alteração · Inativação · Reativação · Cancelamento |
+| `AvailabilityCode` | DI · DO · IN — código do boletim de linha de voo do esquadrão (módulo Atualização de Disponibilidade); ver nota abaixo |
 
 > **Nota sobre `organization` em `Person`**: deixou de ser um enum fixo e passou a ser um campo de
 > texto sugerido pelo catálogo `LookupItem` da categoria Organização — assim, novas organizações
@@ -239,6 +253,14 @@ erDiagram
 `MonitoringType` segue a nomenclatura consagrada em programas de manutenção baseados em MSG-3
 (hard-time / on-condition / condition-monitoring), usada tanto na aviação civil quanto militar para
 classificar como a vida de um componente é controlada.
+
+> **Nota sobre `AvailabilityCode` (DI/DO/IN)**: o significado exato de cada código segue a convenção da
+> própria unidade que emite o boletim de disponibilidade — não fixamos aqui um glossário autoritativo
+> (ex. uma definição formal e diferenciada entre "DO" e "IN") por não termos confirmação direta do
+> esquadrão sobre essa distinção; tratamos os três apenas como rótulos estáveis do boletim. O campo
+> `configuration` (LISO/ADA/EEXD/VENTRAL/CAA) é, por isso, um `LookupItem` editável
+> (`LookupCategory.CONFIGURACAO_DISPONIBILIDADE`) e não um enum fixo, para não travar um vocabulário
+> específico de uma unidade/tipo de aeronave no código.
 
 ## 3. Regras de negócio embutidas no modelo
 
@@ -284,6 +306,14 @@ classificar como a vida de um componente é controlada.
     notificar sobre uma aeronave, o sistema soma os `Assignment` diretos com os membros de todo
     `ResponsibleGroup` vinculado via `AircraftGroupAssignment`, removendo duplicados por pessoa
     (`notifications.suggested_recipients_for_aircraft`).
+13. **Atualização de Disponibilidade é complementar, não substitui, `Aircraft.status`**: o boletim de
+    linha de voo (`AvailabilityUpdate`) reflete a leitura operacional do dia, informada manualmente pela
+    própria unidade, e pode divergir do status de cadastro por um tempo (ex.: uma aeronave
+    "Operacional" no cadastro pode aparecer "DO" no boletim de hoje por um problema pontual ainda não
+    registrado como Ordem de Serviço). O quadro de disponibilidade (`GET /api/availability-updates/board`)
+    usa apenas a **última** atualização de cada aeronave; os totais de configuração (LISO/ADA/EEXD/
+    VENTRAL/CAA) somam só as aeronaves DI/DO (não as IN), e uma aeronave com `has_subalares=true` e
+    sem `configuration` explícita não entra no total "LISO" (ver `backend/app/availability.py`).
 
 ## 4. Caminho de migração para nuvem
 

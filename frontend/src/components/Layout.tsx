@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: "/manutencao", label: "Manutenção", icon: "🔧" },
   { to: "/diagnostico", label: "Diagnóstico", icon: "🩺" },
   { to: "/planejamento", label: "Planejamento", icon: "📈" },
+  { to: "/disponibilidade", label: "Disponibilidade", icon: "🛫" },
   { to: "/pessoal", label: "Usuários", icon: "🎖️" },
   { to: "/protocolos", label: "Protocolos", icon: "📋" },
   { to: "/auditoria", label: "Auditoria", icon: "🕵️" },

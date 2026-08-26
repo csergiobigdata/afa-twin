@@ -16,13 +16,13 @@ from . import seed
 from .routers import (
     aircraft, people, components, assignments, maintenance, checklists, flightlogs,
     dashboard, auth, inspections, diagnostics, planning, notifications, groups,
-    lookups, audit, media,
+    lookups, audit, media, availability,
 )
 
 app = FastAPI(
     title="AFA-TWIN API",
     description="API do piloto de testes de gerenciamento e controle de manutenção de aeronaves militares.",
-    version="0.2.0-piloto",
+    version="0.3.0-piloto",
 )
 
 # Origens autorizadas a chamar a API. Em testes locais/rede interna (sem a
@@ -100,6 +100,7 @@ app.include_router(groups.aircraft_groups_router)
 app.include_router(lookups.router)
 app.include_router(audit.router)
 app.include_router(media.router)
+app.include_router(availability.router)
 app.include_router(dashboard.router)
 
 

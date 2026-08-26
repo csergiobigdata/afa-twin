@@ -66,6 +66,24 @@ class AircraftStatus(str, enum.Enum):
     EM_MODERNIZACAO = "Em Modernização"
 
 
+class AvailabilityCode(str, enum.Enum):
+    """Código do boletim diário/por turno de disponibilidade de linha de voo
+    do esquadrão (módulo "Atualização de Disponibilidade"), no formato usado
+    pela própria unidade (ex.: "5906 - DO (EEXD TREM DE POUSO)"). É um
+    conceito DIFERENTE de AircraftStatus (mais estável, ligado ao cadastro/
+    Ordens de Serviço): este código reflete a leitura operacional do dia,
+    informada manualmente, e pode divergir do status de cadastro por um
+    tempo até uma OS ser aberta para o mesmo problema. A definição exata de
+    cada código segue a convenção da própria unidade - não fixamos aqui um
+    glossário autoritativo (ex. "disponível"/"indisponível") por não termos
+    confirmação formal do esquadrão sobre a distinção precisa entre DO e IN;
+    ver docs/03-modelo-de-dados.md, seção sobre Atualização de
+    Disponibilidade."""
+    DI = "DI"
+    DO = "DO"
+    IN = "IN"
+
+
 class PersonRole(str, enum.Enum):
     PILOTO = "Piloto"
     MECANICO = "Mecânico"
@@ -201,6 +219,7 @@ class Aircraft(Base):
     flight_logs: Mapped[list["FlightLog"]] = relationship(back_populates="aircraft", cascade="all, delete-orphan")
     inspection_findings: Mapped[list["InspectionFinding"]] = relationship(back_populates="aircraft", cascade="all, delete-orphan")
     group_assignments: Mapped[list["AircraftGroupAssignment"]] = relationship(back_populates="aircraft", cascade="all, delete-orphan")
+    availability_updates: Mapped[list["AvailabilityUpdate"]] = relationship(back_populates="aircraft", cascade="all, delete-orphan")
 
 
 # --------------------------------------------------------------------------
@@ -489,6 +508,37 @@ class FlightLog(Base):
 
 
 # --------------------------------------------------------------------------
+# Atualização de Disponibilidade - boletim diário/por turno de linha de voo
+# do esquadrão (ex.: "5906 - DO (EEXD TREM DE POUSO)"), com totais de
+# disponibilidade (DI/DO/IN) e de configuração de asas/hardpoints
+# (LISO/ADA/EEXD/VENTRAL/CAA + SUBALARES). Complementa - sem substituir -
+# Aircraft.status: ver nota em AvailabilityCode e docs/03-modelo-de-dados.md.
+# --------------------------------------------------------------------------
+
+class AvailabilityUpdate(Base):
+    __tablename__ = "availability_updates"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"))
+    report_date: Mapped[dt.date] = mapped_column(default=lambda: now_utc().date())
+    code: Mapped[AvailabilityCode] = mapped_column(SAEnum(AvailabilityCode))
+
+    # Configuração de asas/hardpoints no momento do boletim (ex.: LISO, ADA,
+    # EEXD, VENTRAL, CAA) - cadastro auxiliar editável (LookupItem, categoria
+    # CONFIGURACAO_DISPONIBILIDADE) em vez de enum fixo, pois esse vocabulário
+    # é específico da unidade/tipo de aeronave e pode variar entre esquadrões.
+    configuration: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    has_subalares: Mapped[bool] = mapped_column(Boolean, default=False)  # cargas subalares, independente do ADA
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)  # motivo/observação (ex.: "TREM DE POUSO")
+
+    recorded_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+    aircraft: Mapped["Aircraft"] = relationship(back_populates="availability_updates")
+    recorded_by: Mapped["Person | None"] = relationship()
+
+
+# --------------------------------------------------------------------------
 # Usuário (autenticação simplificada do piloto de testes)
 # --------------------------------------------------------------------------
 
@@ -574,6 +624,7 @@ class LookupCategory(str, enum.Enum):
     COMPONENTE_PADRAO = "Componente Associado (padrão)"
     TIPO_INTERVALO = "Tipo de Intervalo de Manutenção"
     CATEGORIA_ALERTA = "Categoria de Alerta de Manutenção Preventiva"
+    CONFIGURACAO_DISPONIBILIDADE = "Configuração de Disponibilidade (asas/hardpoints)"
 
 
 class LookupItem(Base):

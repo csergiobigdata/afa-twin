@@ -206,6 +206,18 @@ export interface Alert {
   order_id?: number | null;
 }
 
+export interface FleetSummaryItem {
+  id: number;
+  tail_number: string;
+  manufacturer: string;
+  model: string;
+  silhouette_key: string;
+  photo_url?: string | null;
+  status: AircraftStatus;
+  health_index: number;
+  risk_level: string;
+}
+
 export interface DashboardSummary {
   total_aircraft: number;
   operational_aircraft: number;
@@ -215,6 +227,8 @@ export interface DashboardSummary {
   average_health_index: number;
   average_fleet_availability_pct: number;
   alerts: Alert[];
+  fleet: FleetSummaryItem[];
+  recent_notifications: Notification[];
 }
 
 export interface InspectionFinding {
@@ -245,6 +259,59 @@ export interface ReliabilityMetrics {
   availability_operational_pct?: number | null;
   weibull_beta_estimate?: number | null;
   confidence_note: string;
+}
+
+// ---------------- Atualização de Disponibilidade ----------------
+// Boletim diário/por turno de linha de voo do esquadrão (ex.: "5906 - DO
+// (EEXD TREM DE POUSO)"), complementar ao AircraftStatus. Ver nota em
+// backend/app/models.py::AvailabilityCode sobre a origem do vocabulário.
+export type AvailabilityCode = "DI" | "DO" | "IN";
+
+export interface AvailabilityUpdate {
+  id: number;
+  aircraft_id: number;
+  aircraft_tail_number: string;
+  report_date: string;
+  code: AvailabilityCode;
+  configuration?: string | null;
+  has_subalares: boolean;
+  reason?: string | null;
+  recorded_by_id?: number | null;
+  recorded_by_name?: string | null;
+  created_at: string;
+}
+
+export interface AvailabilityUpdateCreate {
+  aircraft_id: number;
+  report_date: string;
+  code: AvailabilityCode;
+  configuration?: string | null;
+  has_subalares: boolean;
+  reason?: string | null;
+}
+
+export interface AvailabilityBoardEntry {
+  aircraft_id: number;
+  aircraft_tail_number: string;
+  aircraft_model: string;
+  availability_update_id: number;
+  report_date: string;
+  code: AvailabilityCode;
+  configuration?: string | null;
+  has_subalares: boolean;
+  reason?: string | null;
+  created_at: string;
+}
+
+export interface AvailabilityBoard {
+  report_date?: string | null;
+  entries: AvailabilityBoardEntry[];
+  di_count: number;
+  do_count: number;
+  in_count: number;
+  subalares_count: number;
+  configuration_counts: Record<string, number>;
+  aircraft_without_update: string[];
 }
 
 export interface RiskFactorScore {
@@ -353,7 +420,8 @@ export interface PendingPartAlert {
 export type LookupCategory =
   | "Organização" | "Posto / Graduação / Cargo" | "Especialidade" | "Esquadrão / Unidade"
   | "Componente Associado (padrão)" | "Tipo de Intervalo de Manutenção"
-  | "Categoria de Alerta de Manutenção Preventiva";
+  | "Categoria de Alerta de Manutenção Preventiva"
+  | "Configuração de Disponibilidade (asas/hardpoints)";
 
 export interface LookupItem {
   id: number;

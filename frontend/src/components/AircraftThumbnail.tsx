@@ -1,16 +1,19 @@
-import type { Aircraft } from "../api/types";
+import type { Aircraft, FleetSummaryItem } from "../api/types";
 import { exampleArtUrl, uploadedPhotoUrl } from "./aircraftArt";
+
+type ThumbnailAircraft = Pick<Aircraft, "manufacturer" | "model" | "silhouette_key" | "photo_url"> | FleetSummaryItem;
 
 /**
  * Miniatura padronizada de uma aeronave: prioriza a foto real enviada no
  * cadastro; na ausência dela, usa a mesma ilustração "pôster" (fundo de céu,
  * roldana, legenda) exibida no visualizador de foto e na Pesquisa Visual -
  * padrão único em toda a aplicação, em vez do ícone de linha simples usado
- * anteriormente em listas/painéis.
+ * anteriormente em listas/painéis. Aceita tanto o objeto `Aircraft` completo
+ * quanto o recorte leve `FleetSummaryItem` usado no Painel.
  */
 export default function AircraftThumbnail({
   aircraft, width = 64, height, rounded = 10,
-}: { aircraft: Aircraft; width?: number; height?: number; rounded?: number }) {
+}: { aircraft: ThumbnailAircraft; width?: number; height?: number; rounded?: number }) {
   const url = uploadedPhotoUrl(aircraft.photo_url) ?? exampleArtUrl(aircraft.silhouette_key, false);
   const h = height ?? Math.round(width * 0.62);
   return (

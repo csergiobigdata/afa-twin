@@ -641,6 +641,11 @@ def seed_if_empty(db: Session) -> None:
             "Vigência Vencida", "Vigência Próxima do Vencimento", "Componente Próximo do Limite",
             "Vida Limite Excedida", "OS Crítica em Aberto",
         ],
+        # Vocabulário observado no boletim de disponibilidade de esquadrão
+        # informado como exemplo (LISO = configuração "limpa", sem cargas
+        # especiais; os demais são siglas da própria unidade) - editável
+        # aqui caso outro esquadrão/tipo de aeronave use outra convenção.
+        models.LookupCategory.CONFIGURACAO_DISPONIBILIDADE: ["LISO", "ADA", "EEXD", "VENTRAL", "CAA"],
     }
     for category, values in lookup_seed.items():
         for value in values:
