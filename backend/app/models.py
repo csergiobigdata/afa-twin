@@ -230,7 +230,7 @@ class Component(Base):
     __tablename__ = "components"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"))
+    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"), index=True)
 
     name: Mapped[str] = mapped_column(String(120))
     part_number: Mapped[str | None] = mapped_column(String(60), nullable=True)
@@ -287,8 +287,8 @@ class InspectionFinding(Base):
     __tablename__ = "inspection_findings"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"))
-    component_id: Mapped[int | None] = mapped_column(ForeignKey("components.id"), nullable=True)
+    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"), index=True)
+    component_id: Mapped[int | None] = mapped_column(ForeignKey("components.id"), index=True, nullable=True)
 
     photo_asset_id: Mapped[int] = mapped_column(ForeignKey("media_assets.id"))
     defect_type: Mapped[DefectType] = mapped_column(SAEnum(DefectType))
@@ -299,7 +299,7 @@ class InspectionFinding(Base):
     amm_reference: Mapped[str | None] = mapped_column(String(200), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    recorded_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), nullable=True)
+    recorded_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
     recorded_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
     aircraft: Mapped["Aircraft"] = relationship(back_populates="inspection_findings")
@@ -357,8 +357,8 @@ class Assignment(Base):
     __tablename__ = "assignments"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    person_id: Mapped[int] = mapped_column(ForeignKey("people.id"))
-    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"))
+    person_id: Mapped[int] = mapped_column(ForeignKey("people.id"), index=True)
+    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"), index=True)
     role_in_aircraft: Mapped[AssignmentRole] = mapped_column(SAEnum(AssignmentRole))
     start_date: Mapped[dt.date] = mapped_column(default=lambda: now_utc().date())
     end_date: Mapped[dt.date | None] = mapped_column(nullable=True)
@@ -396,8 +396,8 @@ class GroupMembership(Base):
     __tablename__ = "group_memberships"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    group_id: Mapped[int] = mapped_column(ForeignKey("responsible_groups.id"))
-    person_id: Mapped[int] = mapped_column(ForeignKey("people.id"))
+    group_id: Mapped[int] = mapped_column(ForeignKey("responsible_groups.id"), index=True)
+    person_id: Mapped[int] = mapped_column(ForeignKey("people.id"), index=True)
     role_in_group: Mapped[AssignmentRole] = mapped_column(SAEnum(AssignmentRole))
     joined_at: Mapped[dt.date] = mapped_column(default=lambda: now_utc().date())
 
@@ -411,8 +411,8 @@ class AircraftGroupAssignment(Base):
     __tablename__ = "aircraft_group_assignments"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"))
-    group_id: Mapped[int] = mapped_column(ForeignKey("responsible_groups.id"))
+    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"), index=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("responsible_groups.id"), index=True)
     start_date: Mapped[dt.date] = mapped_column(default=lambda: now_utc().date())
     end_date: Mapped[dt.date | None] = mapped_column(nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -430,8 +430,8 @@ class MaintenanceOrder(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     order_number: Mapped[str] = mapped_column(String(30), unique=True, index=True)
-    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"))
-    component_id: Mapped[int | None] = mapped_column(ForeignKey("components.id"), nullable=True)
+    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"), index=True)
+    component_id: Mapped[int | None] = mapped_column(ForeignKey("components.id"), index=True, nullable=True)
 
     type: Mapped[MaintenanceType] = mapped_column(SAEnum(MaintenanceType))
     priority: Mapped[Criticality] = mapped_column(SAEnum(Criticality), default=Criticality.MEDIA)
@@ -441,8 +441,8 @@ class MaintenanceOrder(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     reference_doc: Mapped[str | None] = mapped_column(String(200), nullable=True)  # AMM / ICA / Boletim
 
-    opened_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), nullable=True)
-    responsible_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), nullable=True)
+    opened_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
+    responsible_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
 
     opened_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
     due_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -453,12 +453,12 @@ class MaintenanceOrder(Base):
     actions_taken: Mapped[str | None] = mapped_column(Text, nullable=True)
     parts_used: Mapped[str | None] = mapped_column(Text, nullable=True)
     team_members: Mapped[str | None] = mapped_column(Text, nullable=True)  # observações livres sobre a equipe
-    team_group_id: Mapped[int | None] = mapped_column(ForeignKey("responsible_groups.id"), nullable=True)  # equipe/grupo formal
+    team_group_id: Mapped[int | None] = mapped_column(ForeignKey("responsible_groups.id"), index=True, nullable=True)  # equipe/grupo formal
 
     # Uma OS nunca é excluída, e uma vez Concluída/Cancelada não pode mais ser
     # alterada (ver routers/maintenance.py). O cancelamento exige registrar
     # quem cancelou e quando, e dispara notificação ao grupo responsável.
-    cancelled_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), nullable=True)
+    cancelled_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
     cancelled_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     cancellation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -496,8 +496,8 @@ class FlightLog(Base):
     __tablename__ = "flight_logs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"))
-    pilot_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), nullable=True)
+    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"), index=True)
+    pilot_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
     date: Mapped[dt.date] = mapped_column(default=lambda: now_utc().date())
     duration_hours: Mapped[float] = mapped_column(Float, default=0)
     mission_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
@@ -519,7 +519,7 @@ class AvailabilityUpdate(Base):
     __tablename__ = "availability_updates"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"))
+    aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"), index=True)
     report_date: Mapped[dt.date] = mapped_column(default=lambda: now_utc().date())
     code: Mapped[AvailabilityCode] = mapped_column(SAEnum(AvailabilityCode))
 
@@ -531,7 +531,7 @@ class AvailabilityUpdate(Base):
     has_subalares: Mapped[bool] = mapped_column(Boolean, default=False)  # cargas subalares, independente do ADA
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)  # motivo/observação (ex.: "TREM DE POUSO")
 
-    recorded_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), nullable=True)
+    recorded_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
     aircraft: Mapped["Aircraft"] = relationship(back_populates="availability_updates")
@@ -550,7 +550,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(200))
     password_salt: Mapped[str] = mapped_column(String(64))
     role: Mapped[PersonRole] = mapped_column(SAEnum(PersonRole))
-    person_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), nullable=True)
+    person_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
@@ -596,9 +596,9 @@ class Notification(Base):
     message: Mapped[str] = mapped_column(Text)
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)  # resultado/erro do envio, para transparência
 
-    recipient_person_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), nullable=True)
-    aircraft_id: Mapped[int | None] = mapped_column(ForeignKey("aircraft.id"), nullable=True)
-    component_id: Mapped[int | None] = mapped_column(ForeignKey("components.id"), nullable=True)
+    recipient_person_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
+    aircraft_id: Mapped[int | None] = mapped_column(ForeignKey("aircraft.id"), index=True, nullable=True)
+    component_id: Mapped[int | None] = mapped_column(ForeignKey("components.id"), index=True, nullable=True)
 
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 

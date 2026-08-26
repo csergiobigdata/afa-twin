@@ -69,12 +69,48 @@ async function upload<T>(path: string, formData: FormData, method: "POST" | "PUT
   return body as T;
 }
 
+// Cache leve de leituras GET + deduplicação de chamadas em voo: várias
+// páginas buscam os mesmos endpoints (ex.: /aircraft, /people) de forma
+// independente a cada navegação, sem nenhum cache - refazendo o mesmo
+// fetch (e, no backend, o mesmo recálculo de saúde/confiabilidade) toda
+// vez. TTL curto (mantém os dados razoavelmente frescos num app com várias
+// pessoas editando) e invalidação total a cada escrita (POST/PUT/DELETE/
+// upload) - simples e seguro, evita mostrar dado desatualizado após uma
+// edição em troca de não tentar rastrear invalidação por endpoint.
+const GET_CACHE_TTL_MS = 15_000;
+const getCache = new Map<string, { data: unknown; expiresAt: number }>();
+const inFlightGets = new Map<string, Promise<unknown>>();
+
+function invalidateGetCache() {
+  getCache.clear();
+}
+
+function cachedGet<T>(path: string): Promise<T> {
+  const cached = getCache.get(path);
+  if (cached && cached.expiresAt > Date.now()) {
+    return Promise.resolve(cached.data as T);
+  }
+  const inFlight = inFlightGets.get(path);
+  if (inFlight) return inFlight as Promise<T>;
+
+  const promise = request<T>(path)
+    .then((data) => {
+      getCache.set(path, { data, expiresAt: Date.now() + GET_CACHE_TTL_MS });
+      return data;
+    })
+    .finally(() => inFlightGets.delete(path));
+  inFlightGets.set(path, promise);
+  return promise;
+}
+
 export const api = {
-  get: <T>(path: string) => request<T>(path),
+  get: <T>(path: string) => cachedGet<T>(path),
   post: <T>(path: string, data?: unknown) =>
-    request<T>(path, { method: "POST", body: data !== undefined ? JSON.stringify(data) : undefined }),
+    request<T>(path, { method: "POST", body: data !== undefined ? JSON.stringify(data) : undefined })
+      .then((r) => { invalidateGetCache(); return r; }),
   put: <T>(path: string, data?: unknown) =>
-    request<T>(path, { method: "PUT", body: data !== undefined ? JSON.stringify(data) : undefined }),
-  del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
-  upload: <T>(path: string, formData: FormData) => upload<T>(path, formData),
+    request<T>(path, { method: "PUT", body: data !== undefined ? JSON.stringify(data) : undefined })
+      .then((r) => { invalidateGetCache(); return r; }),
+  del: <T>(path: string) => request<T>(path, { method: "DELETE" }).then((r) => { invalidateGetCache(); return r; }),
+  upload: <T>(path: string, formData: FormData) => upload<T>(path, formData).then((r) => { invalidateGetCache(); return r; }),
 };

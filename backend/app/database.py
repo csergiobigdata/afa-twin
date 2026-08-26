@@ -85,3 +85,18 @@ def sync_postgres_enum_types() -> None:
                 # é suficiente e seguro aqui.
                 escaped_value = value.replace("'", "''")
                 conn.execute(text(f"ALTER TYPE {pg_type_name} ADD VALUE IF NOT EXISTS '{escaped_value}'"))
+
+
+def sync_missing_indexes() -> None:
+    """`Base.metadata.create_all()` só cria índices ao criar uma tabela nova -
+    se um índice é adicionado depois a uma coluna de uma tabela que já existe
+    (ex.: `index=True` acrescentado às chaves estrangeiras na v0.3, para
+    evitar table scan nos filtros `?aircraft_id=`/`?component_id=` usados em
+    quase todo router), ele nunca aparece sozinho num banco já existente
+    (local SQLite ou o Postgres de produção). Roda uma vez no startup e só
+    ACRESCENTA índices que faltam (`checkfirst=True` faz o SQLAlchemy pular
+    os que já existem) - operação aditiva e segura para rodar a cada deploy,
+    em qualquer dialeto (SQLite localmente, Postgres em nuvem)."""
+    for table in Base.metadata.sorted_tables:
+        for index in table.indexes:
+            index.create(bind=engine, checkfirst=True)

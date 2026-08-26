@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .database import Base, engine, SessionLocal, sync_postgres_enum_types
+from .database import Base, engine, SessionLocal, sync_postgres_enum_types, sync_missing_indexes
 from . import seed
 from .routers import (
     aircraft, people, components, assignments, maintenance, checklists, flightlogs,
@@ -82,6 +82,11 @@ def on_startup():
     # database.py::sync_postgres_enum_types. Sem custo no SQLite local (a
     # função só age em Postgres).
     sync_postgres_enum_types()
+    # Mesma lógica para índices acrescentados a colunas de tabelas que já
+    # existiam (ver nota em database.py::sync_missing_indexes) - reduz
+    # latência dos filtros ?aircraft_id=/?component_id= usados em quase
+    # todo router, à medida que o volume de dados crescer.
+    sync_missing_indexes()
     db = SessionLocal()
     try:
         seed.seed_if_empty(db)
