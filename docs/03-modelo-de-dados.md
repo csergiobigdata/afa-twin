@@ -288,6 +288,27 @@ classificar como a vida de um componente é controlada.
    Servidas em `/api/media/<id>` (ver `backend/app/routers/media.py`). Decisão deliberada para
    compatibilidade com hospedagem "serverless" (ex.: Vercel, usado em [docs/06](06-implantacao-nuvem.md)),
    que não garante disco persistente entre chamadas de função - ver a nota completa em `models.py`.
+   **Créditos das fotos reais cadastradas (v0.3)**: as 7 aeronaves do piloto usam fotos reais do
+   modelo (não da matrícula fictícia específica, exceto FAB 5962), carregadas via este mesmo mecanismo
+   de upload (`POST /api/aircraft/{id}/photo`) - substituindo a ilustração vetorial de fallback. Fontes,
+   com licença Creative Commons/GFDL que exige atribuição:
+
+   | Aeronave | Autor | Licença | Fonte |
+   |---|---|---|---|
+   | F-39E Gripen (FAB 4100) | Isac Nóbrega/PR (Palácio do Planalto) | CC BY 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Brazilian_Gripen_F-39E_(cropped).jpg) |
+   | F-5EM Tiger II (FAB 4824) | Alan Santos/Palácio do Planalto | CC BY 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:F5_Brazilian_Air_Force.jpg) |
+   | A-1M AMX (FAB 5237) | Renato Spilimbergo Carvalho | GFDL 1.2 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:AMX_International_A-1A,_Brazil_-_Air_Force_AN1990489.jpg) |
+   | KC-390 Millennium (FAB 2856) | Steve Lynes | CC BY 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:EGLF_-_Embraer_KC-390_-_For%C3%A7a_A%C3%A9rea_Brasileira_-_PT-ZNJ_(42759650754).jpg) |
+   | C-130H Hercules (FAB 2464) | Valter Campanato/Agência Brasil | CC BY 3.0 BR | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:C130_Hercules,_Brazilian_Air_Force_I.jpg) |
+   | H-36 Caracal (FAB 8940) | Marinha do Brasil | CC BY-SA 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Opera%C3%A7%C3%A3o_Poseidon_2022_H-36_(Caracal),_da_For%C3%A7a_A%C3%A9rea_Brasileira_(51986536194).png) |
+   | A-29 Super Tucano (FAB 5962) | fornecida pelo usuário do projeto | não verificada - ver nota abaixo | `images/tucano a-29.png` no repositório |
+
+   A foto animada (hélice girando) da FAB 5962 é uma ilustração vetorial original (não a foto real
+   acima), renderizada em quadros e montada como GIF - ver `images/a29-super-tucano-helice-girando.gif`
+   e `frontend/public/aircraft-art/a29-animated.svg`. **Atenção**: a foto estática da FAB 5962 foi
+   fornecida diretamente pelo usuário deste projeto sem confirmação de licença/origem - antes de manter
+   esse arquivo num ambiente acessível publicamente por mais tempo, confirme os direitos de uso ou
+   substitua por uma fonte com licença verificada, como as demais.
 8. **Imutabilidade de Ordem de Serviço em status terminal**: uma vez `Concluída` ou `Cancelada`, a API
    rejeita qualquer alteração adicional (inclusive tentativa de exclusão, que retorna erro 405). A transição
    para `Cancelada` exige `cancelled_by_id` e `cancellation_reason` preenchidos, grava `cancelled_at`
