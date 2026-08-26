@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .database import Base, engine, SessionLocal
+from .database import Base, engine, SessionLocal, sync_postgres_enum_types
 from . import seed
 from .routers import (
     aircraft, people, components, assignments, maintenance, checklists, flightlogs,
@@ -76,6 +76,12 @@ async def optional_access_key_gate(request: Request, call_next):
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    # Em Postgres (nuvem), create_all() cria tabelas/tipos novos mas nunca
+    # altera um tipo ENUM nativo já existente para acrescentar um valor novo
+    # (ex.: nova categoria de LookupItem) - ver nota completa em
+    # database.py::sync_postgres_enum_types. Sem custo no SQLite local (a
+    # função só age em Postgres).
+    sync_postgres_enum_types()
     db = SessionLocal()
     try:
         seed.seed_if_empty(db)
