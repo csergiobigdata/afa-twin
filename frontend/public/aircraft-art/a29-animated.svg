@@ -1,31 +1,54 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    <linearGradient id="mat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#dbe1ec"/>
     </linearGradient>
-    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#748259"/><stop offset="100%" stop-color="#9aa08a"/>
+    </linearGradient>
+    <linearGradient id="stripe" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffcc29"/><stop offset="100%" stop-color="#0b7a3f"/>
     </linearGradient>
   </defs>
-  <rect width="480" height="260" fill="url(#sky)"/>
-  <ellipse cx="240" cy="232" rx="140" ry="12" fill="#000" opacity="0.28"/>
-  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
-    <path d="M100 12 L104 78 L176 90 L176 97 L104 88 L104 100 L114 108 L114 112 L86 112 L86 108 L96 100 L96 88 L24 97 L24 90 L96 78 Z"/>
-    <path d="M92 100 L84 100 L88 88 L92 88 Z"/>
-    <path d="M108 100 L116 100 L112 88 L108 88 Z"/>
-    <g stroke="none">
-      <circle cx="100" cy="60" r="7" fill="#0b6e4f"/>
-      <circle cx="100" cy="60" r="4.6" fill="#ffcc29"/>
-      <circle cx="100" cy="60" r="2.5" fill="#0a1f44"/>
-    </g>
+  <rect width="480" height="260" fill="url(#mat)"/>
+  <rect x="7" y="7" width="466" height="246" rx="6" fill="none" stroke="#c7cedd" stroke-width="2.5"/>
+  <ellipse cx="240" cy="200" rx="150" ry="9" fill="#0a1f44" opacity="0.14"/>
+
+  <!-- asa baixa + tanques subalares -->
+  <path d="M230,150 L290,150 L262,196 L204,196 Z" fill="#4a5738" stroke="#0a1f44" stroke-width="1.8"/>
+  <line x1="222" y1="194" x2="222" y2="206" stroke="#0a1f44" stroke-width="1.8"/>
+  <ellipse cx="222" cy="212" rx="13" ry="6.5" fill="#c9d2e2" stroke="#0a1f44" stroke-width="1.2"/>
+  <line x1="272" y1="188" x2="272" y2="198" stroke="#0a1f44" stroke-width="1.8" opacity="0.85"/>
+  <ellipse cx="272" cy="203" rx="11" ry="5.5" fill="#aab6cc" stroke="#0a1f44" stroke-width="1.2" opacity="0.85"/>
+
+  <!-- estabilizador horizontal -->
+  <path d="M372,144 L414,150 L376,158 Z" fill="url(#body)" stroke="#0a1f44" stroke-width="1.8"/>
+
+  <!-- deriva -->
+  <path d="M352,120 C366,94 390,84 406,89 L412,150 C393,141 368,136 352,120 Z" fill="#173b74" stroke="#0a1f44" stroke-width="1.8"/>
+  <path d="M368,98 L382,94 L393,118 L379,122 Z" fill="url(#stripe)"/>
+  <circle cx="358" cy="132" r="7" fill="#0b7a3f"/><circle cx="358" cy="132" r="4.3" fill="#ffcc29"/><circle cx="358" cy="132" r="2.2" fill="#1c4f9c"/>
+
+  <!-- fuselagem -->
+  <path d="M96,146 C106,126 142,116 196,113 C266,109 350,114 412,132
+           C430,137 442,142 447,146 C442,150 424,156 393,161
+           C333,171 250,176 186,171 C136,167 104,159 96,146 Z"
+        fill="url(#body)" stroke="#0a1f44" stroke-width="1.8"/>
+
+  <!-- canopy (dois postos) -->
+  <path d="M186,120 C200,107 250,106 266,118 C270,126 268,133 256,134 C226,136 198,134 188,129 C184,127 183,123 186,120 Z"
+        fill="#141b24" opacity="0.92" stroke="#3a4658" stroke-width="1.2"/>
+  <line x1="226" y1="108" x2="226" y2="132" stroke="#3a4658" stroke-width="1.2" opacity="0.7"/>
+
+  <!-- nariz + hélice -->
+  <circle cx="96" cy="140" r="5.5" fill="#22282f"/>
+  <g class="prop" style="transform-origin:96px 140px">
+    <ellipse cx="96" cy="140" rx="3.4" ry="36" fill="#cfd8e6" opacity="0.4"/>
+    <line x1="96" y1="104" x2="96" y2="176" stroke="#e8edf5" stroke-width="2.2" opacity="0.85"/>
+    <line x1="60" y1="140" x2="132" y2="140" stroke="#e8edf5" stroke-width="2.2" opacity="0.55"/>
   </g>
-  <g stroke="#0a1f44" stroke-width="2.5" stroke-linecap="round" opacity="0.85">
-    <g>
-      <line x1="223" y1="10" x2="257" y2="38"/>
-      <line x1="257" y1="10" x2="223" y2="38"/>
-      <animateTransform attributeName="transform" type="rotate" from="0 240 24" to="360 240 24" dur="0.2s" repeatCount="indefinite"/>
-    </g>
-  </g>
-  <circle cx="240" cy="24" r="4" fill="#0a1f44"/>
-  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">Embraer A-29 Super Tucano — hélice em operação (ilustrativo)</text>
+
+  <style>.prop { animation: spin-a29 0.15s linear infinite; } @keyframes spin-a29 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>
+  <text x="240" y="234" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#0a1f44">FAB 5962 · Embraer A-29 Super Tucano</text>
+  <text x="240" y="249" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#4b5566">Ilustração vetorial de perfil — modelo de referência do documento de estudo</text>
 </svg>

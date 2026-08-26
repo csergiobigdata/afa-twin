@@ -1,33 +1,51 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    <linearGradient id="mat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#dbe1ec"/>
     </linearGradient>
-    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5c6b4f"/><stop offset="100%" stop-color="#7d8a6c"/>
+    </linearGradient>
+    <linearGradient id="stripe" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffcc29"/><stop offset="100%" stop-color="#0b7a3f"/>
     </linearGradient>
   </defs>
-  <rect width="480" height="260" fill="url(#sky)"/>
-  <ellipse cx="240" cy="232" rx="120" ry="12" fill="#000" opacity="0.28"/>
-  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
-    <ellipse cx="100" cy="70" rx="18" ry="34"/>
-    <rect x="98" y="34" width="4" height="10"/>
-    <rect x="98" y="96" width="4" height="20"/>
-    <rect x="86" y="112" width="28" height="4"/>
-    <rect x="150" y="98" width="4" height="16"/>
-    <g stroke="none">
-      <circle cx="100" cy="66" r="9" fill="#0b6e4f"/>
-      <circle cx="100" cy="66" r="5.8" fill="#ffcc29"/>
-      <circle cx="100" cy="66" r="3.2" fill="#0a1f44"/>
-    </g>
+  <rect width="480" height="260" fill="url(#mat)"/>
+  <rect x="7" y="7" width="466" height="246" rx="6" fill="none" stroke="#c7cedd" stroke-width="2.5"/>
+  <ellipse cx="240" cy="200" rx="150" ry="9" fill="#0a1f44" opacity="0.14"/>
+
+  <!-- disco do rotor principal (visto de perfil - linha fina) -->
+  <g class="prop" style="transform-origin:240px 108px">
+    <ellipse cx="240" cy="108" rx="150" ry="4" fill="#cfd3c2" opacity="0.55"/>
+    <line x1="90" y1="108" x2="390" y2="108" stroke="#e8edf5" stroke-width="2" opacity="0.7"/>
   </g>
-  <g>
-    <rect x="60" y="83" width="360" height="6" rx="3" fill="#0a1f44" opacity="0.8"/>
-    <animateTransform attributeName="transform" type="rotate" from="0 240 86" to="360 240 86" dur="0.35s" repeatCount="indefinite"/>
+  <rect x="236" y="112" width="8" height="16" fill="#22282f"/>
+
+  <!-- cauda -->
+  <path d="M300,148 L400,132 L400,140 L306,156 Z" fill="url(#body)" stroke="#0a1f44" stroke-width="1.6"/>
+  <!-- rotor de cauda -->
+  <g class="tailrotor" style="transform-origin:400px 128px">
+    <ellipse cx="400" cy="128" rx="3" ry="16" fill="#cfd3c2" opacity="0.6"/>
+    <line x1="400" y1="112" x2="400" y2="144" stroke="#e8edf5" stroke-width="1.8" opacity="0.8"/>
   </g>
-  <g>
-    <rect x="326" y="196" width="36" height="5" rx="2.5" fill="#0a1f44" opacity="0.8"/>
-    <animateTransform attributeName="transform" type="rotate" from="0 344 198.5" to="360 344 198.5" dur="0.12s" repeatCount="indefinite"/>
-  </g>
-  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">Airbus H-36 Caracal — rotores em operação (ilustrativo)</text>
+  <circle cx="340" cy="148" r="6.5" fill="#0b7a3f"/><circle cx="340" cy="148" r="4.0" fill="#ffcc29"/><circle cx="340" cy="148" r="2.1" fill="#1c4f9c"/>
+
+  <!-- cabine/fuselagem (corpo arredondado, típico de helicóptero) -->
+  <path d="M120,150 C120,128 150,116 190,114 C240,112 290,120 306,138
+           C310,146 306,154 294,158 C260,168 180,170 148,164
+           C130,160 120,158 120,150 Z"
+        fill="url(#body)" stroke="#0a1f44" stroke-width="1.8"/>
+
+  <!-- para-brisa -->
+  <path d="M130,140 L162,126 L166,136 L134,150 Z" fill="#141b24" opacity="0.88"/>
+
+  <!-- trem de pouso (patins) -->
+  <line x1="140" y1="172" x2="286" y2="172" stroke="#0a1f44" stroke-width="3"/>
+  <line x1="150" y1="164" x2="150" y2="172" stroke="#0a1f44" stroke-width="2.5"/>
+  <line x1="276" y1="164" x2="276" y2="172" stroke="#0a1f44" stroke-width="2.5"/>
+
+  <style>.prop { animation: spin-h36 0.15s linear infinite; } @keyframes spin-h36 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>
+  <style>.tailrotor { animation: spin-h36-tail 0.1s linear infinite; } @keyframes spin-h36-tail { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>
+  <text x="240" y="234" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#0a1f44">FAB 8940 · Airbus Helicopters H-36 Caracal</text>
+  <text x="240" y="249" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#4b5566">Ilustração vetorial de perfil (ilustrativo)</text>
 </svg>

@@ -1,25 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    <linearGradient id="mat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#dbe1ec"/>
     </linearGradient>
-    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5f6a6a"/><stop offset="100%" stop-color="#8a9494"/>
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffcc29" stop-opacity="0.9"/><stop offset="100%" stop-color="#ffcc29" stop-opacity="0"/>
-    </radialGradient>
+    <linearGradient id="stripe" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffcc29"/><stop offset="100%" stop-color="#0b7a3f"/>
+    </linearGradient>
   </defs>
-  <rect width="480" height="260" fill="url(#sky)"/>
-  <ellipse cx="240" cy="232" rx="140" ry="12" fill="#000" opacity="0.28"/>
-  <circle cx="240" cy="214" r="12" fill="url(#glow)"/>
-  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
-    <path d="M100 8 L105 58 L170 82 L170 90 L105 74 L107 98 L118 104 L118 108 L82 108 L82 104 L93 98 L95 74 L30 90 L30 82 L95 58 Z"/>
-    <g stroke="none">
-      <circle cx="100" cy="58" r="6.5" fill="#0b6e4f"/>
-      <circle cx="100" cy="58" r="4.2" fill="#ffcc29"/>
-      <circle cx="100" cy="58" r="2.3" fill="#0a1f44"/>
-    </g>
-  </g>
-  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">Embraer/Aermacchi A-1M AMX — ilustração vetorial</text>
+  <rect width="480" height="260" fill="url(#mat)"/>
+  <rect x="7" y="7" width="466" height="246" rx="6" fill="none" stroke="#c7cedd" stroke-width="2.5"/>
+  <ellipse cx="240" cy="200" rx="150" ry="9" fill="#0a1f44" opacity="0.14"/>
+
+  <!-- asa alta -->
+  <path d="M200,132 L296,132 L296,140 L200,140 Z" fill="#5c6849" stroke="#0a1f44" stroke-width="1.8"/>
+  <path d="M214,140 L182,178 L192,180 L226,144 Z" fill="#5c6849" stroke="#0a1f44" stroke-width="1.2"/>
+  <path d="M282,140 L314,178 L304,180 L270,144 Z" fill="#5c6849" stroke="#0a1f44" stroke-width="1.2"/>
+
+  <!-- estabilizador horizontal -->
+  <path d="M372,148 L410,154 L376,161 Z" fill="url(#body)" stroke="#0a1f44" stroke-width="1.8"/>
+
+  <!-- deriva -->
+  <path d="M354,122 C364,96 384,86 398,90 L404,154 C387,145 366,140 354,122 Z" fill="#173b74" stroke="#0a1f44" stroke-width="1.8"/>
+  <path d="M368,102 L380,98 L390,120 L376,124 Z" fill="url(#stripe)"/>
+  <circle cx="360" cy="134" r="6.5" fill="#0b7a3f"/><circle cx="360" cy="134" r="4.0" fill="#ffcc29"/><circle cx="360" cy="134" r="2.1" fill="#1c4f9c"/>
+
+  <!-- fuselagem robusta com corcunda dorsal (entrada de ar) bem marcada -->
+  <path d="M70,146 C86,132 118,124 156,122 C158,104 194,94 218,104 C226,112 222,120 210,124
+           C252,120 330,126 400,142 C416,146 428,150 434,154 C424,158 400,164 364,168
+           C296,176 200,180 148,174 C110,170 84,160 70,146 Z"
+        fill="url(#body)" stroke="#0a1f44" stroke-width="1.8"/>
+
+  <!-- canopy -->
+  <path d="M166,116 C178,106 210,105 224,113 C227,118 225,123 217,124 C198,126 178,124 169,121 C166,120 163,118 166,116 Z"
+        fill="#141b24" opacity="0.92" stroke="#3a4658" stroke-width="1.2"/>
+
+  <!-- bocal -->
+  <ellipse cx="428" cy="150" rx="6" ry="7" fill="#4b5566"/>
+
+  <text x="240" y="234" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#0a1f44">FAB 5237 · Embraer/Aermacchi A-1M AMX</text>
+  <text x="240" y="249" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#4b5566">Ilustração vetorial de perfil (ilustrativo)</text>
 </svg>

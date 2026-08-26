@@ -1,32 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    <linearGradient id="mat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#dbe1ec"/>
     </linearGradient>
-    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c7cfdc"/><stop offset="100%" stop-color="#98a4bc"/>
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffcc29" stop-opacity="0.95"/><stop offset="100%" stop-color="#ffcc29" stop-opacity="0"/>
-    </radialGradient>
+    <linearGradient id="stripe" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffcc29"/><stop offset="100%" stop-color="#0b7a3f"/>
+    </linearGradient>
   </defs>
-  <rect width="480" height="260" fill="url(#sky)"/>
-  <ellipse cx="240" cy="232" rx="140" ry="12" fill="#000" opacity="0.28"/>
-  <circle cx="240" cy="206" r="14" fill="url(#glow)">
-    <animate attributeName="r" values="10;18;10" dur="0.9s" repeatCount="indefinite"/>
-    <animate attributeName="opacity" values="0.6;1;0.6" dur="0.9s" repeatCount="indefinite"/>
-  </circle>
-  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
-    <path d="M100 6 L108 46 L172 84 L172 92 L108 74 L104 96 L120 100 L120 104 L80 104 L80 100 L96 96 L92 74 L28 92 L28 84 L92 46 Z"/>
-    <path d="M96 96 L86 116 L92 118 L100 108 L108 118 L114 116 L104 96 Z"/>
-    <g stroke="none">
-      <circle cx="100" cy="54" r="7" fill="#0b6e4f"/>
-      <circle cx="100" cy="54" r="4.6" fill="#ffcc29"/>
-      <circle cx="100" cy="54" r="2.5" fill="#0a1f44"/>
-    </g>
-  </g>
-  <circle cx="72" cy="98" r="3" fill="#ff3b3b">
-    <animate attributeName="opacity" values="1;0.1;1" dur="1.1s" repeatCount="indefinite"/>
-  </circle>
-  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">Saab F-39E Gripen — pós-combustão (ilustrativo)</text>
+  <rect width="480" height="260" fill="url(#mat)"/>
+  <rect x="7" y="7" width="466" height="246" rx="6" fill="none" stroke="#c7cedd" stroke-width="2.5"/>
+  <ellipse cx="240" cy="200" rx="150" ry="9" fill="#0a1f44" opacity="0.14"/>
+
+  <!-- asa delta (bem larga, characterística do Gripen) -->
+  <path d="M190,164 L306,164 L348,208 L330,212 L246,178 L162,212 L146,208 Z" fill="#8a97ac" stroke="#0a1f44" stroke-width="1.8"/>
+
+  <!-- estabilizador horizontal -->
+  <path d="M372,146 L412,152 L376,160 Z" fill="url(#body)" stroke="#0a1f44" stroke-width="1.8"/>
+
+  <!-- deriva única, alta e reta -->
+  <path d="M356,122 C366,92 386,80 402,84 L408,152 C391,143 368,138 356,122 Z" fill="#173b74" stroke="#0a1f44" stroke-width="1.8"/>
+  <path d="M370,96 L384,92 L394,116 L380,120 Z" fill="url(#stripe)"/>
+  <circle cx="362" cy="134" r="7" fill="#0b7a3f"/><circle cx="362" cy="134" r="4.3" fill="#ffcc29"/><circle cx="362" cy="134" r="2.2" fill="#1c4f9c"/>
+
+  <!-- fuselagem afilada e pontiaguda -->
+  <path d="M64,142 C80,128 110,120 150,120 C230,118 330,124 404,140
+           C420,144 432,148 438,152 C428,156 404,162 366,166
+           C300,174 200,178 140,172 C100,168 76,158 64,142 Z"
+        fill="url(#body)" stroke="#0a1f44" stroke-width="1.8"/>
+
+  <!-- canard (desenhado por cima da fuselagem, para não ficar escondido -
+       marca registrada do Gripen: pequena aleta à frente da cabine) -->
+  <path d="M96,130 L118,132 L108,106 L92,112 Z" fill="#8a97ac" stroke="#0a1f44" stroke-width="1.5"/>
+
+  <!-- canopy única -->
+  <path d="M164,124 C178,112 218,110 240,120 C244,127 242,133 232,134 C206,136 182,134 170,130 C166,128 162,127 164,124 Z"
+        fill="#141b24" opacity="0.92" stroke="#3a4658" stroke-width="1.2"/>
+
+  <!-- nariz fino em ponta -->
+  <path d="M64,142 L38,146 L64,150 Z" fill="url(#body)" stroke="#0a1f44" stroke-width="1.5"/>
+  <!-- bocal do motor -->
+  <ellipse cx="440" cy="152" rx="6" ry="7" fill="#4b5566"/>
+
+  <text x="240" y="234" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#0a1f44">FAB 4100 · Saab F-39E Gripen</text>
+  <text x="240" y="249" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#4b5566">Ilustração vetorial de perfil (ilustrativo)</text>
 </svg>

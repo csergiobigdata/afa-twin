@@ -1,35 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    <linearGradient id="mat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#dbe1ec"/>
     </linearGradient>
-    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d3d8e2"/><stop offset="100%" stop-color="#a3adc2"/>
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#ffcc29" stop-opacity="0.95"/><stop offset="100%" stop-color="#ffcc29" stop-opacity="0"/>
-    </radialGradient>
+    <linearGradient id="stripe" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffcc29"/><stop offset="100%" stop-color="#0b7a3f"/>
+    </linearGradient>
   </defs>
-  <rect width="480" height="260" fill="url(#sky)"/>
-  <ellipse cx="240" cy="232" rx="140" ry="12" fill="#000" opacity="0.28"/>
-  <circle cx="226" cy="214" r="9" fill="url(#glow)">
-    <animate attributeName="r" values="7;13;7" dur="0.8s" repeatCount="indefinite"/>
-  </circle>
-  <circle cx="254" cy="214" r="9" fill="url(#glow)">
-    <animate attributeName="r" values="7;13;7" dur="0.8s" begin="0.15s" repeatCount="indefinite"/>
-  </circle>
-  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
-    <path d="M100 8 L106 50 L168 78 L168 86 L106 66 L106 90 L124 98 L124 102 L76 102 L76 98 L94 90 L94 66 L32 86 L32 78 L94 50 Z"/>
-    <rect x="90" y="88" width="6" height="16"/>
-    <rect x="104" y="88" width="6" height="16"/>
-    <g stroke="none">
-      <circle cx="100" cy="52" r="6.5" fill="#0b6e4f"/>
-      <circle cx="100" cy="52" r="4.2" fill="#ffcc29"/>
-      <circle cx="100" cy="52" r="2.3" fill="#0a1f44"/>
-    </g>
-  </g>
-  <circle cx="72" cy="92" r="3" fill="#ff3b3b">
-    <animate attributeName="opacity" values="1;0.1;1" dur="1.1s" repeatCount="indefinite"/>
-  </circle>
-  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">F-5EM Tiger II — pós-combustão (ilustrativo)</text>
+  <rect width="480" height="260" fill="url(#mat)"/>
+  <rect x="7" y="7" width="466" height="246" rx="6" fill="none" stroke="#c7cedd" stroke-width="2.5"/>
+  <ellipse cx="240" cy="200" rx="150" ry="9" fill="#0a1f44" opacity="0.14"/>
+
+  <!-- asa em flecha -->
+  <path d="M220,166 L288,166 L316,198 L300,200 L246,178 L192,200 L182,196 Z" fill="#94a0b4" stroke="#0a1f44" stroke-width="1.8"/>
+
+  <!-- estabilizador horizontal -->
+  <path d="M380,146 L416,152 L384,160 Z" fill="url(#body)" stroke="#0a1f44" stroke-width="1.8"/>
+
+  <!-- deriva -->
+  <path d="M362,120 C372,94 392,84 406,88 L412,152 C395,143 374,138 362,120 Z" fill="#173b74" stroke="#0a1f44" stroke-width="1.8"/>
+  <path d="M376,100 L388,96 L398,118 L384,122 Z" fill="url(#stripe)"/>
+  <circle cx="368" cy="132" r="6.5" fill="#0b7a3f"/><circle cx="368" cy="132" r="4.0" fill="#ffcc29"/><circle cx="368" cy="132" r="2.1" fill="#1c4f9c"/>
+
+  <!-- fuselagem, nariz bem fino -->
+  <path d="M56,144 C74,130 108,122 150,120 C240,117 340,124 408,140
+           C424,144 434,148 440,152 C430,156 406,162 370,166
+           C300,174 200,178 144,172 C102,168 74,158 56,144 Z"
+        fill="url(#body)" stroke="#0a1f44" stroke-width="1.8"/>
+  <path d="M56,144 L30,147 L56,151 Z" fill="url(#body)" stroke="#0a1f44" stroke-width="1.5"/>
+
+  <!-- canopy -->
+  <path d="M158,124 C172,113 208,112 226,121 C230,127 228,133 219,134 C196,136 174,134 163,130 C160,128 156,127 158,124 Z"
+        fill="#141b24" opacity="0.92" stroke="#3a4658" stroke-width="1.2"/>
+
+  <!-- bocais gêmeos -->
+  <ellipse cx="426" cy="147" rx="5.5" ry="6.5" fill="#4b5566"/>
+  <ellipse cx="426" cy="159" rx="5.5" ry="6.5" fill="#4b5566"/>
+
+  <text x="240" y="234" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#0a1f44">FAB 4824 · F-5EM Tiger II</text>
+  <text x="240" y="249" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#4b5566">Ilustração vetorial de perfil (ilustrativo)</text>
 </svg>

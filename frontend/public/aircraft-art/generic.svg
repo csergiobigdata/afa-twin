@@ -1,21 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
   <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3a6bb0"/><stop offset="55%" stop-color="#173b74"/><stop offset="100%" stop-color="#0a1f44"/>
+    <linearGradient id="mat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#dbe1ec"/>
     </linearGradient>
-    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f4f6fb"/><stop offset="100%" stop-color="#aab6cc"/>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c7cedd"/><stop offset="100%" stop-color="#9aa5ba"/>
+    </linearGradient>
+    <linearGradient id="stripe" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffcc29"/><stop offset="100%" stop-color="#0b7a3f"/>
     </linearGradient>
   </defs>
-  <rect width="480" height="260" fill="url(#sky)"/>
-  <ellipse cx="240" cy="232" rx="140" ry="12" fill="#000" opacity="0.28"/>
-  <g transform="translate(40 6) scale(2)" fill="url(#metal)" stroke="#0a1f44" stroke-width="1">
-    <path d="M100 8 L106 60 L165 80 L165 88 L106 72 L106 96 L118 104 L118 108 L82 108 L82 104 L94 96 L94 72 L35 88 L35 80 L94 60 Z"/>
-    <g stroke="none">
-      <circle cx="100" cy="56" r="7" fill="#0b6e4f"/>
-      <circle cx="100" cy="56" r="4.6" fill="#ffcc29"/>
-      <circle cx="100" cy="56" r="2.5" fill="#0a1f44"/>
-    </g>
-  </g>
-  <text x="240" y="250" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.55">Aeronave cadastrada — ilustração vetorial genérica</text>
+  <rect width="480" height="260" fill="url(#mat)"/>
+  <rect x="7" y="7" width="466" height="246" rx="6" fill="none" stroke="#c7cedd" stroke-width="2.5"/>
+  <ellipse cx="240" cy="200" rx="150" ry="9" fill="#0a1f44" opacity="0.14"/>
+
+  <path d="M210,150 L300,150 L326,182 L310,184 L250,164 L190,184 L180,180 Z" fill="#93a0b4" stroke="#0a1f44" stroke-width="1.8"/>
+  <path d="M362,124 C372,100 390,90 402,94 L408,152 C393,144 374,138 362,124 Z" fill="#173b74" stroke="#0a1f44" stroke-width="1.8"/>
+  <path d="M374,102 L386,98 L395,118 L382,122 Z" fill="url(#stripe)"/>
+  <circle cx="366" cy="134" r="6.5" fill="#0b7a3f"/><circle cx="366" cy="134" r="4.0" fill="#ffcc29"/><circle cx="366" cy="134" r="2.1" fill="#1c4f9c"/>
+  <path d="M70,144 C88,130 122,122 160,120 C240,117 330,123 396,140
+           C412,144 424,148 430,152 C420,156 398,162 366,166
+           C300,174 200,178 150,172 C108,168 82,158 70,144 Z"
+        fill="url(#body)" stroke="#0a1f44" stroke-width="1.8"/>
+  <path d="M168,124 C180,114 212,113 228,121 C231,127 229,132 221,133 C200,135 180,133 171,130 C168,128 165,126 168,124 Z"
+        fill="#141b24" opacity="0.9" stroke="#3a4658" stroke-width="1.2"/>
+
+  <text x="240" y="234" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#0a1f44">Aeronave cadastrada</text>
+  <text x="240" y="249" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#4b5566">Ilustração vetorial de perfil genérica (nenhum modelo específico associado)</text>
 </svg>
