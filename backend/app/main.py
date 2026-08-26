@@ -16,7 +16,7 @@ from . import seed
 from .routers import (
     aircraft, people, components, assignments, maintenance, checklists, flightlogs,
     dashboard, auth, inspections, diagnostics, planning, notifications, groups,
-    lookups, audit, media, availability,
+    lookups, audit, media, availability, admin,
 )
 
 app = FastAPI(
@@ -112,6 +112,7 @@ app.include_router(lookups.router)
 app.include_router(audit.router)
 app.include_router(media.router)
 app.include_router(availability.router)
+app.include_router(admin.router)
 app.include_router(dashboard.router)
 
 

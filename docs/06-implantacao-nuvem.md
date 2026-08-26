@@ -81,6 +81,20 @@ O script é seguro para rodar mais de uma vez: ele reaproveita o repositório, o
 o site Netlify já criados (por nome), em vez de duplicá-los — útil para publicar uma nova versão depois
 de alterações no código.
 
+> **Importante ao adicionar/alterar uma tabela, um tipo enum (`SAEnum`) ou um índice em `models.py`:**
+> na teoria, `Base.metadata.create_all()` mais as rotinas `sync_postgres_enum_types()`/
+> `sync_missing_indexes()` (`backend/app/database.py`) rodariam sozinhas a cada novo deploy, via
+> `@app.on_event("startup")` do FastAPI. **Na prática, confirmamos que esse hook de startup não é
+> confiável no runtime serverless do Vercel** - uma alteração de esquema publicada não apareceu no
+> Postgres de produção até ser aplicada manualmente. Por isso, depois de um deploy que altera
+> `models.py`, chame explicitamente (autenticado como Gestor):
+> ```bash
+> curl -X POST https://SEU-BACKEND.vercel.app/api/admin/sync-schema \
+>   -H "Authorization: Bearer <token do login como gestor>"
+> ```
+> A rotina é aditiva e idempotente (nunca remove nada) - segura de chamar quantas vezes forem
+> necessárias, inclusive sem nenhuma alteração pendente.
+
 ## 4. Publicação manual (alternativa, se preferir não gerar tokens de API)
 
 ### 4.1 Banco de dados (Neon)
