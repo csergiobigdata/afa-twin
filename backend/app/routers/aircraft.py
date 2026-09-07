@@ -160,8 +160,8 @@ def update_aircraft(
     models.PersonRole.GESTOR.value, models.PersonRole.ENGENHEIRO.value))])
 def delete_aircraft(aircraft_id: int, db: Session = Depends(get_db)):
     a = _get_or_404(db, aircraft_id)
-    _delete_asset_if_exists(db, a.photo_asset_id)
-    _delete_asset_if_exists(db, a.photo_animated_asset_id)
+    photo_asset_id = a.photo_asset_id
+    photo_animated_asset_id = a.photo_animated_asset_id
 
     # Notification.aircraft_id/component_id não têm cascade a partir de
     # Aircraft (é um histórico de comunicação independente, não uma coleção
@@ -181,7 +181,18 @@ def delete_aircraft(aircraft_id: int, db: Session = Depends(get_db)):
         if n.component_id in component_ids:
             n.component_id = None
 
+    # A aeronave (que segura a FK photo_asset_id/photo_animated_asset_id)
+    # precisa sumir ANTES de excluirmos os MediaAsset que ela referenciava -
+    # não há relationship() mapeada para essas duas colunas (só a FK crua),
+    # então o unit-of-work do SQLAlchemy não tem como ordenar isso sozinho.
+    # Sem esse flush intermediário, em Postgres (produção) a exclusão do
+    # MediaAsset ainda referenciado pela aeronave violava a FK; em SQLite
+    # (desenvolvimento local) isso não aparecia por não aplicar a FK.
     db.delete(a)
+    db.flush()
+    _delete_asset_if_exists(db, photo_asset_id)
+    _delete_asset_if_exists(db, photo_animated_asset_id)
+
     db.commit()
     return None
 
