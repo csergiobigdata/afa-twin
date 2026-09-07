@@ -478,6 +478,7 @@ export interface ConfigurationCode {
   station_3?: string | null;
   station_2?: string | null;
   station_1?: string | null;
+  status_disp: ConfigDispStatus;
   created_at: string;
 }
 

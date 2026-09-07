@@ -698,6 +698,7 @@ class ConfigurationCodeBase(BaseModel):
     station_3: Optional[str] = None
     station_2: Optional[str] = None
     station_1: Optional[str] = None
+    status_disp: ConfigDispStatus = ConfigDispStatus.INATIVO
 
 
 class ConfigurationCodeCreate(ConfigurationCodeBase):
@@ -711,6 +712,7 @@ class ConfigurationCodeUpdate(BaseModel):
     station_3: Optional[str] = None
     station_2: Optional[str] = None
     station_1: Optional[str] = None
+    status_disp: Optional[ConfigDispStatus] = None
 
 
 class ConfigurationCodeOut(ConfigurationCodeBase, ORMModel):

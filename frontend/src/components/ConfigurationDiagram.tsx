@@ -1,32 +1,12 @@
 import type { ConfigurationCode } from "../api/types";
 import AuthorizedConfigSymbol from "./AuthorizedConfigSymbol";
 
-/** Silhueta da aeronave vista de frente, com um ponto por estação de
- * hardpoint (5, 4, 3, 2, 1) - recriação vetorial simplificada/ilustrativa
- * do diagrama do documento de referência (não um fac-símile pixel a
- * pixel). Usada como cabeçalho fixo do "Código de Configuração"
- * selecionado, com a faixa de estações logo abaixo (ver
- * ConfigurationDiagram). */
-function AircraftFrontView() {
-  return (
-    <svg viewBox="0 0 300 130" width="100%" style={{ maxWidth: 320 }} aria-hidden="true">
-      <g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
-        {/* deriva (cauda vertical) */}
-        <path d="M150 8 L163 46 L137 46 Z" />
-        {/* disco do hélice (tracejado) + cubo do motor/canópia */}
-        <circle cx="150" cy="58" r="21" strokeDasharray="3 3" />
-        <circle cx="150" cy="58" r="12" />
-        {/* asas, do centro até a ponta */}
-        <path d="M150 63 L18 96 M150 63 L282 96" />
-      </g>
-      {/* pontos de estação: 5/4 na asa esquerda, 2/1 na asa direita */}
-      <circle cx="52" cy="88" r="3.4" fill="currentColor" />
-      <circle cx="92" cy="79" r="3.4" fill="currentColor" />
-      <circle cx="208" cy="79" r="3.4" fill="currentColor" />
-      <circle cx="248" cy="88" r="3.4" fill="currentColor" />
-    </svg>
-  );
-}
+// Silhueta real da aeronave vista de frente, recortada da imagem de
+// referência enviada pelo usuário (docs/"Exemplo de Configuração.png") -
+// substitui a recriação vetorial usada antes. Usada como cabeçalho fixo do
+// "Código de Configuração" selecionado, com a faixa de estações logo
+// abaixo (ver ConfigurationDiagram).
+const AIRCRAFT_SILHOUETTE_IMAGE = "/reference/aeronave-silhueta.png";
 
 const STATIONS: { key: "station_5" | "station_4" | "station_3" | "station_2" | "station_1"; label: string }[] = [
   { key: "station_5", label: "Estação 5" },
@@ -51,8 +31,11 @@ export default function ConfigurationDiagram({
         {code ? `Configuração ${code.code}` : "Configuração"}
       </div>
       <div className="card" style={{ padding: 12, background: "#fff", display: "inline-block" }}>
-        <div style={{ color: "#111" }}><AircraftFrontView /></div>
-        <div style={{ display: "flex", marginTop: 6 }}>
+        <img
+          src={AIRCRAFT_SILHOUETTE_IMAGE} alt="Aeronave vista de frente, com as estações de hardpoint"
+          style={{ width: "100%", maxWidth: 320, display: "block" }}
+        />
+        <div style={{ display: "flex", marginTop: -4 }}>
           {STATIONS.map((s) => {
             const equipment = code?.[s.key];
             const svg = equipment ? symbolFor(equipment) : undefined;

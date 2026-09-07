@@ -593,11 +593,27 @@ class AuthorizedConfiguration(Base):
 # código curto (ex.: "12", "19", "21I") - ver docs/03-modelo-de-dados.md e
 # routers/configuration_codes.py. Cada campo estacao_N guarda o texto do
 # equipamento (mesmo vocabulário de AuthorizedConfiguration.equipment) ou
-# fica vazio quando aquela estação não é usada nesse código. Selecionar um
-# código no lançamento manual de disponibilidade lança, de uma vez, um
-# AvailabilityUpdate por estação preenchida (ver AvailabilityPage.tsx) -
-# forma mais simples, e explicitamente aceita como alternativa, a deixar o
-# usuário montar manualmente cada estação.
+# fica vazio quando aquela estação não é usada nesse código, ou quando o
+# detalhamento por estação ainda não foi transcrito (ver status_disp
+# abaixo). Selecionar um código Ativo no lançamento manual de
+# disponibilidade lança, de uma vez, um AvailabilityUpdate por estação
+# preenchida (ver AvailabilityPage.tsx) - forma mais simples, e
+# explicitamente aceita como alternativa, a deixar o usuário montar
+# manualmente cada estação.
+#
+# status_disp segue a MESMA convenção "A"/"I" de AuthorizedConfiguration
+# (ver ConfigDispStatus): todo código existente no manual de referência
+# completo (docs/CONFIGURAÇÕES AUTORIZADAS.pdf, 119 códigos) está
+# cadastrado, mas só os que também aparecem, com a marcação de bolinha
+# vermelha, no boletim vigente da unidade (docs/"configurações da
+# aeronave atual".pdf, 31 códigos) ficam "A" (Ativo) - só esses têm o
+# detalhamento por estação transcrito com confiança (cada linha desse
+# documento veio como uma imagem própria, permitindo conferir estação por
+# estação) e aparecem como opção para lançar no formulário. Os demais
+# ficam "I" (Inativo): o código em si vem de texto real do PDF (preciso),
+# mas o detalhamento por estação não foi transcrito (ficaria sujeito a
+# erro, lido de imagens de tabela mais densas, sem a mesma conferência
+# linha a linha) - consultáveis para referência, não lançáveis.
 # --------------------------------------------------------------------------
 
 class ConfigurationCode(Base):
@@ -610,6 +626,7 @@ class ConfigurationCode(Base):
     station_3: Mapped[str | None] = mapped_column(String(200), nullable=True)
     station_2: Mapped[str | None] = mapped_column(String(200), nullable=True)
     station_1: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    status_disp: Mapped[ConfigDispStatus] = mapped_column(SAEnum(ConfigDispStatus), default=ConfigDispStatus.INATIVO)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
 

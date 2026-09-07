@@ -17,8 +17,11 @@ router = APIRouter(
 
 
 @router.get("", response_model=list[schemas.ConfigurationCodeOut])
-def list_codes(db: Session = Depends(get_db)):
-    return db.query(models.ConfigurationCode).order_by(models.ConfigurationCode.id).all()
+def list_codes(status_disp: models.ConfigDispStatus | None = None, db: Session = Depends(get_db)):
+    q = db.query(models.ConfigurationCode)
+    if status_disp:
+        q = q.filter(models.ConfigurationCode.status_disp == status_disp)
+    return q.order_by(models.ConfigurationCode.id).all()
 
 
 def _get_or_404(db: Session, code_id: int) -> models.ConfigurationCode:

@@ -68,7 +68,12 @@ export default function AvailabilityPage() {
   // Configurações Autorizadas → Códigos de Configuração.
   const [configCodes, setConfigCodes] = useState<ConfigurationCode[]>([]);
   useEffect(() => {
-    api.get<ConfigurationCode[]>("/configuration-codes").then(setConfigCodes).catch(() => setConfigCodes([]));
+    // Só os códigos "A" (Ativo) - com marcação de bolinha vermelha no
+    // boletim vigente e detalhamento por estação conferido - aparecem como
+    // opção para lançar aqui (ver Aeronaves → Configurações Autorizadas →
+    // Códigos de Configuração para consultar TODOS os códigos, inclusive
+    // os "I" cadastrados só para referência).
+    api.get<ConfigurationCode[]>("/configuration-codes?status_disp=A").then(setConfigCodes).catch(() => setConfigCodes([]));
   }, []);
   const [selectedCodeId, setSelectedCodeId] = useState<number | "">("");
   const selectedCode = configCodes.find((c) => c.id === selectedCodeId) ?? null;

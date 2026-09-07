@@ -7,6 +7,7 @@ nuvem (ex.: "postgresql+psycopg://usuario:senha@host:5432/afa_twin") -
 o restante do código (models/queries) não muda, pois usamos SQLAlchemy ORM
 como camada de abstração. Ver docs/02-arquitetura-da-solucao.md.
 """
+import enum
 import os
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
@@ -102,20 +103,50 @@ def sync_missing_indexes() -> None:
             index.create(bind=engine, checkfirst=True)
 
 
+def _column_default_literal(column) -> str | None:
+    """Literal SQL do valor default Python de uma coluna (ex.: `default=
+    ConfigDispStatus.INATIVO`), para popular linhas já existentes ao
+    acrescentar uma coluna NOT NULL via ALTER TABLE ADD COLUMN - sem isso, o
+    ADD COLUMN falha tanto no SQLite quanto no Postgres quando a tabela já
+    tem linhas (não há valor pra elas). Retorna None se não houver default
+    "escalar" simples (ex.: default é uma função/callable) - nesse caso a
+    coluna continua sendo pulada, como já documentado abaixo."""
+    default = column.default
+    if default is None or not getattr(default, "is_scalar", False):
+        return None
+    value = default.arg
+    if isinstance(value, enum.Enum):
+        # SQLAlchemy Enum grava o NOME do membro Python (ex.: "INATIVO"),
+        # não o `.value` (ex.: "I") - mesma convenção usada pelo restante
+        # do app (ver ConfigDispStatus/status_disp).
+        value = value.name
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    if isinstance(value, (int, float)):
+        return str(value)
+    escaped = str(value).replace("'", "''")
+    return f"'{escaped}'"
+
+
 def sync_missing_columns() -> None:
     """`Base.metadata.create_all()` só cria COLUNAS ao criar uma tabela nova -
     se uma coluna é acrescentada depois a um modelo cuja tabela já existe
-    (ex.: `AvailabilityUpdate.location`), ela nunca aparece sozinha num banco
-    já existente (local SQLite ou o Postgres de produção), pelo mesmo motivo
-    documentado em sync_missing_indexes/sync_postgres_enum_types acima. Roda
-    uma vez no startup e só ACRESCENTA colunas que faltam - sempre NULLABLE
-    (ou com valor padrão), nunca quebrando linhas já existentes - operação
-    aditiva seguro para rodar a cada deploy, em qualquer dialeto.
+    (ex.: `AvailabilityUpdate.location`, `ConfigurationCode.status_disp`),
+    ela nunca aparece sozinha num banco já existente (local SQLite ou o
+    Postgres de produção), pelo mesmo motivo documentado em
+    sync_missing_indexes/sync_postgres_enum_types acima. Roda uma vez no
+    startup e só ACRESCENTA colunas que faltam - nunca quebrando linhas já
+    existentes - operação aditiva segura para rodar a cada deploy, em
+    qualquer dialeto.
 
-    Colunas NOT NULL sem default são puladas propositalmente (não há um
-    valor seguro para preencher linhas já existentes sem uma decisão de
-    negócio) - hoje nenhum modelo depende disso; se precisar no futuro,
-    seria um passo de migração manual, não automático."""
+    Colunas NOT NULL com um default Python "escalar" (`default=X`, não uma
+    função) levam um `DEFAULT` literal na própria DDL, pra popular linhas já
+    existentes (ex.: status_disp="INATIVO") - sem isso, tanto SQLite quanto
+    Postgres recusam acrescentar NOT NULL numa tabela não-vazia. Colunas NOT
+    NULL sem nenhum default utilizável (Python escalar OU server_default)
+    são puladas propositalmente (não há um valor seguro pra preencher linhas
+    já existentes sem uma decisão de negócio) - seria um passo de migração
+    manual, não automático."""
     inspector = inspect(engine)
     existing_tables = set(inspector.get_table_names())
     with engine.begin() as conn:
@@ -126,8 +157,13 @@ def sync_missing_columns() -> None:
             for column in table.columns:
                 if column.name in existing_columns:
                     continue
-                if not column.nullable and column.default is None and column.server_default is None:
+                default_literal = _column_default_literal(column)
+                if not column.nullable and default_literal is None and column.server_default is None:
                     continue
                 ddl_type = column.type.compile(dialect=engine.dialect)
+                default_clause = f" DEFAULT {default_literal}" if default_literal is not None else ""
                 nullability = "" if column.nullable else " NOT NULL"
-                conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {ddl_type}{nullability}'))
+                conn.execute(text(
+                    f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" '
+                    f'{ddl_type}{default_clause}{nullability}'
+                ))

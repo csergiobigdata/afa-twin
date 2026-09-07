@@ -51,6 +51,7 @@ export default function AuthorizedConfigurationsPage() {
   }, []);
   const [previewCodeId, setPreviewCodeId] = useState<number | "">("");
   const previewCode = codes.find((c) => c.id === previewCodeId) ?? null;
+  const [codeStatusFilter, setCodeStatusFilter] = useState<"" | "A" | "I">("");
   function symbolFor(equipment: string): string | undefined {
     return items.find((i) => i.equipment === equipment)?.symbol_svg;
   }
@@ -170,14 +171,30 @@ export default function AuthorizedConfigurationsPage() {
 
       <div className="card" style={{ padding: 18, marginTop: 18 }}>
         <h2 style={{ fontSize: 15.5, margin: "0 0 4px" }}>Códigos de Configuração</h2>
-        <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14, maxWidth: 640 }}>
+        <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 4, maxWidth: 640 }}>
           Combinações padronizadas de equipamento por estação (5 a 1), como o esquadrão já nomeia com um
-          código curto (ex.: "12", "21I"). Consulte a composição de qualquer código abaixo - no lançamento
-          manual de disponibilidade (Disponibilidade → Lançamento manual) é possível lançar um código
-          inteiro de uma vez. {codes.length} código(s) cadastrado(s).
+          código curto (ex.: "12", "21I"). Todos os {codes.length} códigos do manual de referência estão
+          cadastrados aqui para consulta; só os <strong>Ativos</strong> ({codes.filter((c) => c.status_disp === "A").length}
+          , marcados com bolinha vermelha no boletim vigente) aparecem como opção para lançar no
+          lançamento manual de disponibilidade.
+        </p>
+        <p style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14, maxWidth: 640 }}>
+          Os códigos <strong>Inativos</strong> têm o código em si conferido, mas não o detalhamento por
+          estação (não veio de linhas individuais como os Ativos) - por isso aparecem sem símbolo/estação
+          preenchida abaixo.
         </p>
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-start" }}>
           <div style={{ flex: "1 1 220px", maxWidth: 260 }}>
+            <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+              {(["", "A", "I"] as const).map((f) => (
+                <button
+                  key={f} type="button" className={`btn btn-sm ${codeStatusFilter === f ? "btn-primary" : "btn-outline"}`}
+                  onClick={() => setCodeStatusFilter(f)}
+                >
+                  {f === "" ? "Todos" : f === "A" ? "Ativos" : "Inativos"}
+                </button>
+              ))}
+            </div>
             <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>
               Selecione um código
             </label>
@@ -186,10 +203,19 @@ export default function AuthorizedConfigurationsPage() {
               style={{ width: "100%" }}
             >
               <option value="">— Selecione —</option>
-              {codes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+              {codes.filter((c) => !codeStatusFilter || c.status_disp === codeStatusFilter).map((c) => (
+                <option key={c.id} value={c.id}>{c.code} ({c.status_disp === "A" ? "Ativo" : "Inativo"})</option>
+              ))}
             </select>
           </div>
-          <ConfigurationDiagram code={previewCode} symbolFor={symbolFor} />
+          <div>
+            <ConfigurationDiagram code={previewCode} symbolFor={symbolFor} />
+            {previewCode && previewCode.status_disp === "I" && (
+              <p style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 8, maxWidth: 260, textAlign: "center" }}>
+                Código Inativo: não disponível para lançar; detalhamento por estação não conferido.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>

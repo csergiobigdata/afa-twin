@@ -798,7 +798,7 @@ def seed_authorized_configurations_if_empty(db: Session) -> None:
 
 # --------------------------------------------------------------------------
 # Códigos de Configuração - combinações padronizadas de equipamento por
-# estação (5, 4, 3, 2, 1), transcritas manualmente das 30 linhas do
+# estação (5, 4, 3, 2, 1), transcritas manualmente das 31 linhas do
 # documento de referência docs/"configurações da aeronave atual.pdf"
 # (cada linha do documento já veio como uma imagem própria, uma por
 # configuração, o que permitiu conferir cada estação individualmente em
@@ -807,6 +807,8 @@ def seed_authorized_configurations_if_empty(db: Session) -> None:
 # referência as define (podem vir a ser usadas por um código futuro). Os
 # nomes de equipamento usam o mesmo texto de _AUTHORIZED_CONFIG_SEED acima,
 # para o símbolo aparecer certo na tela (ver AuthorizedConfigSymbol.tsx).
+# Essas 31 são as únicas com bolinha vermelha (autorizadas/selecionáveis)
+# nesse documento - viram status_disp="A" (Ativo) logo abaixo.
 # --------------------------------------------------------------------------
 
 _CONFIGURATION_CODE_SEED: list[tuple[str, str | None, str | None, str | None, str | None, str | None]] = [
@@ -847,12 +849,65 @@ _CONFIGURATION_CODE_SEED: list[tuple[str, str | None, str | None, str | None, st
     ("54", None, "ALVO AÉREO NP-AV CAA", "BOMBA BLG-252", "ALVO AÉREO NP-AV CAA", None),
 ]
 
+# Códigos que também existem no manual de referência completo (docs/
+# CONFIGURAÇÕES AUTORIZADAS.pdf, Figura 5-8, folhas 2-8 - 119 códigos ao
+# todo) mas NÃO aparecem na tabela vigente acima (sem a marcação de bolinha
+# vermelha) - o código em si vem de texto real extraído do PDF (preciso),
+# mas o detalhamento por estação foi deliberadamente deixado em branco: as
+# folhas 2-8 desse manual não trazem cada linha como uma imagem própria
+# (diferente do documento acima), então ler o ícone de cada estação exigiria
+# reconhecer células pequenas numa tabela densa, sem a mesma conferência
+# linha a linha - risco de erro alto demais para um dado usado em decisão
+# de manutenção. Ficam com status_disp="I" (Inativo): cadastrados e
+# consultáveis (não é omitido do sistema), mas não aparecem como opção para
+# lançar no formulário (só o detalhamento vazio, sem símbolo). Se precisar
+# do detalhamento de algum desses no futuro, o caminho mais confiável é
+# exportar essas páginas no mesmo formato "uma imagem por linha" usado no
+# documento vigente.
+_CONFIGURATION_CODE_INACTIVE_ONLY = [
+    "0E", "0IE", "1E", "1IE", "2", "3", "4", "5", "6", "7", "7E", "8", "8E", "9", "9E",
+    "10", "10E", "11", "12E", "13E", "13IE", "14", "14E", "15", "15I", "15E", "15IE",
+    "16", "16I", "16E", "16IE", "17", "17E", "18", "19E", "20E", "21E", "21IE", "22", "22E", "23",
+    "24E", "25E", "26E", "27E", "27IE", "28", "28I", "29", "29I", "30",
+    "31E", "32E", "33E", "33IE", "34", "34E", "35", "35E", "36", "36I", "36E", "36IE",
+    "37", "37E", "38", "38E", "39", "39I", "39E", "39IE", "40E", "41E", "42E", "43E", "43IE",
+    "44", "45", "46", "47", "48", "49E", "50E", "51E", "51IE", "52E", "53", "54E",
+]
+
 
 def seed_configuration_codes_if_empty(db: Session) -> None:
-    if db.query(models.ConfigurationCode).count() > 0:
-        return
-    db.add_all([
-        models.ConfigurationCode(code=code, station_5=s5, station_4=s4, station_3=s3, station_2=s2, station_1=s1)
-        for code, s5, s4, s3, s2, s1 in _CONFIGURATION_CODE_SEED
-    ])
+    # Upsert por código (não só "se vazio"): instalações que já rodaram uma
+    # versão anterior deste seed (só os 31 códigos Ativos, sem
+    # _CONFIGURATION_CODE_INACTIVE_ONLY / status_disp) ficam com a tabela
+    # não-vazia, então um `count() > 0` simples nunca completaria o cadastro
+    # com os 88 códigos Inativos novos. Em vez disso, adiciona só os códigos
+    # que ainda não existem (comparação case-insensitive, mesmo padrão de
+    # `func.lower` usado no restante do app) - idempotente e seguro rodar de
+    # novo a qualquer momento, sem duplicar códigos já cadastrados.
+    existing_rows = {c.code.lower(): c for c in db.query(models.ConfigurationCode).all()}
+    to_add = []
+    for code, s5, s4, s3, s2, s1 in _CONFIGURATION_CODE_SEED:
+        if code.lower() not in existing_rows:
+            to_add.append(models.ConfigurationCode(
+                code=code, station_5=s5, station_4=s4, station_3=s3, station_2=s2, station_1=s1,
+                status_disp=models.ConfigDispStatus.ATIVO,
+            ))
+    for code in _CONFIGURATION_CODE_INACTIVE_ONLY:
+        if code.lower() not in existing_rows:
+            to_add.append(models.ConfigurationCode(code=code, status_disp=models.ConfigDispStatus.INATIVO))
+    if to_add:
+        db.add_all(to_add)
+
+    # Corrige status_disp de linhas que já existiam ANTES da coluna
+    # status_disp ser criada: `sync_missing_columns` (database.py) precisa
+    # de um DEFAULT para acrescentar a coluna NOT NULL numa tabela não-vazia
+    # via ALTER TABLE, e esse DEFAULT (Inativo) é aplicado a TODAS as linhas
+    # já existentes - inclusive as 31 que na verdade são Ativas (station
+    # data conferida). Reforça aqui, de novo, sempre que o seed roda -
+    # idempotente, não mexe em nada que já esteja correto.
+    active_codes = {code.lower() for code, *_ in _CONFIGURATION_CODE_SEED}
+    for row in existing_rows.values():
+        if row.code.lower() in active_codes and row.status_disp != models.ConfigDispStatus.ATIVO:
+            row.status_disp = models.ConfigDispStatus.ATIVO
+
     db.commit()
