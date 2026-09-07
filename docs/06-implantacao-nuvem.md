@@ -131,6 +131,13 @@ de alterações no código.
    `netlify.toml`).
 3. Deploy. Anote a URL pública (ex.: `https://afa-twin.netlify.app`).
 4. Volte ao Vercel (passo 4.2) e confirme que `AFA_TWIN_ALLOWED_ORIGINS` está com essa URL exata.
+5. **Removendo o selo "Powered by Netlify"**: é um elemento injetado pela própria hospedagem (plano
+   gratuito), não algo que existe no código deste repositório (`frontend/netlify.toml` não tem nenhuma
+   configuração relacionada) - por isso não pode ser removido editando o app. Para desativar: no painel
+   do site em [app.netlify.com](https://app.netlify.com), **Site configuration → General → Site details**
+   e desmarque a opção do selo (nome exato pode variar conforme a versão da interface do Netlify, ex.
+   "Netlify badge"/"Site badge"). Alternativamente, publicar num domínio próprio configurado no site
+   também costuma ocultá-lo.
 
 ## 5. Alternativa para o backend: Render/Railway/Fly com Docker (exige cartão)
 

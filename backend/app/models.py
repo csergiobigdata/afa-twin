@@ -87,7 +87,7 @@ class AvailabilityCode(str, enum.Enum):
 class PersonRole(str, enum.Enum):
     PILOTO = "Piloto"
     MECANICO = "Mecânico"
-    ENGENHEIRO = "Engenheiro"
+    ENGENHEIRO = "Engenheiro Aeronáutico"
     CIENTISTA = "Cientista"
     GESTOR = "Gestor / Responsável Técnico"
 
@@ -536,6 +536,38 @@ class AvailabilityUpdate(Base):
 
     aircraft: Mapped["Aircraft"] = relationship(back_populates="availability_updates")
     recorded_by: Mapped["Person | None"] = relationship()
+
+
+# --------------------------------------------------------------------------
+# Configurações Autorizadas para Aeronaves - cadastro mestre dos equipamentos/
+# cargas de asas e hardpoints que uma aeronave pode ostentar (pilones vazios,
+# armamento, lançadores, tanques externos, pods FLIR/casulo etc.), derivado
+# da tabela de símbolos do boletim de disponibilidade do esquadrão. Cada item
+# guarda seu próprio símbolo gráfico (SVG inline, pequeno o bastante para
+# caber numa coluna de tabela) e um status_disp ("A"/"I") que indica se ele
+# está atualmente autorizado a aparecer como opção no lançamento de
+# disponibilidade (ver routers/authorized_configs.py e AvailabilityPage) -
+# equipamentos descontinuados/proibidos ficam "I" sem precisar ser excluídos
+# (preservando o histórico de lançamentos antigos que os referenciam).
+# --------------------------------------------------------------------------
+
+class ConfigDispStatus(str, enum.Enum):
+    ATIVO = "A"
+    INATIVO = "I"
+
+
+class AuthorizedConfiguration(Base):
+    __tablename__ = "authorized_configurations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # Marcação SVG do símbolo (ver nota de validação/sanitização em
+    # schemas.py e components/AuthorizedConfigSymbol.tsx no front) - pequena
+    # o bastante para ficar embutida no próprio registro, sem precisar de
+    # upload/MediaAsset separado.
+    symbol_svg: Mapped[str] = mapped_column(Text)
+    equipment: Mapped[str] = mapped_column(String(200))
+    status_disp: Mapped[ConfigDispStatus] = mapped_column(SAEnum(ConfigDispStatus), default=ConfigDispStatus.INATIVO)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
 
 # --------------------------------------------------------------------------

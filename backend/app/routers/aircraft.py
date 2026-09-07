@@ -2,7 +2,7 @@ import mimetypes
 import os
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from .. import audit, models, schemas, compute, security, reliability
 from .. import notifications as notifications_service
@@ -74,6 +74,40 @@ def list_aircraft(db: Session = Depends(get_db)):
 @router.get("/{aircraft_id}", response_model=schemas.AircraftOut)
 def get_aircraft(aircraft_id: int, db: Session = Depends(get_db)):
     return _to_out(_get_or_404(db, aircraft_id))
+
+
+@router.get("/{aircraft_id}/detail", response_model=schemas.AircraftDetailBundle)
+def get_aircraft_detail(aircraft_id: int, db: Session = Depends(get_db)):
+    """Agrega, numa única resposta, tudo que a tela de detalhe de uma
+    aeronave (AircraftDetailPage) precisa: cadastro + componentes + ordens
+    de serviço + vínculos de pessoal (com a pessoa já embutida) + livro de
+    bordo. Antes eram 6 requisições HTTP independentes disparadas em
+    paralelo pelo front (aircraft, components, maintenance-orders,
+    assignments, people, flight-logs); em hospedagem "serverless" (backend
+    no Vercel - ver docs/06-implantacao-nuvem.md), requisições concorrentes
+    a uma função pouco usada podem cada uma pagar seu próprio "cold start" -
+    tornando 6 chamadas paralelas bem mais lentas na prática do que uma
+    única chamada equivalente, além do custo fixo (rede + autenticação) de
+    cada requisição HTTP se repetir 6 vezes. `GET /people` continua
+    separado (não é específico de uma aeronave; já fica com cache de
+    leitura de 15s reaproveitado entre navegações - ver frontend/src/api/
+    client.ts)."""
+    a = db.query(models.Aircraft).options(
+        selectinload(models.Aircraft.components),
+        selectinload(models.Aircraft.maintenance_orders),
+        selectinload(models.Aircraft.assignments).joinedload(models.Assignment.person),
+        selectinload(models.Aircraft.flight_logs),
+    ).filter(models.Aircraft.id == aircraft_id).first()
+    if not a:
+        raise HTTPException(404, "Aeronave não encontrada")
+
+    return schemas.AircraftDetailBundle(
+        aircraft=_to_out(a),
+        components=sorted(a.components, key=lambda c: c.name),
+        maintenance_orders=sorted(a.maintenance_orders, key=lambda o: o.opened_at, reverse=True),
+        assignments=a.assignments,
+        flight_logs=sorted(a.flight_logs, key=lambda f: f.date, reverse=True),
+    )
 
 
 @router.post("", response_model=schemas.AircraftOut, status_code=201)

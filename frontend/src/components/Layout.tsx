@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { to: "/pessoal", label: "Usuários", icon: "🎖️" },
   { to: "/protocolos", label: "Protocolos", icon: "📋" },
   { to: "/auditoria", label: "Auditoria", icon: "🕵️" },
+  { to: "/sobre", label: "Sobre", icon: "ℹ️" },
 ];
 
 export default function Layout() {
@@ -65,7 +66,7 @@ export default function Layout() {
               style={({ isActive }) => ({
                 display: "flex", alignItems: "center", gap: 12,
                 padding: "12px 16px", borderRadius: 10, textDecoration: "none",
-                color: isActive ? "#fff" : "var(--text-secondary)",
+                color: isActive ? "#fff" : "var(--side-nav-text)",
                 background: isActive ? "var(--fab-navy-900)" : "transparent",
                 fontWeight: 600, fontSize: 14.5,
               })}
@@ -74,9 +75,9 @@ export default function Layout() {
               {item.label}
             </NavLink>
           ))}
-          <Link to="/perfil" style={{ marginTop: "auto", padding: 16, fontSize: 11.5, color: "var(--text-secondary)", textDecoration: "none" }}>
+          <Link to="/perfil" style={{ marginTop: "auto", padding: 16, fontSize: 11.5, color: "var(--side-nav-text-secondary)", textDecoration: "none" }}>
             👤 Meu Perfil<br />
-            <strong style={{ color: "var(--text-primary)" }}>{personName}</strong><br />
+            <strong style={{ color: "var(--side-nav-text)" }}>{personName}</strong><br />
             {personRank ?? role}
           </Link>
         </nav>
@@ -123,7 +124,7 @@ export default function Layout() {
 }
 
 const sideNavStyle: CSSProperties = {
-  width: 220, flexShrink: 0, background: "var(--bg-surface)", borderRight: "1px solid var(--border-subtle)",
+  width: 220, flexShrink: 0, background: "var(--side-nav-bg)", borderRight: "1px solid var(--border-subtle)",
   padding: 14, flexDirection: "column", gap: 4, position: "sticky", top: 61, height: "calc(100dvh - 61px)",
 };
 

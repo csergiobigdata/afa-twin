@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 const SUB_TABS = [
   { to: "/aeronaves/cadastro", label: "Cadastro", icon: "📋", hint: "Lista administrativa: gerenciar, editar e excluir registros" },
   { to: "/aeronaves/pesquisa", label: "Pesquisa", icon: "🔍", hint: "Busca visual pelo modelo, com foto de cada aeronave" },
+  { to: "/aeronaves/configuracoes", label: "Configurações Autorizadas", icon: "⚙️", hint: "Equipamentos e cargas de asas/hardpoints autorizados por aeronave" },
 ];
 
 export default function AircraftSection() {

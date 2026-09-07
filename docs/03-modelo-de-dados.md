@@ -245,6 +245,7 @@ erDiagram
 | `LookupCategory` | Organização · Posto/Graduação/Cargo · Especialidade · Esquadrão/Unidade · Componente Associado (padrão) · Tipo de Intervalo de Manutenção · Categoria de Alerta de Manutenção Preventiva · Configuração de Disponibilidade (asas/hardpoints) — cada uma vira uma aba editável em Usuários → Cadastros Auxiliares (ou em Manutenção → Cadastro de Manutenção, para as três últimas) |
 | `AuditAction` | Criação · Alteração · Inativação · Reativação · Cancelamento |
 | `AvailabilityCode` | DI · DO · IN — código do boletim de linha de voo do esquadrão (módulo Atualização de Disponibilidade); ver nota abaixo |
+| `ConfigDispStatus` | A (Ativo) · I (Inativo) — status_disp de `AuthorizedConfiguration`; só itens "A" aparecem como opção selecionável no lançamento manual de disponibilidade |
 
 > **Nota sobre `organization` em `Person`**: deixou de ser um enum fixo e passou a ser um campo de
 > texto sugerido pelo catálogo `LookupItem` da categoria Organização — assim, novas organizações
@@ -335,6 +336,30 @@ classificar como a vida de um componente é controlada.
     usa apenas a **última** atualização de cada aeronave; os totais de configuração (LISO/ADA/EEXD/
     VENTRAL/CAA) somam só as aeronaves DI/DO (não as IN), e uma aeronave com `has_subalares=true` e
     sem `configuration` explícita não entra no total "LISO" (ver `backend/app/availability.py`).
+
+14. **Configurações Autorizadas para Aeronaves é o cadastro mestre dos equipamentos/cargas de asas e
+    hardpoints** (`AuthorizedConfiguration`: `id`, `symbol_svg`, `equipment`, `status_disp`), derivado da
+    tabela de símbolos do boletim de disponibilidade do esquadrão (pilones vazios, armamento,
+    lançadores, tanques externos, pods FLIR/casulo etc.). Cada item guarda seu próprio símbolo gráfico
+    como marcação SVG embutida no registro (`symbol_svg`, validada no backend — deve começar em `<svg`,
+    terminar em `</svg>` e não conter script/handlers — e sanitizada de novo no front antes de
+    `dangerouslySetInnerHTML`, ver `components/AuthorizedConfigSymbol.tsx`), em vez de um upload
+    `MediaAsset` separado, por serem ícones vetoriais pequenos e editáveis como texto. Apenas os itens
+    com `status_disp = "A"` (Ativo) aparecem como opção do campo "Configuração" no lançamento manual
+    (por aeronave) de `AvailabilityUpdate` — os demais ficam "I" (Inativo) sem serem excluídos,
+    preservando o histórico de lançamentos antigos que os referenciam. Seed inicial em
+    `backend/app/seed.py::seed_authorized_configurations_if_empty` reproduz as 18 linhas da tabela de
+    referência do esquadrão (12 ativas/marcadas com bolinha vermelha na origem, 6 inativas) - os
+    símbolos são representações vetoriais simplificadas/ilustrativas, não um fac-símile pixel a pixel do
+    documento original. O cadastro não tem criação manual pela interface: o `status_disp` de todo o
+    catálogo é atualizado em lote pelo botão "Carregar configurações autorizadas" (Aeronaves →
+    Configurações Autorizadas), que recebe um PDF de referência (ex.: uma Ordem Técnica/OTFN da
+    aeronave, como `docs/CONFIGURAÇÕES AUTORIZADAS.pdf`) - rejeitado (HTTP 400, "documento inválido/não
+    autorizado") se o texto não contiver a sigla "OTFN", ou se não houver uma página com o título
+    "Configurações Autorizadas" e a tabela de símbolos. A extração usa a camada de texto real do PDF
+    (não faz OCR nem analisa pixels/cores): cada `equipment` do cadastro atual é procurado nesse texto
+    (normalizando variações de hífen/travessão e espaçamento) - encontrado vira "A", ausente vira "I".
+    Ver `backend/app/config_pdf.py` e `routers/authorized_configs.py::load_from_pdf`.
 
 ## 4. Caminho de migração para nuvem
 

@@ -1,0 +1,31 @@
+ATUALIZAÇÃO DE DISPONIBILIDADE
+
+5906 - DO (EEXD TREM DE POUSO)
+5914 - DI
+5919 - DI (SUBALARES)
+5937 - DO (EEXD - MOTOR)
+5941 - IN
+5945 - DO (CAA) (não aciona com UFT à diesel)
+5946 - DI (CAA)
+5949 - DI
+5952 - DI ADA
+5954 - DI
+5956 - IN
+5957 - DI
+5962 - IN
+
+
+Totais:
+DI: 7
+DO: 3
+IN: 3
+
+Configuração DI/DO
+ADA: 1
+EEXD: 2
+LISO: 4
+VENTRAL: 0
+CAA: 2
+
+
+SUBALARES: 1 (fora o ADA)

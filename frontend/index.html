@@ -11,6 +11,21 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="/icons/icon.svg" />
     <title>AFA-TWIN · Manutenção Aeronáutica</title>
+    <script>
+      // Aplica o modo dia/noturno salvo (ver src/theme/ThemeContext.tsx)
+      // ANTES da primeira renderização, evitando o "flash" de um tema
+      // trocando para o outro assim que o React monta. Padrão "dark" (modo
+      // noturno) quando não há preferência salva, reproduzindo a aparência
+      // histórica do app em vez de seguir o tema do sistema operacional.
+      (function () {
+        var theme = "dark";
+        try {
+          var stored = localStorage.getItem("afa_twin_theme");
+          if (stored === "light" || stored === "dark") theme = stored;
+        } catch (e) { /* ambientes sem localStorage (ex.: modo privado) */ }
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

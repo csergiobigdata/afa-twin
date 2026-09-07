@@ -9,7 +9,7 @@ export type AircraftStatus =
 // então o tipo aceita qualquer string cadastrada, com as opções conhecidas como sugestão.
 export type Organization = string;
 
-export type PersonRole = "Piloto" | "Mecânico" | "Engenheiro" | "Cientista" | "Gestor / Responsável Técnico";
+export type PersonRole = "Piloto" | "Mecânico" | "Engenheiro Aeronáutico" | "Cientista" | "Gestor / Responsável Técnico";
 
 export type ComponentCategory =
   | "Motor / Grupo Motopropulsor" | "Trem de Pouso" | "Sistema Hidráulico" | "Aviônicos"
@@ -65,6 +65,17 @@ export interface Aircraft {
   risk_level?: string | null;
   availability_pct?: number | null;
   reliability_pct?: number | null;
+}
+
+// Resposta agregada de GET /aircraft/{id}/detail (ver nota de performance em
+// backend/app/routers/aircraft.py e pages/AircraftDetailPage.tsx) - reúne,
+// numa única chamada, tudo que a tela de detalhe de uma aeronave precisa.
+export interface AircraftDetailBundle {
+  aircraft: Aircraft;
+  components: Component[];
+  maintenance_orders: MaintenanceOrder[];
+  assignments: Assignment[];
+  flight_logs: FlightLog[];
 }
 
 export interface Component {
@@ -415,6 +426,39 @@ export interface PendingPartAlert {
   severity: string;
   detail: string;
   suggested_recipients: Person[];
+}
+
+// ---------------- Configurações Autorizadas para Aeronaves ----------------
+// Cadastro mestre dos equipamentos/cargas de asas e hardpoints (pilones
+// vazios, armamento, lançadores, tanques externos, pods etc.), derivado da
+// tabela de símbolos do boletim de disponibilidade do esquadrão. Ver nota em
+// backend/app/models.py::AuthorizedConfiguration.
+export type ConfigDispStatus = "A" | "I";
+
+export interface AuthorizedConfiguration {
+  id: number;
+  symbol_svg: string;
+  equipment: string;
+  status_disp: ConfigDispStatus;
+  created_at: string;
+}
+
+export interface AuthorizedConfigurationCreate {
+  symbol_svg: string;
+  equipment: string;
+  status_disp: ConfigDispStatus;
+}
+
+// Resultado de POST /authorized-configurations/load-from-pdf (ver
+// backend/app/config_pdf.py) - atualização em lote do status_disp a partir
+// do texto de um PDF de Configurações Autorizadas validado (contém "OTFN"
+// e a página com a tabela de símbolos).
+export interface AuthorizedConfigPdfLoadResult {
+  items_checked: number;
+  active_count: number;
+  inactive_count: number;
+  note: string;
+  items: AuthorizedConfiguration[];
 }
 
 export type LookupCategory =

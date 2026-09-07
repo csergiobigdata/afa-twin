@@ -5,10 +5,9 @@ import { AfaTwinMark } from "../components/Layout";
 import AircraftSilhouette from "../components/AircraftSilhouette";
 
 const DEMO_USERS = [
-  { user: "gestor", label: "Gestor / Responsável Técnico" },
   { user: "piloto", label: "Piloto" },
   { user: "mecanico", label: "Mecânico" },
-  { user: "engenheiro", label: "Engenheiro" },
+  { user: "engenheiro", label: "Engenheiro Aeronáutico" },
   { user: "cientista", label: "Cientista (P&D)" },
 ];
 
@@ -96,7 +95,7 @@ export default function LoginPage() {
 
           <div style={{ marginTop: 24, paddingTop: 18, borderTop: "1px solid var(--border-subtle)" }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 8 }}>
-              CONTAS DE DEMONSTRAÇÃO (piloto de testes)
+              Contas de Usuários - Demonstração
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {DEMO_USERS.map((u) => (

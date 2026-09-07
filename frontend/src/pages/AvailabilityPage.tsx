@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type {
-  Aircraft, AvailabilityBoard, AvailabilityCode, AvailabilityUpdate, AvailabilityUpdateCreate,
+  Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityCode, AvailabilityUpdate,
+  AvailabilityUpdateCreate,
 } from "../api/types";
 import { useLookupValues } from "../api/useLookup";
 import { useAuth } from "../auth/AuthContext";
 import { ROLE_PERMISSIONS } from "../auth/AuthContext";
+import AuthorizedConfigSelect from "../components/AuthorizedConfigSelect";
+import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
 import { AvailabilityCodeBadge } from "../components/Badges";
 import SplashScreen from "../components/SplashScreen";
 import StatCard from "../components/StatCard";
@@ -23,6 +26,19 @@ function formatDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+/** dd/mm/yyyy hh:mm:ss em horário local do navegador, a partir de um
+ * timestamp ISO (ex.: `created_at`) - formato fixo pedido para a coluna
+ * "Data/Hora" de Configurações Autorizadas para a Aeronave, em vez de
+ * depender de `toLocaleString` (cujo formato varia por navegador/SO). */
+function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+// Aeronave selecionada por padrão ao abrir o módulo, no lançamento manual.
+const DEFAULT_MANUAL_AIRCRAFT_TAIL = "FAB 5962";
+
 export default function AvailabilityPage() {
   const { role } = useAuth();
   const canManage = ROLE_PERMISSIONS.canManageRecords(role);
@@ -30,15 +46,27 @@ export default function AvailabilityPage() {
 
   const [board, setBoard] = useState<AvailabilityBoard | null>(null);
   const [fleet, setFleet] = useState<Aircraft[]>([]);
-  const [recent, setRecent] = useState<AvailabilityUpdate[]>([]);
   const [loading, setLoading] = useState(true);
+  // Configurações Autorizadas (cadastro completo) - as ativas (status_disp =
+  // "A") populam o seletor de "Configuração" do lançamento manual; o
+  // conjunto completo serve para achar o símbolo de um lançamento antigo
+  // mesmo que o equipamento tenha sido inativado depois (ver Aeronaves →
+  // Configurações Autorizadas).
+  const [allConfigs, setAllConfigs] = useState<AuthorizedConfiguration[]>([]);
+  useEffect(() => {
+    api.get<AuthorizedConfiguration[]>("/authorized-configurations")
+      .then(setAllConfigs).catch(() => setAllConfigs([]));
+  }, []);
+  const activeConfigs = useMemo(() => allConfigs.filter((c) => c.status_disp === "A"), [allConfigs]);
+  function configSymbol(equipment: string | null | undefined): string | undefined {
+    return equipment ? allConfigs.find((c) => c.equipment === equipment)?.symbol_svg : undefined;
+  }
 
   function reload() {
     Promise.all([
       api.get<AvailabilityBoard>("/availability-updates/board"),
       api.get<Aircraft[]>("/aircraft"),
-      api.get<AvailabilityUpdate[]>("/availability-updates?limit=20"),
-    ]).then(([b, f, r]) => { setBoard(b); setFleet(f); setRecent(r); }).finally(() => setLoading(false));
+    ]).then(([b, f]) => { setBoard(b); setFleet(f); }).finally(() => setLoading(false));
   }
   useEffect(reload, []);
 
@@ -97,7 +125,7 @@ export default function AvailabilityPage() {
     }
   }
 
-  // ---------------- Lançamento manual (uma aeronave por vez) ----------------
+  // ---------------- Lançamento manual (por aeronave) ----------------
   const [manualAircraftId, setManualAircraftId] = useState("");
   const [manualCode, setManualCode] = useState<AvailabilityCode>("DI");
   const [manualConfig, setManualConfig] = useState("");
@@ -105,6 +133,32 @@ export default function AvailabilityPage() {
   const [manualReason, setManualReason] = useState("");
   const [manualDate, setManualDate] = useState(todayIso());
   const [manualSaving, setManualSaving] = useState(false);
+
+  // Valor padrão ao abrir o módulo: pré-seleciona a FAB 5962 assim que a
+  // frota carrega, sem sobrescrever uma escolha manual do usuário depois.
+  useEffect(() => {
+    if (manualAircraftId || fleet.length === 0) return;
+    const def = fleet.find((a) => a.tail_number === DEFAULT_MANUAL_AIRCRAFT_TAIL);
+    if (def) setManualAircraftId(String(def.id));
+  }, [fleet, manualAircraftId]);
+
+  // Configurações atualmente lançadas para a aeronave selecionada no
+  // lançamento manual (em vez de um histórico recente genérico de toda a
+  // frota) - refeita a cada troca de aeronave e a cada `reload()` (que troca
+  // a identidade de `board`), para refletir imediatamente um lançamento ou
+  // remoção.
+  const [selectedHistory, setSelectedHistory] = useState<AvailabilityUpdate[]>([]);
+  const [selectedHistoryLoading, setSelectedHistoryLoading] = useState(false);
+  useEffect(() => {
+    if (!manualAircraftId) {
+      setSelectedHistory([]);
+      return;
+    }
+    setSelectedHistoryLoading(true);
+    api.get<AvailabilityUpdate[]>(`/availability-updates?aircraft_id=${manualAircraftId}&limit=50`)
+      .then(setSelectedHistory)
+      .finally(() => setSelectedHistoryLoading(false));
+  }, [manualAircraftId, board]);
 
   async function submitManual(e: FormEvent) {
     e.preventDefault();
@@ -301,8 +355,9 @@ export default function AvailabilityPage() {
       )}
 
       {canManage && (
+        <>
         <div className="card" style={{ padding: 18, marginBottom: 18 }}>
-          <h2 style={{ fontSize: 15.5, margin: "0 0 12px" }}>Lançamento manual (uma aeronave)</h2>
+          <h2 style={{ fontSize: 15.5, margin: "0 0 12px" }}>Lançamento manual (por aeronave)</h2>
           <form onSubmit={submitManual} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
             <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
               Aeronave
@@ -319,10 +374,7 @@ export default function AvailabilityPage() {
             </label>
             <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
               Configuração
-              <input list="availability-config-options-manual" value={manualConfig} onChange={(e) => setManualConfig(e.target.value)} style={{ maxWidth: 130 }} />
-              <datalist id="availability-config-options-manual">
-                {configOptions.map((c) => <option key={c} value={c} />)}
-              </datalist>
+              <AuthorizedConfigSelect options={activeConfigs} value={manualConfig} onChange={setManualConfig} />
             </label>
             <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, paddingBottom: 8 }}>
               <input type="checkbox" checked={manualSubalares} onChange={(e) => setManualSubalares(e.target.checked)} /> Subalares
@@ -336,34 +388,61 @@ export default function AvailabilityPage() {
               <input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} style={{ maxWidth: 150 }} />
             </label>
             <button type="submit" className="btn btn-primary btn-sm" disabled={manualSaving || !manualAircraftId}>
-              {manualSaving ? "Salvando…" : "+ Lançar"}
+              {manualSaving ? "Salvando…" : "+ Adicionar"}
             </button>
           </form>
         </div>
-      )}
 
-      <div className="card" style={{ padding: 18 }}>
-        <h2 style={{ fontSize: 15.5, margin: "0 0 12px" }}>Histórico recente</h2>
-        <div className="scroll-x">
-          <table>
-            <thead><tr><th>Aeronave</th><th>Código</th><th>Configuração</th><th>Subalares</th><th>Motivo</th><th>Data</th><th>Registrado por</th></tr></thead>
-            <tbody>
-              {recent.map((u) => (
-                <tr key={u.id}>
-                  <td style={{ fontWeight: 700 }}>{u.aircraft_tail_number}</td>
-                  <td><AvailabilityCodeBadge code={u.code} /></td>
-                  <td style={{ fontSize: 12.5 }}>{u.configuration ?? "LISO"}</td>
-                  <td style={{ fontSize: 12.5 }}>{u.has_subalares ? "Sim" : "—"}</td>
-                  <td style={{ fontSize: 12.5 }}>{u.reason ?? "—"}</td>
-                  <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{formatDate(u.report_date)}</td>
-                  <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{u.recorded_by_name ?? "—"}</td>
-                </tr>
-              ))}
-              {recent.length === 0 && <tr><td colSpan={7} style={{ color: "var(--text-secondary)" }}>Nenhum lançamento registrado ainda.</td></tr>}
-            </tbody>
-          </table>
+        <div className="card" style={{ padding: 18, marginBottom: 18 }}>
+          <h2 style={{ fontSize: 15.5, margin: "0 0 2px" }}>
+            Configurações Autorizadas para a Aeronave
+            {manualAircraftId && (() => {
+              const a = fleet.find((x) => x.id === Number(manualAircraftId));
+              return a ? ` — ${a.tail_number} · ${a.model}` : "";
+            })()}
+          </h2>
+          <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 0, marginBottom: 12 }}>
+            Lançamentos de disponibilidade da aeronave selecionada em "Lançamento manual (por aeronave)" acima.
+          </p>
+          {!manualAircraftId ? (
+            <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+              Selecione uma aeronave no lançamento manual acima para ver suas configurações lançadas.
+            </p>
+          ) : selectedHistoryLoading ? (
+            <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Carregando…</p>
+          ) : (
+            <div className="scroll-x">
+              <table>
+                <thead>
+                  <tr><th></th><th>Código</th><th>Configuração</th><th>Subalares</th><th>Motivo/Obs</th><th>Usuário</th><th>Data/Hora</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {selectedHistory.map((u) => (
+                    <tr key={u.id}>
+                      <td>
+                        {configSymbol(u.configuration) && <AuthorizedConfigSymbol svg={configSymbol(u.configuration)!} size={20} />}
+                      </td>
+                      <td><AvailabilityCodeBadge code={u.code} /></td>
+                      <td style={{ fontSize: 12.5 }}>{u.configuration ?? "LISO"}</td>
+                      <td style={{ fontSize: 12.5 }}>{u.has_subalares ? "Sim" : "—"}</td>
+                      <td style={{ fontSize: 12.5 }}>{u.reason ?? "—"}</td>
+                      <td style={{ fontSize: 12.5 }}>{u.recorded_by_name ?? "—"}</td>
+                      <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{formatDateTime(u.created_at)}</td>
+                      <td>
+                        <button className="btn btn-outline btn-sm" onClick={() => removeUpdate(u.id)}>Remover</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {selectedHistory.length === 0 && (
+                    <tr><td colSpan={8} style={{ color: "var(--text-secondary)" }}>Nenhuma configuração lançada para esta aeronave ainda.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

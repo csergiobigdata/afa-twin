@@ -9,6 +9,7 @@ import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
 from .database import Base, engine, SessionLocal, sync_postgres_enum_types, sync_missing_indexes
@@ -16,7 +17,7 @@ from . import seed
 from .routers import (
     aircraft, people, components, assignments, maintenance, checklists, flightlogs,
     dashboard, auth, inspections, diagnostics, planning, notifications, groups,
-    lookups, audit, media, availability, admin,
+    lookups, audit, media, availability, admin, authorized_configs,
 )
 
 app = FastAPI(
@@ -42,6 +43,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Compacta respostas JSON acima de 500 bytes (gzip) - a lista de frota, o
+# resumo do painel e o pacote de detalhe de aeronave são textuais/repetitivos
+# (nomes de campo, enums) e comprimem bem; reduz o tempo de download em
+# conexões mais lentas (ex.: tablets em Wi-Fi de campo, ver docs/05-guia-
+# instalacao-execucao.md) sem exigir nenhuma mudança no cliente HTTP (fetch descompacta
+# automaticamente).
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 # Camada opcional extra de restrição de acesso ("defesa em profundidade"),
 # desligada por padrão. O controle de acesso principal já é o login (só o
@@ -90,6 +99,7 @@ def on_startup():
     db = SessionLocal()
     try:
         seed.seed_if_empty(db)
+        seed.seed_authorized_configurations_if_empty(db)
     finally:
         db.close()
 
@@ -113,6 +123,7 @@ app.include_router(audit.router)
 app.include_router(media.router)
 app.include_router(availability.router)
 app.include_router(admin.router)
+app.include_router(authorized_configs.router)
 app.include_router(dashboard.router)
 
 

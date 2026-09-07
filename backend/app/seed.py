@@ -668,3 +668,129 @@ def seed_if_empty(db: Session) -> None:
         ),
     ])
     db.commit()
+
+
+# --------------------------------------------------------------------------
+# Configurações Autorizadas para Aeronaves - tabela de símbolos do boletim de
+# disponibilidade do esquadrão (asas/hardpoints: pilones vazios, armamento,
+# lançadores, tanques externos, pods etc.). Os símbolos abaixo são
+# representações vetoriais simplificadas/ilustrativas dos ícones originais
+# da tabela de referência (não são um fac-símile pixel a pixel do documento
+# de origem) - suficientes para identificar cada item numa lista/seleção.
+# Status "A" (Ativo) reproduz a marcação de bolinha vermelha da tabela de
+# origem; os demais entram como "I" (Inativo), mantendo o cadastro completo
+# e permitindo reativação futura sem recriar o item.
+# --------------------------------------------------------------------------
+
+def _svg(inner: str, *, stroke: bool = True) -> str:
+    attrs = 'fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"' if stroke else 'fill="currentColor"'
+    return f'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {attrs}>{inner}</svg>'
+
+
+_AUTHORIZED_CONFIG_SEED: list[tuple[str, str, "models.ConfigDispStatus"]] = [
+    (
+        _svg('<line x1="6" y1="6" x2="18" y2="6"/><line x1="12" y1="6" x2="12" y2="15"/><ellipse cx="12" cy="18" rx="5" ry="3"/>'),
+        "PILONE SUBALAR VAZIO", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<line x1="4" y1="6" x2="20" y2="6"/><line x1="9" y1="6" x2="9" y2="14"/><line x1="15" y1="6" x2="15" y2="14"/>'
+             '<ellipse cx="9" cy="17" rx="3.4" ry="2.4"/><ellipse cx="15" cy="17" rx="3.4" ry="2.4"/>'),
+        "PILONE VENTRAL VAZIO", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<rect x="3" y="10" width="14" height="4" rx="1"/><rect x="15" y="9" width="6" height="2"/>'
+             '<rect x="6" y="14" width="3" height="4"/><rect x="10" y="6" width="2" height="4"/>', stroke=False),
+        "METRALHADORA .50", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<circle cx="12" cy="12" r="7"/>'),
+        "BOMBA BAFG-120", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<circle cx="12" cy="12" r="7"/>', stroke=False),
+        "BOMBA BAFG-230", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="3.2"/>'),
+        "BOMBA BINC-300", models.ConfigDispStatus.INATIVO,
+    ),
+    (
+        _svg('<circle cx="12" cy="12" r="7"/><path d="M12 7v10M7 12h10"/>'),
+        "BOMBA BLG-252", models.ConfigDispStatus.INATIVO,
+    ),
+    (
+        _svg(
+            '<circle cx="12" cy="12" r="7"/>'
+            '<circle cx="9" cy="9" r="0.9" fill="currentColor" stroke="none"/><circle cx="12" cy="9" r="0.9" fill="currentColor" stroke="none"/>'
+            '<circle cx="15" cy="9" r="0.9" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="0.9" fill="currentColor" stroke="none"/>'
+            '<circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="0.9" fill="currentColor" stroke="none"/>'
+            '<circle cx="9" cy="15" r="0.9" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r="0.9" fill="currentColor" stroke="none"/>'
+            '<circle cx="15" cy="15" r="0.9" fill="currentColor" stroke="none"/>'
+        ),
+        "LANÇADOR DE FOGUETES 70 X 19 (EQ-LMF-70/19)", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg(
+            '<circle cx="12" cy="12" r="7"/>'
+            '<circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>'
+            '<circle cx="12" cy="7.3" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="9.6" r="1" fill="currentColor" stroke="none"/>'
+            '<circle cx="16" cy="14.4" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="16.7" r="1" fill="currentColor" stroke="none"/>'
+            '<circle cx="8" cy="14.4" r="1" fill="currentColor" stroke="none"/><circle cx="8" cy="9.6" r="1" fill="currentColor" stroke="none"/>'
+        ),
+        "LANÇADOR DE FOGUETES 70 X 7 (EQ-LMF-70/7 AP)", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<rect x="3" y="10" width="18" height="4" rx="2"/><line x1="7" y1="14" x2="6" y2="18"/>'
+             '<line x1="17" y1="14" x2="18" y2="18"/><line x1="6" y1="10" x2="6" y2="7"/>'),
+        "LANÇADOR - SUU-20 (SOMENTE 6 BOMBAS BEX11)", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>'),
+        "ALVO AÉREO NP-AV CAA", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<line x1="4" y1="19" x2="20" y2="5"/><ellipse cx="12" cy="12" rx="5" ry="2" transform="rotate(-40 12 12)"/>'),
+        "MÍSSIL MAA-1 IR + ADAPTADOR + LANÇADOR", models.ConfigDispStatus.INATIVO,
+    ),
+    (
+        _svg('<rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="4.2"/>'
+             '<circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/>'),
+        "FLIR", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<circle cx="12" cy="12" r="7"/><path d="M12 7v10M8.3 8.9l7.4 6.2M15.7 8.9l-7.4 6.2"/>'),
+        "CASULO LOGÍSTICO", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<ellipse cx="12" cy="12" rx="9" ry="3.6"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>'),
+        "TANQUE EXTERNO DE COMBUSTÍVEL", models.ConfigDispStatus.ATIVO,
+    ),
+    (
+        _svg('<rect x="3" y="5" width="18" height="14" rx="3"/>'
+             '<text x="12" y="16" font-size="9" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="Arial, sans-serif">E</text>'),
+        "PILONES EXTERNOS (E)", models.ConfigDispStatus.INATIVO,
+    ),
+    (
+        _svg('<rect x="3" y="5" width="18" height="14" rx="3"/>'
+             '<text x="12" y="16" font-size="9" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="Arial, sans-serif">I</text>'),
+        "PILONES INTERNOS (I)", models.ConfigDispStatus.INATIVO,
+    ),
+    (
+        _svg('<rect x="3" y="5" width="18" height="14" rx="3"/>'
+             '<text x="12" y="16" font-size="7" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="Arial, sans-serif">IE</text>'),
+        "PILONES INTERNOS E EXTERNOS (IE)", models.ConfigDispStatus.INATIVO,
+    ),
+]
+
+
+def seed_authorized_configurations_if_empty(db: Session) -> None:
+    """Roda de forma independente de `seed_if_empty` (própria checagem de
+    tabela vazia) para alimentar o cadastro mesmo em bancos já existentes que
+    tenham sido criados antes deste cadastro existir."""
+    if db.query(models.AuthorizedConfiguration).count() > 0:
+        return
+    db.add_all([
+        models.AuthorizedConfiguration(symbol_svg=svg, equipment=equipment, status_disp=status)
+        for svg, equipment, status in _AUTHORIZED_CONFIG_SEED
+    ])
+    db.commit()

@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
+import { ThemeProvider } from "./theme/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import LoginPage from "./pages/LoginPage";
@@ -23,51 +24,57 @@ import DiagnosticsPage from "./pages/DiagnosticsPage";
 import PlanningPage from "./pages/PlanningPage";
 import AvailabilityPage from "./pages/AvailabilityPage";
 import AuditPage from "./pages/AuditPage";
+import AuthorizedConfigurationsPage from "./pages/AuthorizedConfigurationsPage";
+import AboutPage from "./pages/AboutPage";
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/aeronaves" element={<AircraftSection />}>
-              <Route index element={<Navigate to="cadastro" replace />} />
-              <Route path="cadastro" element={<AircraftListPage />} />
-              <Route path="pesquisa" element={<AircraftSearchPage />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/aeronaves" element={<AircraftSection />}>
+                <Route index element={<Navigate to="cadastro" replace />} />
+                <Route path="cadastro" element={<AircraftListPage />} />
+                <Route path="pesquisa" element={<AircraftSearchPage />} />
+                <Route path="configuracoes" element={<AuthorizedConfigurationsPage />} />
+              </Route>
+              <Route path="/aeronaves/novo" element={<AircraftFormPage mode="create" />} />
+              <Route path="/aeronaves/:id" element={<AircraftDetailPage />} />
+              <Route path="/aeronaves/:id/editar" element={<AircraftFormPage mode="edit" />} />
+              <Route path="/perfil" element={<MyProfilePage />} />
+              <Route path="/pessoal" element={<PeopleSection />}>
+                <Route index element={<Navigate to="usuarios" replace />} />
+                <Route path="usuarios" element={<PeoplePage />} />
+                <Route path="grupos" element={<GroupsPage />} />
+                <Route path="cadastros" element={<LookupsPage />} />
+              </Route>
+              <Route path="/manutencao" element={<MaintenanceSection />}>
+                <Route index element={<Navigate to="ordens" replace />} />
+                <Route path="ordens" element={<MaintenancePage />} />
+                <Route path="cadastro" element={<MaintenanceCatalogPage />} />
+              </Route>
+              <Route path="/manutencao/nova" element={<MaintenanceFormPage />} />
+              <Route path="/manutencao/:id" element={<MaintenanceFormPage />} />
+              <Route path="/diagnostico" element={<DiagnosticsPage />} />
+              <Route path="/planejamento" element={<PlanningPage />} />
+              <Route path="/disponibilidade" element={<AvailabilityPage />} />
+              <Route path="/protocolos" element={<ChecklistsPage />} />
+              <Route path="/auditoria" element={<AuditPage />} />
+              <Route path="/sobre" element={<AboutPage />} />
             </Route>
-            <Route path="/aeronaves/novo" element={<AircraftFormPage mode="create" />} />
-            <Route path="/aeronaves/:id" element={<AircraftDetailPage />} />
-            <Route path="/aeronaves/:id/editar" element={<AircraftFormPage mode="edit" />} />
-            <Route path="/perfil" element={<MyProfilePage />} />
-            <Route path="/pessoal" element={<PeopleSection />}>
-              <Route index element={<Navigate to="usuarios" replace />} />
-              <Route path="usuarios" element={<PeoplePage />} />
-              <Route path="grupos" element={<GroupsPage />} />
-              <Route path="cadastros" element={<LookupsPage />} />
-            </Route>
-            <Route path="/manutencao" element={<MaintenanceSection />}>
-              <Route index element={<Navigate to="ordens" replace />} />
-              <Route path="ordens" element={<MaintenancePage />} />
-              <Route path="cadastro" element={<MaintenanceCatalogPage />} />
-            </Route>
-            <Route path="/manutencao/nova" element={<MaintenanceFormPage />} />
-            <Route path="/manutencao/:id" element={<MaintenanceFormPage />} />
-            <Route path="/diagnostico" element={<DiagnosticsPage />} />
-            <Route path="/planejamento" element={<PlanningPage />} />
-            <Route path="/disponibilidade" element={<AvailabilityPage />} />
-            <Route path="/protocolos" element={<ChecklistsPage />} />
-            <Route path="/auditoria" element={<AuditPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

@@ -4,14 +4,21 @@ from __future__ import annotations
 import datetime as dt
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from .models import (
     AircraftCategory, AircraftStatus, PersonRole, ComponentCategory,
     MonitoringType, Criticality, MaintenanceType, OrderStatus, AssignmentRole,
     RiskLevel, DefectType, NotificationChannel, NotificationReason, NotificationStatus,
-    LookupCategory, AuditAction, AvailabilityCode,
+    LookupCategory, AuditAction, AvailabilityCode, ConfigDispStatus,
 )
+
+# Palavras/trechos que nunca devem aparecer num SVG de símbolo aceito pela
+# API (defesa em profundidade contra XSS via o campo símbolo, que é
+# renderizado como HTML bruto no front - ver AuthorizedConfigSymbol.tsx).
+# Não é um sanitizador completo (não substitui uma allowlist de tags), mas
+# barra os vetores óbvios de execução de script embutidos num SVG.
+_SVG_DANGEROUS_PATTERNS = ("<script", "javascript:", "onload=", "onerror=", "onclick=", "<foreignobject", "<iframe")
 
 
 class ORMModel(BaseModel):
@@ -81,6 +88,18 @@ class AircraftOut(AircraftBase, ORMModel):
     risk_level: Optional[str] = None
     availability_pct: Optional[float] = None
     reliability_pct: Optional[float] = None
+
+
+class AircraftDetailBundle(BaseModel):
+    """Agrega, numa única resposta, tudo que a tela de detalhe de uma
+    aeronave precisa (cadastro + componentes + ordens de serviço + vínculos
+    de pessoal + livro de bordo) - ver GET /aircraft/{id}/detail e a nota de
+    performance em frontend/src/pages/AircraftDetailPage.tsx."""
+    aircraft: AircraftOut
+    components: list["ComponentOut"]
+    maintenance_orders: list["MaintenanceOrderOut"]
+    assignments: list["AssignmentOut"]
+    flight_logs: list["FlightLogOut"]
 
 
 # ---------------- Component ----------------
@@ -617,6 +636,56 @@ class LookupItemOut(ORMModel):
     value: str
     active: bool
     created_at: dt.datetime
+
+
+# ---------------- Configurações Autorizadas para Aeronaves ----------------
+
+def _validate_symbol_svg(value: str) -> str:
+    value = value.strip()
+    if len(value) > 20_000:
+        raise ValueError("Símbolo excede o tamanho máximo permitido.")
+    lowered = value.lower()
+    if not lowered.startswith("<svg") or not lowered.endswith("</svg>"):
+        raise ValueError("O símbolo deve ser uma marcação SVG (iniciando em <svg> e terminando em </svg>).")
+    if any(pattern in lowered for pattern in _SVG_DANGEROUS_PATTERNS):
+        raise ValueError("O símbolo contém conteúdo não permitido (script/handler de evento).")
+    return value
+
+
+class AuthorizedConfigurationCreate(BaseModel):
+    symbol_svg: str
+    equipment: str
+    status_disp: ConfigDispStatus = ConfigDispStatus.INATIVO
+
+    _validate_svg = field_validator("symbol_svg")(_validate_symbol_svg)
+
+
+class AuthorizedConfigurationUpdate(BaseModel):
+    symbol_svg: Optional[str] = None
+    equipment: Optional[str] = None
+    status_disp: Optional[ConfigDispStatus] = None
+
+    _validate_svg = field_validator("symbol_svg")(
+        lambda v: _validate_symbol_svg(v) if v is not None else v
+    )
+
+
+class AuthorizedConfigurationOut(ORMModel):
+    id: int
+    symbol_svg: str
+    equipment: str
+    status_disp: ConfigDispStatus
+    created_at: dt.datetime
+
+
+class AuthorizedConfigPdfLoadResult(BaseModel):
+    """Resultado de POST /authorized-configurations/load-from-pdf - ver
+    config_pdf.py para a validação e extração (texto real do PDF, sem OCR)."""
+    items_checked: int
+    active_count: int
+    inactive_count: int
+    note: str
+    items: list[AuthorizedConfigurationOut]
 
 
 # ---------------- Auditoria ----------------

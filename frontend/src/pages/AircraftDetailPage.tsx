@@ -2,10 +2,10 @@ import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type {
-  Aircraft, AircraftGroupAssignment, Assignment, AssignmentRole, Component, ComponentCategory,
-  Criticality, DefectType, FlightLog, InspectionFinding, MaintenanceOrder, MonitoringType,
-  Notification as AppNotification, NotificationChannel, OperationalRiskBreakdown, PendingPartAlert,
-  Person, ReliabilityMetrics, ResponsibleGroup,
+  Aircraft, AircraftDetailBundle, AircraftGroupAssignment, Assignment, AssignmentRole, Component,
+  ComponentCategory, Criticality, DefectType, FlightLog, InspectionFinding, MaintenanceOrder,
+  MonitoringType, Notification as AppNotification, NotificationChannel, OperationalRiskBreakdown,
+  PendingPartAlert, Person, ReliabilityMetrics, ResponsibleGroup,
 } from "../api/types";
 import AircraftThumbnail from "../components/AircraftThumbnail";
 import AircraftPhotoViewer from "../components/AircraftPhotoViewer";
@@ -38,17 +38,22 @@ export default function AircraftDetailPage() {
   const [flightLogs, setFlightLogs] = useState<FlightLog[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Uma única chamada (/aircraft/{id}/detail) monta a tela inteira (cadastro
+  // + componentes + OS + vínculos + livro de bordo) - antes eram 6
+  // requisições paralelas independentes; em hospedagem serverless, chamadas
+  // concorrentes a uma função pouco usada podem cada uma pagar seu próprio
+  // "cold start", tornando isso bem mais lento na prática do que uma única
+  // chamada equivalente (ver nota completa em routers/aircraft.py). "/people"
+  // continua à parte por não ser específico da aeronave (e por já reaproveitar
+  // o cache de leitura de 15s entre navegações - ver api/client.ts).
   function reload() {
     if (!id) return;
     Promise.all([
-      api.get<Aircraft>(`/aircraft/${id}`),
-      api.get<Component[]>(`/components?aircraft_id=${id}`),
-      api.get<MaintenanceOrder[]>(`/maintenance-orders?aircraft_id=${id}`),
-      api.get<Assignment[]>(`/assignments?aircraft_id=${id}`),
+      api.get<AircraftDetailBundle>(`/aircraft/${id}/detail`),
       api.get<Person[]>(`/people`),
-      api.get<FlightLog[]>(`/flight-logs?aircraft_id=${id}`),
-    ]).then(([a, c, o, asg, p, fl]) => {
-      setAircraft(a); setComponents(c); setOrders(o); setAssignments(asg); setPeople(p); setFlightLogs(fl);
+    ]).then(([bundle, p]) => {
+      setAircraft(bundle.aircraft); setComponents(bundle.components); setOrders(bundle.maintenance_orders);
+      setAssignments(bundle.assignments); setFlightLogs(bundle.flight_logs); setPeople(p);
     }).finally(() => setLoading(false));
   }
 

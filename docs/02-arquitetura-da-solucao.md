@@ -70,6 +70,21 @@ Documento 2 de 6 — ver também: [01 - Contexto e Brainstorming](01-contexto-e-
 | Autenticação | Hash PBKDF2-HMAC-SHA256 + token assinado por HMAC (stdlib) | Sem dependências binárias frágeis, zero custo, adequado ao piloto; caminho de evolução documentado abaixo |
 | Hospedagem (piloto) | Execução local / rede interna (uvicorn + Vite build servido estaticamente) | Zero custo de nuvem nesta fase |
 
+### 3.1. Cache HTTP de mídia (fotos de aeronave/perfil/inspeção)
+
+O Painel de Apoio à Decisão e as listas de aeronaves exibem uma miniatura por aeronave
+(`AircraftThumbnail`), buscada em `GET /api/media/{id}`. Até a v0.3, essa rota não enviava nenhum
+cabeçalho de cache — o navegador baixava de novo, por inteiro, a foto de **cada** aeronave da frota a
+cada visita ao Painel, mesmo quando o conteúdo nunca muda (o gargalo real por trás de relatos de
+lentidão no carregamento do Painel, não o cálculo do resumo em si, que é local e leve — ver
+`backend/app/routers/dashboard.py`). Corrigido enviando `Cache-Control: public, max-age=86400,
+must-revalidate` + `ETag` (derivado de `"{id}-{created_at}"`) em `backend/app/routers/media.py`: como a
+troca de foto sempre cria um `MediaAsset` novo (ver seção 3, item 7, de
+[docs/03-modelo-de-dados.md](03-modelo-de-dados.md)) e só apaga o antigo depois, o par (id, conteúdo) é
+efetivamente imutável enquanto a URL estiver em uso — o `ETag` cobre com segurança o único caso em que
+um `id` poderia ser reaproveitado (SQLite pode reciclar o rowid de uma linha excluída), já que a data de
+criação muda junto e invalida o `ETag` antigo automaticamente.
+
 ## 4. Por que não usar [outras opções]
 
 - **Node.js/Express no backend**: descartado como escolha primária porque a evolução planejada do

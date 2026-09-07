@@ -43,6 +43,16 @@
   --radius-md: 14px;
   --radius-lg: 20px;
   --font-sans: "Segoe UI", -apple-system, BlinkMacSystemFont, "Inter", Roboto, Arial, sans-serif;
+
+  /* Painel esquerdo de navegação (módulos: Painel, Aeronaves, Manutenção
+     etc.) - cor própria por modo, independente do resto da UI: cinza médio
+     no modo Diurno, azul claro no modo Noturno (ver Sobre → Aparência).
+     Como o painel fica sempre com fundo claro/médio nos dois modos, usa
+     texto escuro fixo (não os tokens --text-* normais, que se invertem
+     para claro no modo Noturno e ficariam ilegíveis aqui). */
+  --side-nav-bg: #9aa0a6;
+  --side-nav-text: #20242b;
+  --side-nav-text-secondary: #454b55;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -59,6 +69,9 @@
     --status-info-bg: rgba(47, 107, 196, 0.18);
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
     --shadow-md: 0 4px 16px rgba(0,0,0,0.45);
+    --side-nav-bg: #aac8ef;
+    --side-nav-text: #0d2038;
+    --side-nav-text-secondary: #1c3b5c;
   }
 }
 
@@ -73,6 +86,9 @@
   --status-warn-bg: rgba(217, 154, 0, 0.16);
   --status-critical-bg: rgba(198, 40, 40, 0.18);
   --status-info-bg: rgba(47, 107, 196, 0.18);
+  --side-nav-bg: #aac8ef;
+  --side-nav-text: #0d2038;
+  --side-nav-text-secondary: #1c3b5c;
 }
 
 * { box-sizing: border-box; }
