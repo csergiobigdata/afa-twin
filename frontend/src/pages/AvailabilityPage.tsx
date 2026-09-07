@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { api } from "../api/client";
 import type {
   Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityCode, AvailabilityLocation,
@@ -19,8 +19,8 @@ const CODES: AvailabilityCode[] = ["DI", "DO", "IN"];
 const LOCATIONS: AvailabilityLocation[] = ["Estação Ventral", "Tanque Subalar", "Asas (Dir/Esq)"];
 const CONFIG_CATEGORY = "Configuração de Disponibilidade (asas/hardpoints)" as const;
 // Estações centrais (3) mapeiam para "Estação Ventral"; as demais (5/4/2/1,
-// todas nas asas) mapeiam para "Asas (Dir/Esq)" - usado ao lançar um Código
-// de Configuração inteiro de uma vez (ver launchConfigurationCode).
+// todas nas asas) mapeiam para "Asas (Dir/Esq)" - usado ao cadastrar um
+// Código de Configuração inteiro de uma vez (ver cadastrarConfiguracaoAutomatica).
 type StationKey = "station_5" | "station_4" | "station_3" | "station_2" | "station_1";
 const STATION_KEYS: StationKey[] = ["station_5", "station_4", "station_3", "station_2", "station_1"];
 const STATION_TO_LOCATION: Record<StationKey, AvailabilityLocation> = {
@@ -36,6 +36,15 @@ function formatDate(iso: string): string {
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
 }
+
+// Estilo comum de título de campo digitado/selecionado nos formulários desta
+// página (Aeronave, Código, Configuração, Local, Motivo/Observação etc.) -
+// mesmo peso/cor/tamanho em todos, para os rótulos ficarem alinhados
+// visualmente entre si, em vez de cada campo com uma aparência diferente.
+const FIELD_LABEL_STYLE: CSSProperties = {
+  fontSize: 12, fontWeight: 600, color: "var(--text-secondary)",
+  display: "flex", flexDirection: "column", gap: 4,
+};
 
 // Aeronave selecionada por padrão ao abrir o módulo, no lançamento manual.
 const DEFAULT_MANUAL_AIRCRAFT_TAIL = "FAB 5962";
@@ -142,7 +151,7 @@ export default function AvailabilityPage() {
     }
   }
 
-  // ---------------- Lançamento manual (por aeronave) ----------------
+  // ---------------- Cadastro de Configuração da Aeronave (Manual + Automática) ----------------
   const [manualAircraftId, setManualAircraftId] = useState("");
   const [manualCode, setManualCode] = useState<AvailabilityCode>("DI");
   const [manualConfig, setManualConfig] = useState("");
@@ -202,23 +211,32 @@ export default function AvailabilityPage() {
     reload();
   }
 
-  // Lança, de uma vez, um AvailabilityUpdate por estação preenchida do
-  // Código de Configuração selecionado (ex.: "12" lança 3 lançamentos:
-  // estações 4, 3 e 2) - forma mais simples de registrar uma configuração
-  // padronizada inteira sem montar cada estação manualmente.
-  async function launchConfigurationCode() {
+  // "Configuração Automática": aplica de uma vez um Código de Configuração
+  // já cadastrado, SUBSTITUINDO a configuração atual da aeronave (não soma
+  // às entradas anteriores) - primeiro remove todo lançamento com
+  // equipamento (`configuration`) já existente para a aeronave selecionada,
+  // depois cadastra um lançamento por estação preenchida do código
+  // escolhido (ex.: "12" cadastra 3: estações 4, 3 e 2). Para lançar
+  // equipamento por equipamento em vez de um código inteiro, ver
+  // "Configuração Manual" ao lado.
+  async function cadastrarConfiguracaoAutomatica() {
     if (!manualAircraftId || !selectedCode) return;
-    const payload: AvailabilityUpdateCreate[] = STATION_KEYS
-      .filter((s) => selectedCode[s])
-      .map((s) => ({
-        aircraft_id: Number(manualAircraftId), report_date: todayIso(), code: manualCode,
-        configuration: selectedCode[s] as string, has_subalares: false,
-        reason: `Código de configuração ${selectedCode.code}`, location: STATION_TO_LOCATION[s],
-      }));
-    if (payload.length === 0) return;
     setLaunchingCode(true);
     try {
-      await api.post("/availability-updates/bulk", payload);
+      const toRemove = selectedHistory.filter((u) => u.configuration);
+      if (toRemove.length > 0) {
+        await Promise.all(toRemove.map((u) => api.del(`/availability-updates/${u.id}`)));
+      }
+      const payload: AvailabilityUpdateCreate[] = STATION_KEYS
+        .filter((s) => selectedCode[s])
+        .map((s) => ({
+          aircraft_id: Number(manualAircraftId), report_date: todayIso(), code: manualCode,
+          configuration: selectedCode[s] as string, has_subalares: false,
+          reason: `Código de configuração ${selectedCode.code}`, location: STATION_TO_LOCATION[s],
+        }));
+      if (payload.length > 0) {
+        await api.post("/availability-updates/bulk", payload);
+      }
       setSelectedCodeId("");
       reload();
     } finally {
@@ -311,7 +329,7 @@ export default function AvailabilityPage() {
             O reconhecimento é uma heurística revisável — confira e ajuste cada linha antes de salvar.
           </p>
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
-            <label style={{ fontSize: 12.5, display: "flex", alignItems: "center", gap: 6 }}>
+            <label style={{ ...FIELD_LABEL_STYLE, flexDirection: "row", alignItems: "center" }}>
               Data do boletim:
               <input type="date" value={pasteDate} onChange={(e) => setPasteDate(e.target.value)} style={{ maxWidth: 170 }} />
             </label>
@@ -401,67 +419,82 @@ export default function AvailabilityPage() {
       {canManage && (
         <>
         <div className="card" style={{ padding: 18, marginBottom: 18 }}>
-          <h2 style={{ fontSize: 15.5, margin: "0 0 12px" }}>Lançamento manual (por aeronave)</h2>
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-start" }}>
-          <form onSubmit={submitManual} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end", flex: "1 1 420px" }}>
-            <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-              Aeronave
-              <select value={manualAircraftId} onChange={(e) => setManualAircraftId(e.target.value)} required style={{ minWidth: 180 }}>
-                <option value="">Selecione…</option>
-                {fleet.map((a) => <option key={a.id} value={a.id}>{a.tail_number} · {a.model}</option>)}
-              </select>
-            </label>
-            <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-              Código
-              <select value={manualCode} onChange={(e) => setManualCode(e.target.value as AvailabilityCode)} style={{ minWidth: 90 }}>
-                {CODES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </label>
-            <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-              Configuração
-              <AuthorizedConfigSelect options={activeConfigs} value={manualConfig} onChange={setManualConfig} />
-            </label>
-            <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-              Local
-              <select value={manualLocation} onChange={(e) => setManualLocation(e.target.value as AvailabilityLocation | "")} style={{ minWidth: 160 }}>
-                <option value="">— Selecione —</option>
-                {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
-              </select>
-            </label>
-            <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
-              Motivo / Observação
-              <input value={manualReason} onChange={(e) => setManualReason(e.target.value)} placeholder="ex.: TREM DE POUSO" />
-            </label>
-            <button type="submit" className="btn btn-primary btn-sm" disabled={manualSaving || !manualAircraftId}>
-              {manualSaving ? "Salvando…" : "+ Adicionar"}
-            </button>
-          </form>
+          <h2 style={{ fontSize: 15.5, margin: "0 0 4px" }}>Cadastro de Configuração da Aeronave</h2>
+          <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14, maxWidth: 640 }}>
+            Duas formas de cadastrar o equipamento de uma aeronave: <strong>Configuração Manual</strong> (um
+            equipamento por vez) ou <strong>Configuração Automática</strong> (aplica de uma vez um Código de
+            Configuração já cadastrado, substituindo a configuração atual).
+          </p>
+          <label style={{ ...FIELD_LABEL_STYLE, maxWidth: 260, marginBottom: 18 }}>
+            Aeronave
+            <select value={manualAircraftId} onChange={(e) => setManualAircraftId(e.target.value)} style={{ minWidth: 180 }}>
+              <option value="">Selecione…</option>
+              {fleet.map((a) => <option key={a.id} value={a.id}>{a.tail_number} · {a.model}</option>)}
+            </select>
+          </label>
 
-          {/* Painel da configuração - sempre visível assim que uma aeronave
-              é selecionada (não só ao escolher algo), com a silhueta da
-              aeronave e a faixa de estações (5 a 1) do Código de
-              Configuração escolhido logo abaixo (ver ConfigurationDiagram e
-              docs/03-modelo-de-dados.md). */}
-          {manualAircraftId && (
-            <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <select
-                  value={selectedCodeId} onChange={(e) => setSelectedCodeId(e.target.value ? Number(e.target.value) : "")}
-                  style={{ minWidth: 170 }} title="Código de Configuração"
-                >
-                  <option value="">Código de Configuração…</option>
-                  {configCodes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-                </select>
-                <button
-                  type="button" className="btn btn-outline btn-sm" disabled={!selectedCode || launchingCode}
-                  onClick={launchConfigurationCode} title="Lança um registro por estação preenchida deste código"
-                >
-                  {launchingCode ? "Lançando…" : "Lançar código"}
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-start" }}>
+            <div style={{ flex: "1 1 420px" }}>
+              <h3 style={{ fontSize: 13.5, margin: "0 0 10px", color: "var(--text-primary)" }}>Configuração Manual</h3>
+              <form onSubmit={submitManual} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+                <label style={FIELD_LABEL_STYLE}>
+                  Código
+                  <select value={manualCode} onChange={(e) => setManualCode(e.target.value as AvailabilityCode)} style={{ minWidth: 90 }}>
+                    {CODES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+                <label style={FIELD_LABEL_STYLE}>
+                  Configuração
+                  <AuthorizedConfigSelect options={activeConfigs} value={manualConfig} onChange={setManualConfig} />
+                </label>
+                <label style={FIELD_LABEL_STYLE}>
+                  Local
+                  <select value={manualLocation} onChange={(e) => setManualLocation(e.target.value as AvailabilityLocation | "")} style={{ minWidth: 160 }}>
+                    <option value="">— Selecione —</option>
+                    {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </label>
+                <label style={{ ...FIELD_LABEL_STYLE, flex: "1 1 200px" }}>
+                  Motivo / Observação
+                  <input value={manualReason} onChange={(e) => setManualReason(e.target.value)} placeholder="ex.: TREM DE POUSO" />
+                </label>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={manualSaving || !manualAircraftId}>
+                  {manualSaving ? "Salvando…" : "+ Adicionar"}
                 </button>
-              </div>
-              <ConfigurationDiagram code={selectedCode} symbolFor={(eq) => configSymbol(eq)} />
+              </form>
             </div>
-          )}
+
+            {/* Painel da Configuração Automática - sempre visível assim que
+                uma aeronave é selecionada (não só ao escolher um código),
+                com a silhueta da aeronave e a faixa de estações (5 a 1) do
+                Código de Configuração escolhido logo abaixo (ver
+                ConfigurationDiagram e docs/03-modelo-de-dados.md). */}
+            {manualAircraftId && (
+              <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+                <h3 style={{ fontSize: 13.5, margin: "0 0 2px", color: "var(--text-primary)" }}>Configuração Automática</h3>
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                  <label style={FIELD_LABEL_STYLE}>
+                    Configuração
+                    <select
+                      value={selectedCodeId} onChange={(e) => setSelectedCodeId(e.target.value ? Number(e.target.value) : "")}
+                      style={{ minWidth: 170 }}
+                    >
+                      <option value="">Selecione…</option>
+                      {configCodes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+                    </select>
+                  </label>
+                  <button
+                    type="button" className="btn btn-outline btn-sm" disabled={!selectedCode || launchingCode}
+                    onClick={cadastrarConfiguracaoAutomatica} title="Substitui a configuração atual da aeronave pela deste código"
+                  >
+                    {launchingCode ? "Cadastrando…" : "Cadastrar Configuração"}
+                  </button>
+                </div>
+                <div style={{ alignSelf: "center" }}>
+                  <ConfigurationDiagram code={selectedCode} symbolFor={(eq) => configSymbol(eq)} />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -478,11 +511,11 @@ export default function AvailabilityPage() {
             })()}
           </h2>
           <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 0, marginBottom: 12 }}>
-            Lançamentos de disponibilidade da aeronave selecionada em "Lançamento manual (por aeronave)" acima.
+            Lançamentos de disponibilidade da aeronave selecionada em "Cadastro de Configuração da Aeronave" acima.
           </p>
           {!manualAircraftId ? (
             <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-              Selecione uma aeronave no lançamento manual acima para ver suas configurações lançadas.
+              Selecione uma aeronave acima para ver suas configurações lançadas.
             </p>
           ) : selectedHistoryLoading ? (
             <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Carregando…</p>
