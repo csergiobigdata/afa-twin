@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { Person, PersonRole } from "../api/types";
 import { useLookupValues } from "../api/useLookup";
 
-const ROLES: PersonRole[] = ["Piloto", "Mecânico", "Engenheiro Aeronáutico", "Cientista", "Gestor / Responsável Técnico"];
+const ROLES: PersonRole[] = ["Piloto", "Mecânico", "Engenheiro", "Cientista", "Gestor / Responsável Técnico"];
 
 export interface PersonFormValues {
   full_name: string;

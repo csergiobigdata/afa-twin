@@ -7,8 +7,8 @@ import AircraftSilhouette from "../components/AircraftSilhouette";
 const DEMO_USERS = [
   { user: "piloto", label: "Piloto" },
   { user: "mecanico", label: "Mecânico" },
-  { user: "engenheiro", label: "Engenheiro Aeronáutico" },
-  { user: "cientista", label: "Cientista (P&D)" },
+  { user: "engenheiro", label: "Engenheiro" },
+  { user: "cientista", label: "Cientista ITA" },
 ];
 
 export default function LoginPage() {
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -80,8 +81,12 @@ export default function LoginPage() {
             </div>
             <div className="field" style={{ marginBottom: 18 }}>
               <label htmlFor="password">Senha</label>
-              <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              <input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
                      placeholder="••••••••" autoComplete="current-password" required />
+              <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 12, fontWeight: 400, color: "var(--text-secondary)", cursor: "pointer" }}>
+                <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} style={{ width: "auto" }} />
+                Mostrar senha
+              </label>
             </div>
             {error && (
               <div className="badge badge-critical" style={{ display: "block", marginBottom: 14, padding: "8px 12px" }}>
@@ -104,9 +109,6 @@ export default function LoginPage() {
                   {u.label}
                 </button>
               ))}
-            </div>
-            <div style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 8 }}>
-              Senha padrão de demonstração: <code>AfaTwin@2026</code>
             </div>
           </div>
         </div>

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type {
-  Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityCode, AvailabilityUpdate,
-  AvailabilityUpdateCreate,
+  Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityCode, AvailabilityLocation,
+  AvailabilityUpdate, AvailabilityUpdateCreate,
 } from "../api/types";
 import { useLookupValues } from "../api/useLookup";
 import { useAuth } from "../auth/AuthContext";
@@ -15,7 +15,13 @@ import StatCard from "../components/StatCard";
 import { parseAvailabilityBoardText, type ParsedAvailabilityRow } from "./availabilityParser";
 
 const CODES: AvailabilityCode[] = ["DI", "DO", "IN"];
+const LOCATIONS: AvailabilityLocation[] = ["Estação Ventral", "Tanque Subalar", "Asas (Dir/Esq)"];
 const CONFIG_CATEGORY = "Configuração de Disponibilidade (asas/hardpoints)" as const;
+// Imagem de referência fixa mostrada enquanto uma configuração é montada no
+// lançamento manual (ver Aeronaves → Configurações Autorizadas para o
+// cadastro dos símbolos). Por enquanto é uma única imagem fixa; no futuro
+// cada configuração/local poderá ter sua própria imagem.
+const CONFIG_REFERENCE_IMAGE = "/reference/configuracao-exemplo.png";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -24,16 +30,6 @@ function todayIso(): string {
 function formatDate(iso: string): string {
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
-}
-
-/** dd/mm/yyyy hh:mm:ss em horário local do navegador, a partir de um
- * timestamp ISO (ex.: `created_at`) - formato fixo pedido para a coluna
- * "Data/Hora" de Configurações Autorizadas para a Aeronave, em vez de
- * depender de `toLocaleString` (cujo formato varia por navegador/SO). */
-function formatDateTime(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
 // Aeronave selecionada por padrão ao abrir o módulo, no lançamento manual.
@@ -129,8 +125,8 @@ export default function AvailabilityPage() {
   const [manualAircraftId, setManualAircraftId] = useState("");
   const [manualCode, setManualCode] = useState<AvailabilityCode>("DI");
   const [manualConfig, setManualConfig] = useState("");
+  const [manualLocation, setManualLocation] = useState<AvailabilityLocation | "">("");
   const [manualReason, setManualReason] = useState("");
-  const [manualDate, setManualDate] = useState(todayIso());
   const [manualSaving, setManualSaving] = useState(false);
 
   // Valor padrão ao abrir o módulo: pré-seleciona a FAB 5962 assim que a
@@ -164,11 +160,15 @@ export default function AvailabilityPage() {
     if (!manualAircraftId) return;
     setManualSaving(true);
     try {
+      // A data não é mais escolhida pelo usuário neste formulário (sempre
+      // "hoje") - o registro em si já guarda `created_at` automaticamente
+      // (data/hora reais do lançamento, para auditoria/relatórios/logs).
       await api.post<AvailabilityUpdate>("/availability-updates", {
-        aircraft_id: Number(manualAircraftId), report_date: manualDate, code: manualCode,
+        aircraft_id: Number(manualAircraftId), report_date: todayIso(), code: manualCode,
         configuration: manualConfig || null, has_subalares: false, reason: manualReason || null,
+        location: manualLocation || null,
       });
-      setManualReason(""); setManualConfig("");
+      setManualReason(""); setManualConfig(""); setManualLocation("");
       reload();
     } finally {
       setManualSaving(false);
@@ -357,7 +357,8 @@ export default function AvailabilityPage() {
         <>
         <div className="card" style={{ padding: 18, marginBottom: 18 }}>
           <h2 style={{ fontSize: 15.5, margin: "0 0 12px" }}>Lançamento manual (por aeronave)</h2>
-          <form onSubmit={submitManual} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-start" }}>
+          <form onSubmit={submitManual} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end", flex: "1 1 420px" }}>
             <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
               Aeronave
               <select value={manualAircraftId} onChange={(e) => setManualAircraftId(e.target.value)} required style={{ minWidth: 180 }}>
@@ -375,18 +376,37 @@ export default function AvailabilityPage() {
               Configuração
               <AuthorizedConfigSelect options={activeConfigs} value={manualConfig} onChange={setManualConfig} />
             </label>
-            <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
-              Motivo / observação
-              <input value={manualReason} onChange={(e) => setManualReason(e.target.value)} placeholder="ex.: TREM DE POUSO" />
-            </label>
             <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-              Data
-              <input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} style={{ maxWidth: 150 }} />
+              Local
+              <select value={manualLocation} onChange={(e) => setManualLocation(e.target.value as AvailabilityLocation | "")} style={{ minWidth: 160 }}>
+                <option value="">— Selecione —</option>
+                {LOCATIONS.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </label>
+            <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
+              Motivo / Observação
+              <input value={manualReason} onChange={(e) => setManualReason(e.target.value)} placeholder="ex.: TREM DE POUSO" />
             </label>
             <button type="submit" className="btn btn-primary btn-sm" disabled={manualSaving || !manualAircraftId}>
               {manualSaving ? "Salvando…" : "+ Adicionar"}
             </button>
           </form>
+
+          {/* Imagem de referência da configuração sendo montada - por
+              enquanto uma única imagem fixa (ver CONFIG_REFERENCE_IMAGE);
+              aparece assim que o usuário começa a escolher a Configuração
+              ou o Local. No futuro cada combinação poderá ter sua própria
+              imagem. */}
+          {(manualConfig || manualLocation) && (
+            <div style={{ flex: "0 0 auto", textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 4 }}>Exemplo de configuração</div>
+              <img
+                src={CONFIG_REFERENCE_IMAGE} alt="Exemplo de configuração de asas/hardpoints"
+                style={{ maxWidth: 220, borderRadius: 8, border: "1px solid var(--border-subtle)", background: "#fff" }}
+              />
+            </div>
+          )}
+          </div>
         </div>
 
         <div className="card" style={{ padding: 18, marginBottom: 18 }}>
@@ -410,7 +430,7 @@ export default function AvailabilityPage() {
             <div className="scroll-x">
               <table>
                 <thead>
-                  <tr><th></th><th>Código</th><th>Configuração</th><th>Motivo/Obs</th><th>Usuário</th><th>Data/Hora</th><th></th></tr>
+                  <tr><th></th><th>Código</th><th>Configuração</th><th>Local</th><th>Motivo/Obs</th><th></th></tr>
                 </thead>
                 <tbody>
                   {selectedHistory.map((u) => (
@@ -420,16 +440,15 @@ export default function AvailabilityPage() {
                       </td>
                       <td><AvailabilityCodeBadge code={u.code} /></td>
                       <td style={{ fontSize: 12.5 }}>{u.configuration ?? "LISO"}</td>
+                      <td style={{ fontSize: 12.5 }}>{u.location ?? "—"}</td>
                       <td style={{ fontSize: 12.5 }}>{u.reason ?? "—"}</td>
-                      <td style={{ fontSize: 12.5 }}>{u.recorded_by_name ?? "—"}</td>
-                      <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{formatDateTime(u.created_at)}</td>
                       <td>
                         <button className="btn btn-outline btn-sm" onClick={() => removeUpdate(u.id)}>Remover</button>
                       </td>
                     </tr>
                   ))}
                   {selectedHistory.length === 0 && (
-                    <tr><td colSpan={7} style={{ color: "var(--text-secondary)" }}>Nenhuma configuração lançada para esta aeronave ainda.</td></tr>
+                    <tr><td colSpan={6} style={{ color: "var(--text-secondary)" }}>Nenhuma configuração lançada para esta aeronave ainda.</td></tr>
                   )}
                 </tbody>
               </table>

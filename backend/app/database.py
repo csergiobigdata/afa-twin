@@ -8,7 +8,7 @@ o restante do código (models/queries) não muda, pois usamos SQLAlchemy ORM
 como camada de abstração. Ver docs/02-arquitetura-da-solucao.md.
 """
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from sqlalchemy.types import Enum as SAEnum
 
@@ -100,3 +100,34 @@ def sync_missing_indexes() -> None:
     for table in Base.metadata.sorted_tables:
         for index in table.indexes:
             index.create(bind=engine, checkfirst=True)
+
+
+def sync_missing_columns() -> None:
+    """`Base.metadata.create_all()` só cria COLUNAS ao criar uma tabela nova -
+    se uma coluna é acrescentada depois a um modelo cuja tabela já existe
+    (ex.: `AvailabilityUpdate.location`), ela nunca aparece sozinha num banco
+    já existente (local SQLite ou o Postgres de produção), pelo mesmo motivo
+    documentado em sync_missing_indexes/sync_postgres_enum_types acima. Roda
+    uma vez no startup e só ACRESCENTA colunas que faltam - sempre NULLABLE
+    (ou com valor padrão), nunca quebrando linhas já existentes - operação
+    aditiva seguro para rodar a cada deploy, em qualquer dialeto.
+
+    Colunas NOT NULL sem default são puladas propositalmente (não há um
+    valor seguro para preencher linhas já existentes sem uma decisão de
+    negócio) - hoje nenhum modelo depende disso; se precisar no futuro,
+    seria um passo de migração manual, não automático."""
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        for table in Base.metadata.sorted_tables:
+            if table.name not in existing_tables:
+                continue  # tabela nova - create_all() já cuidou dela inteira
+            existing_columns = {c["name"] for c in inspector.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in existing_columns:
+                    continue
+                if not column.nullable and column.default is None and column.server_default is None:
+                    continue
+                ddl_type = column.type.compile(dialect=engine.dialect)
+                nullability = "" if column.nullable else " NOT NULL"
+                conn.execute(text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {ddl_type}{nullability}'))

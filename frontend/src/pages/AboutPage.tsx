@@ -2,7 +2,7 @@ import { AfaTwinMark } from "../components/Layout";
 import { useTheme } from "../theme/ThemeContext";
 
 const APP_VERSION = "1.2";
-const DEVELOPER_NAME = "Walter Vinicius Malwald";
+const DEVELOPER_NAME = "Walter Vinicius da Costa Malwald";
 
 /** Módulo "Sobre": identificação do aplicativo (nome, desenvolvedor, versão
  * fixa) e a alternância de modo dia/noturno de visualização (ver

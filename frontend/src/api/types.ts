@@ -9,7 +9,7 @@ export type AircraftStatus =
 // então o tipo aceita qualquer string cadastrada, com as opções conhecidas como sugestão.
 export type Organization = string;
 
-export type PersonRole = "Piloto" | "Mecânico" | "Engenheiro Aeronáutico" | "Cientista" | "Gestor / Responsável Técnico";
+export type PersonRole = "Piloto" | "Mecânico" | "Engenheiro" | "Cientista" | "Gestor / Responsável Técnico";
 
 export type ComponentCategory =
   | "Motor / Grupo Motopropulsor" | "Trem de Pouso" | "Sistema Hidráulico" | "Aviônicos"
@@ -278,6 +278,11 @@ export interface ReliabilityMetrics {
 // backend/app/models.py::AvailabilityCode sobre a origem do vocabulário.
 export type AvailabilityCode = "DI" | "DO" | "IN";
 
+// Local de instalação do equipamento/carga (ver backend/app/models.py::
+// AvailabilityLocation) - ex.: um tanque externo pode ir na estação
+// ventral ou num pilone subalar.
+export type AvailabilityLocation = "Estação Ventral" | "Tanque Subalar" | "Asas (Dir/Esq)";
+
 export interface AvailabilityUpdate {
   id: number;
   aircraft_id: number;
@@ -287,6 +292,7 @@ export interface AvailabilityUpdate {
   configuration?: string | null;
   has_subalares: boolean;
   reason?: string | null;
+  location?: AvailabilityLocation | null;
   recorded_by_id?: number | null;
   recorded_by_name?: string | null;
   created_at: string;
@@ -299,6 +305,7 @@ export interface AvailabilityUpdateCreate {
   configuration?: string | null;
   has_subalares: boolean;
   reason?: string | null;
+  location?: AvailabilityLocation | null;
 }
 
 export interface AvailabilityBoardEntry {

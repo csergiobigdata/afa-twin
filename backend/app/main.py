@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from .database import Base, engine, SessionLocal, sync_postgres_enum_types, sync_missing_indexes
+from .database import Base, engine, SessionLocal, sync_postgres_enum_types, sync_missing_indexes, sync_missing_columns
 from . import seed
 from .routers import (
     aircraft, people, components, assignments, maintenance, checklists, flightlogs,
@@ -96,6 +96,10 @@ def on_startup():
     # latência dos filtros ?aircraft_id=/?component_id= usados em quase
     # todo router, à medida que o volume de dados crescer.
     sync_missing_indexes()
+    # Mesma lógica para colunas acrescentadas depois a um modelo cuja tabela
+    # já existia (ex.: AvailabilityUpdate.location) - ver nota em
+    # database.py::sync_missing_columns.
+    sync_missing_columns()
     db = SessionLocal()
     try:
         seed.seed_if_empty(db)

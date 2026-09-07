@@ -59,8 +59,8 @@ export function useAuth(): AuthState {
 }
 
 export const ROLE_PERMISSIONS = {
-  canDeleteAircraft: (role: PersonRole | null) => role === "Gestor / Responsável Técnico" || role === "Engenheiro Aeronáutico",
+  canDeleteAircraft: (role: PersonRole | null) => role === "Gestor / Responsável Técnico" || role === "Engenheiro",
   canDeletePerson: (role: PersonRole | null) => role === "Gestor / Responsável Técnico",
   canManageRecords: (role: PersonRole | null) =>
-    role === "Gestor / Responsável Técnico" || role === "Engenheiro Aeronáutico" || role === "Mecânico",
+    role === "Gestor / Responsável Técnico" || role === "Engenheiro" || role === "Mecânico",
 };

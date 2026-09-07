@@ -84,10 +84,22 @@ class AvailabilityCode(str, enum.Enum):
     IN = "IN"
 
 
+class AvailabilityLocation(str, enum.Enum):
+    """Local de instalação do equipamento/carga informado no lançamento
+    manual de disponibilidade (ex.: um tanque externo pode ir na estação
+    ventral ou num pilone subalar - ver docs/Configurações na prática.txt).
+    Guardado como texto simples em AvailabilityUpdate.location (não como
+    enum nativo do Postgres), mesmo raciocínio de `configuration`: mantém
+    a coluna simples de acrescentar via migração aditiva."""
+    ESTACAO_VENTRAL = "Estação Ventral"
+    TANQUE_SUBALAR = "Tanque Subalar"
+    ASAS = "Asas (Dir/Esq)"
+
+
 class PersonRole(str, enum.Enum):
     PILOTO = "Piloto"
     MECANICO = "Mecânico"
-    ENGENHEIRO = "Engenheiro Aeronáutico"
+    ENGENHEIRO = "Engenheiro"
     CIENTISTA = "Cientista"
     GESTOR = "Gestor / Responsável Técnico"
 
@@ -530,6 +542,11 @@ class AvailabilityUpdate(Base):
     configuration: Mapped[str | None] = mapped_column(String(60), nullable=True)
     has_subalares: Mapped[bool] = mapped_column(Boolean, default=False)  # cargas subalares, independente do ADA
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)  # motivo/observação (ex.: "TREM DE POUSO")
+    # Local de instalação do equipamento (ver AvailabilityLocation) - texto
+    # simples (não SAEnum) de propósito, para acrescentar via migração
+    # aditiva (sync_missing_columns) sem exigir criar um tipo nativo no
+    # Postgres de produção.
+    location: Mapped[str | None] = mapped_column(String(30), nullable=True)
 
     recorded_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)

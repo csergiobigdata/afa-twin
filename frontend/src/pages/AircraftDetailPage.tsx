@@ -5,12 +5,24 @@ import type {
   Aircraft, AircraftDetailBundle, AircraftGroupAssignment, Assignment, AssignmentRole, Component,
   ComponentCategory, Criticality, DefectType, FlightLog, InspectionFinding, MaintenanceOrder,
   MonitoringType, Notification as AppNotification, NotificationChannel, OperationalRiskBreakdown,
-  PendingPartAlert, Person, ReliabilityMetrics, ResponsibleGroup,
+  PendingPartAlert, Person, PersonRole, ReliabilityMetrics, ResponsibleGroup,
 } from "../api/types";
 import AircraftThumbnail from "../components/AircraftThumbnail";
 import AircraftPhotoViewer from "../components/AircraftPhotoViewer";
 import { CriticalityBadge, HealthBar, OrderStatusBadge, RiskBadge, StatusBadge } from "../components/Badges";
+import PersonPicker from "../components/PersonPicker";
 import { ROLE_PERMISSIONS, useAuth } from "../auth/AuthContext";
+
+// Função na aeronave sugerida automaticamente ao escolher uma Pessoa em
+// "Vínculos individuais", a partir do cargo dela (PersonRole) - só um
+// valor inicial: o campo continua editável, o usuário pode trocar.
+const DEFAULT_ASSIGNMENT_ROLE_BY_PERSON_ROLE: Record<PersonRole, AssignmentRole> = {
+  "Piloto": "Piloto Titular",
+  "Mecânico": "Mecânico Responsável",
+  "Engenheiro": "Engenheiro de Confiabilidade",
+  "Cientista": "Cientista Responsável (P&D)",
+  "Gestor / Responsável Técnico": "Chefe de Manutenção",
+};
 
 type Tab = "geral" | "componentes" | "manutencao" | "confiabilidade" | "inspecao" | "pessoal";
 
@@ -580,7 +592,7 @@ function OrdersTab({ aircraftId, orders, components }: { aircraftId: number; ord
 /** Grupos/equipes vinculados a esta aeronave (responsabilidade coletiva) -
  * complementa os vínculos individuais com a composição de equipes nomeadas
  * (ver módulo Usuários → Grupos). */
-function AircraftGroupsPanel({ aircraftId }: { aircraftId: number }) {
+function AircraftGroupsPanel({ aircraftId, onIndividualAssignmentsChanged }: { aircraftId: number; onIndividualAssignmentsChanged: () => void }) {
   const [links, setLinks] = useState<AircraftGroupAssignment[]>([]);
   const [allGroups, setAllGroups] = useState<ResponsibleGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -598,9 +610,29 @@ function AircraftGroupsPanel({ aircraftId }: { aircraftId: number }) {
   async function linkGroup(e: FormEvent) {
     e.preventDefault();
     if (!groupId) return;
+    const group = allGroups.find((g) => g.id === groupId);
+    if (group && !confirm(
+      `Vincular "${group.name}" substituirá a composição atual de vínculos individuais desta aeronave `
+      + `pelos ${group.members.length} membro(s) da equipe. Continuar?`,
+    )) return;
     setSaving(true);
     try {
       await api.post("/aircraft-groups", { aircraft_id: aircraftId, group_id: groupId, start_date: new Date().toISOString().slice(0, 10) });
+
+      // Vincular um grupo existente substitui a composição atual de
+      // vínculos individuais desta aeronave pelos membros do grupo (cada um
+      // com o papel que já tem na equipe) - evita duplicidade/divergência
+      // entre "quem está na equipe" e "quem está individualmente vinculado".
+      if (group) {
+        const current = await api.get<Assignment[]>(`/assignments?aircraft_id=${aircraftId}`);
+        await Promise.all(current.map((a) => api.del(`/assignments/${a.id}`)));
+        await Promise.all(group.members.map((m) => api.post("/assignments", {
+          person_id: m.person.id, aircraft_id: aircraftId, role_in_aircraft: m.role_in_group,
+          start_date: new Date().toISOString().slice(0, 10),
+        })));
+        onIndividualAssignmentsChanged();
+      }
+
       setGroupId("");
       reload();
     } finally {
@@ -650,13 +682,17 @@ function AircraftGroupsPanel({ aircraftId }: { aircraftId: number }) {
         </div>
         <button type="submit" className="btn btn-primary btn-sm" disabled={saving || !groupId}>Vincular</button>
       </form>
+      <p style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 8 }}>
+        Vincular um grupo aqui substitui a "Equipe Responsável" (vínculos individuais) desta aeronave
+        pelos membros do grupo escolhido.
+      </p>
     </div>
   );
 }
 
 function PeopleTab({ aircraftId, assignments, people, onReload }: { aircraftId: number; assignments: Assignment[]; people: Person[]; onReload: () => void }) {
   const [showForm, setShowForm] = useState(false);
-  const [personId, setPersonId] = useState<number | "">("");
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [roleInAircraft, setRoleInAircraft] = useState<AssignmentRole>("Mecânico Responsável");
   const [saving, setSaving] = useState(false);
   const [peopleInGroups, setPeopleInGroups] = useState<Set<number>>(new Set());
@@ -667,18 +703,26 @@ function PeopleTab({ aircraftId, assignments, people, onReload }: { aircraftId: 
     });
   }, []);
 
-  const selectedPersonHasNoGroup = personId !== "" && !peopleInGroups.has(personId);
+  const selectedPersonHasNoGroup = selectedPerson !== null && !peopleInGroups.has(selectedPerson.id);
+
+  // Ao escolher a Pessoa, já sugere a Função na aeronave a partir do cargo
+  // dela (DEFAULT_ASSIGNMENT_ROLE_BY_PERSON_ROLE) - o campo continua
+  // editável, não é obrigatório manter a sugestão.
+  function onPersonSelected(p: Person | null) {
+    setSelectedPerson(p);
+    if (p) setRoleInAircraft(DEFAULT_ASSIGNMENT_ROLE_BY_PERSON_ROLE[p.role] ?? "Mecânico Responsável");
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!personId) return;
+    if (!selectedPerson) return;
     setSaving(true);
     try {
       await api.post("/assignments", {
-        person_id: personId, aircraft_id: aircraftId, role_in_aircraft: roleInAircraft,
+        person_id: selectedPerson.id, aircraft_id: aircraftId, role_in_aircraft: roleInAircraft,
         start_date: new Date().toISOString().slice(0, 10),
       });
-      setShowForm(false); setPersonId("");
+      setShowForm(false); setSelectedPerson(null);
       onReload();
     } finally {
       setSaving(false);
@@ -698,20 +742,17 @@ function PeopleTab({ aircraftId, assignments, people, onReload }: { aircraftId: 
         abaixo se somam aos membros de qualquer grupo/equipe vinculado (aba <Link to="/pessoal/grupos">Grupos</Link>).
       </p>
 
-      <AircraftGroupsPanel aircraftId={aircraftId} />
+      <AircraftGroupsPanel aircraftId={aircraftId} onIndividualAssignmentsChanged={onReload} />
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <h3 style={{ fontSize: 14.5, margin: 0 }}>Vínculos individuais</h3>
+        <h3 style={{ fontSize: 14.5, margin: 0 }}>Equipe Responsável</h3>
         <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : "+ Vincular Responsável"}</button>
       </div>
       {showForm && (
         <form onSubmit={submit} className="card" style={{ padding: 18, marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
-          <div className="field" style={{ minWidth: 240 }}>
+          <div className="field" style={{ minWidth: 300 }}>
             <label>Pessoa</label>
-            <select required value={personId} onChange={(e) => setPersonId(Number(e.target.value))}>
-              <option value="">Selecione…</option>
-              {people.map((p) => <option key={p.id} value={p.id}>{p.rank ? `${p.rank} - ` : ""}{p.full_name} ({p.role})</option>)}
-            </select>
+            <PersonPicker people={people} selected={selectedPerson} onSelect={onPersonSelected} />
           </div>
           <div className="field" style={{ minWidth: 220 }}>
             <label>Função na aeronave</label>
@@ -719,7 +760,7 @@ function PeopleTab({ aircraftId, assignments, people, onReload }: { aircraftId: 
               {ASSIGNMENT_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
-          <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>{saving ? "Salvando…" : "Vincular"}</button>
+          <button type="submit" className="btn btn-primary btn-sm" disabled={saving || !selectedPerson}>{saving ? "Salvando…" : "Vincular"}</button>
           {selectedPersonHasNoGroup && (
             <div style={{ flexBasis: "100%", fontSize: 11.5, color: "var(--status-warn)" }}>
               💡 Esta pessoa não pertence a nenhum grupo/equipe ainda. Um vínculo individual só notifica
@@ -731,18 +772,17 @@ function PeopleTab({ aircraftId, assignments, people, onReload }: { aircraftId: 
       )}
       <div className="card scroll-x">
         <table>
-          <thead><tr><th>Nome</th><th>Organização</th><th>Função na Aeronave</th><th>Desde</th><th></th></tr></thead>
+          <thead><tr><th>Nome</th><th>Organização</th><th>Função na Aeronave</th><th></th></tr></thead>
           <tbody>
             {assignments.map((a) => (
               <tr key={a.id}>
                 <td><strong>{a.person.rank ? `${a.person.rank} - ` : ""}{a.person.full_name}</strong></td>
                 <td style={{ fontSize: 12.5 }}>{a.person.organization}</td>
-                <td>{a.role_in_aircraft}</td>
-                <td style={{ fontSize: 12.5 }}>{new Date(a.start_date).toLocaleDateString("pt-BR")}</td>
+                <td><span className="badge badge-warn">{a.role_in_aircraft}</span></td>
                 <td><button className="btn btn-outline btn-sm" onClick={() => removeAssignment(a.id)}>Remover</button></td>
               </tr>
             ))}
-            {assignments.length === 0 && <tr><td colSpan={5} style={{ color: "var(--text-secondary)" }}>Nenhum vínculo cadastrado.</td></tr>}
+            {assignments.length === 0 && <tr><td colSpan={4} style={{ color: "var(--text-secondary)" }}>Nenhum vínculo cadastrado.</td></tr>}
           </tbody>
         </table>
       </div>

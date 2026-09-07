@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from .. import models, security
-from ..database import Base, engine, sync_missing_indexes, sync_postgres_enum_types
+from ..database import Base, engine, sync_missing_columns, sync_missing_indexes, sync_postgres_enum_types
 
 router = APIRouter(prefix="/api/admin", tags=["administração"])
 
@@ -13,7 +13,8 @@ router = APIRouter(prefix="/api/admin", tags=["administração"])
 def sync_schema():
     """Aplica manualmente as sincronizações de esquema que deveriam rodar
     sozinhas no startup (`Base.metadata.create_all` + `sync_postgres_enum_types`
-    + `sync_missing_indexes`, ver database.py) - confirmado na prática que o
+    + `sync_missing_indexes` + `sync_missing_columns`, ver database.py) -
+    confirmado na prática que o
     hook de startup do FastAPI (`@app.on_event("startup")`) não é confiável no
     runtime serverless do Vercel (tabelas/índices/enums que deveriam ter sido
     criados/atualizados sozinhos a um novo deploy não apareciam no Postgres de
@@ -23,4 +24,5 @@ def sync_schema():
     Base.metadata.create_all(bind=engine)
     sync_postgres_enum_types()
     sync_missing_indexes()
-    return {"status": "ok", "detail": "Tabelas, tipos enum e índices sincronizados."}
+    sync_missing_columns()
+    return {"status": "ok", "detail": "Tabelas, tipos enum, índices e colunas sincronizados."}

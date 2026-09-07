@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthContext";
 import PersonAvatar from "../components/PersonAvatar";
 import PersonForm, { type PersonFormValues } from "../components/PersonForm";
 
-const ROLES: PersonRole[] = ["Piloto", "Mecânico", "Engenheiro Aeronáutico", "Cientista", "Gestor / Responsável Técnico"];
+const ROLES: PersonRole[] = ["Piloto", "Mecânico", "Engenheiro", "Cientista", "Gestor / Responsável Técnico"];
 
 function phoneFull(p: Person): string {
   if (p.phone_ddd && p.phone_number) return `(${p.phone_ddd}) ${p.phone_number}`;

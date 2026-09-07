@@ -9,7 +9,7 @@ const CATEGORIES: { key: LookupCategory; icon: string; hint: string }[] = [
   { key: "Esquadrão / Unidade", icon: "🛩️", hint: "Esquadrões, grupos de aviação e unidades" },
 ];
 
-const SYSTEM_ROLES = ["Piloto", "Mecânico", "Engenheiro Aeronáutico", "Cientista", "Gestor / Responsável Técnico"];
+const SYSTEM_ROLES = ["Piloto", "Mecânico", "Engenheiro", "Cientista", "Gestor / Responsável Técnico"];
 const FUNCAO = "Função" as LookupCategory;
 
 export default function LookupsPage() {
