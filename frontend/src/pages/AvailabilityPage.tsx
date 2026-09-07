@@ -464,8 +464,15 @@ export default function AvailabilityPage() {
             </select>
           </label>
 
-          <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-start" }}>
-            <div style={{ flex: "1 1 420px" }}>
+          {/* Dois grupos distintos e visualmente separados (cada um com sua
+              própria borda): Configuração Manual (um equipamento por vez) e
+              Configuração Automática (aplica um Código de Configuração
+              inteiro de uma vez). Nenhum dos dois mostra o diagrama aqui -
+              ele fica sempre visível no final da página, refletindo a
+              configuração ATUAL da aeronave (ver seção "Configuração da
+              Aeronave" mais abaixo). */}
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+            <div style={{ flex: "1 1 480px", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 14 }}>
               <h3 style={{ fontSize: 13.5, margin: "0 0 10px", color: "var(--text-primary)" }}>Configuração Manual</h3>
               <form onSubmit={submitManual} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
                 <label style={FIELD_LABEL_STYLE}>
@@ -505,47 +512,33 @@ export default function AvailabilityPage() {
               </form>
             </div>
 
-            {/* Painel da Configuração Automática - sempre visível assim que
-                uma aeronave é selecionada (não só ao escolher um código),
-                com a silhueta da aeronave e a faixa de estações (5 a 1) do
-                Código de Configuração escolhido logo abaixo (ver
-                ConfigurationDiagram e docs/03-modelo-de-dados.md). */}
-            {manualAircraftId && (
-              <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-                <h3 style={{ fontSize: 13.5, margin: "0 0 2px", color: "var(--text-primary)" }}>Configuração Automática</h3>
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                  <label style={FIELD_LABEL_STYLE}>
-                    Configuração
-                    <select
-                      value={selectedCodeId} onChange={(e) => setSelectedCodeId(e.target.value ? Number(e.target.value) : "")}
-                      style={{ minWidth: 170 }}
-                    >
-                      <option value="">Selecione…</option>
-                      {configCodes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-                    </select>
-                  </label>
-                  <button
-                    type="button" className="btn btn-outline btn-sm" disabled={!selectedCode || launchingCode}
-                    onClick={cadastrarConfiguracaoAutomatica} title="Substitui a configuração atual da aeronave pela deste código"
+            <div style={{ flex: "1 1 320px", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 14 }}>
+              <h3 style={{ fontSize: 13.5, margin: "0 0 10px", color: "var(--text-primary)" }}>Configuração Automática</h3>
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+                <label style={FIELD_LABEL_STYLE}>
+                  Configuração
+                  <select
+                    value={selectedCodeId} onChange={(e) => setSelectedCodeId(e.target.value ? Number(e.target.value) : "")}
+                    style={{ minWidth: 170 }} disabled={!manualAircraftId}
                   >
-                    {launchingCode ? "Cadastrando…" : "Cadastrar Configuração"}
-                  </button>
-                </div>
-                <div style={{ alignSelf: "center" }}>
-                  {/* Sem um código em preview (Automática), mostra a configuração
-                      ATUAL da aeronave (currentConfigDisplay) - lançada manual ou
-                      automaticamente - para o usuário sempre poder visualizá-la,
-                      não só ao escolher um código novo para aplicar. */}
-                  <ConfigurationDiagram code={selectedCode ?? currentConfigDisplay} symbolFor={(eq) => configSymbol(eq)} />
-                </div>
+                    <option value="">Selecione…</option>
+                    {configCodes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+                  </select>
+                </label>
+                <button
+                  type="button" className="btn btn-outline btn-sm" disabled={!selectedCode || launchingCode}
+                  onClick={cadastrarConfiguracaoAutomatica} title="Substitui a configuração atual da aeronave pela deste código"
+                >
+                  {launchingCode ? "Cadastrando…" : "Cadastrar Configuração"}
+                </button>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
         <div className="card" style={{ padding: 18, marginBottom: 18 }}>
           <h2 style={{ fontSize: 15.5, margin: "0 0 2px" }}>
-            Configurações Autorizadas para a Aeronave
+            Configurações Autorizadas:
             {manualAircraftId && (() => {
               const a = fleet.find((x) => x.id === Number(manualAircraftId));
               return a ? (
@@ -594,6 +587,17 @@ export default function AvailabilityPage() {
             </div>
           )}
         </div>
+
+        {/* Diagrama da configuração ATUAL da aeronave - no final da página,
+            depois da lista "Configurações Autorizadas:" acima (não mais
+            dentro do cadastro Manual/Automática) - reconstruído estação a
+            estação a partir do histórico (ver currentConfigDisplay),
+            refletindo tanto lançamentos manuais quanto automáticos. */}
+        {manualAircraftId && (
+          <div className="card" style={{ padding: 18, marginBottom: 18, textAlign: "center" }}>
+            <ConfigurationDiagram code={currentConfigDisplay} symbolFor={(eq) => configSymbol(eq)} />
+          </div>
+        )}
         </>
       )}
     </div>
