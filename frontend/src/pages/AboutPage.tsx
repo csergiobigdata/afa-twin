@@ -1,7 +1,7 @@
 import { AfaTwinMark } from "../components/Layout";
 import { useTheme } from "../theme/ThemeContext";
 
-const APP_VERSION = "1.1";
+const APP_VERSION = "1.2";
 const DEVELOPER_NAME = "Walter Vinicius Malwald";
 
 /** Módulo "Sobre": identificação do aplicativo (nome, desenvolvedor, versão
