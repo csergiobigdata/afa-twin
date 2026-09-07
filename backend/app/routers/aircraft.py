@@ -2,6 +2,7 @@ import mimetypes
 import os
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from .. import audit, models, schemas, compute, security, reliability
@@ -161,6 +162,25 @@ def delete_aircraft(aircraft_id: int, db: Session = Depends(get_db)):
     a = _get_or_404(db, aircraft_id)
     _delete_asset_if_exists(db, a.photo_asset_id)
     _delete_asset_if_exists(db, a.photo_animated_asset_id)
+
+    # Notification.aircraft_id/component_id não têm cascade a partir de
+    # Aircraft (é um histórico de comunicação independente, não uma coleção
+    # "pertencente" à aeronave como components/maintenance_orders/etc.) - em
+    # Postgres (produção), a FK bloqueia a exclusão da aeronave enquanto
+    # existir uma notificação antiga apontando para ela ou para um de seus
+    # componentes (SQLite não aplica a FK por padrão, então isso não
+    # aparecia em desenvolvimento local). Preserva a notificação (valor
+    # histórico) e só desvincula a referência, em vez de apagá-la.
+    component_ids = [c.id for c in a.components]
+    conditions = [models.Notification.aircraft_id == aircraft_id]
+    if component_ids:
+        conditions.append(models.Notification.component_id.in_(component_ids))
+    for n in db.query(models.Notification).filter(or_(*conditions)).all():
+        if n.aircraft_id == aircraft_id:
+            n.aircraft_id = None
+        if n.component_id in component_ids:
+            n.component_id = None
+
     db.delete(a)
     db.commit()
     return None

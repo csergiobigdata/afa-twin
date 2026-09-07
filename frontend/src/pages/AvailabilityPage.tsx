@@ -129,7 +129,6 @@ export default function AvailabilityPage() {
   const [manualAircraftId, setManualAircraftId] = useState("");
   const [manualCode, setManualCode] = useState<AvailabilityCode>("DI");
   const [manualConfig, setManualConfig] = useState("");
-  const [manualSubalares, setManualSubalares] = useState(false);
   const [manualReason, setManualReason] = useState("");
   const [manualDate, setManualDate] = useState(todayIso());
   const [manualSaving, setManualSaving] = useState(false);
@@ -167,9 +166,9 @@ export default function AvailabilityPage() {
     try {
       await api.post<AvailabilityUpdate>("/availability-updates", {
         aircraft_id: Number(manualAircraftId), report_date: manualDate, code: manualCode,
-        configuration: manualConfig || null, has_subalares: manualSubalares, reason: manualReason || null,
+        configuration: manualConfig || null, has_subalares: false, reason: manualReason || null,
       });
-      setManualReason(""); setManualSubalares(false); setManualConfig("");
+      setManualReason(""); setManualConfig("");
       reload();
     } finally {
       setManualSaving(false);
@@ -376,9 +375,6 @@ export default function AvailabilityPage() {
               Configuração
               <AuthorizedConfigSelect options={activeConfigs} value={manualConfig} onChange={setManualConfig} />
             </label>
-            <label style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 6, paddingBottom: 8 }}>
-              <input type="checkbox" checked={manualSubalares} onChange={(e) => setManualSubalares(e.target.checked)} /> Subalares
-            </label>
             <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4, flex: "1 1 200px" }}>
               Motivo / observação
               <input value={manualReason} onChange={(e) => setManualReason(e.target.value)} placeholder="ex.: TREM DE POUSO" />
@@ -414,7 +410,7 @@ export default function AvailabilityPage() {
             <div className="scroll-x">
               <table>
                 <thead>
-                  <tr><th></th><th>Código</th><th>Configuração</th><th>Subalares</th><th>Motivo/Obs</th><th>Usuário</th><th>Data/Hora</th><th></th></tr>
+                  <tr><th></th><th>Código</th><th>Configuração</th><th>Motivo/Obs</th><th>Usuário</th><th>Data/Hora</th><th></th></tr>
                 </thead>
                 <tbody>
                   {selectedHistory.map((u) => (
@@ -424,7 +420,6 @@ export default function AvailabilityPage() {
                       </td>
                       <td><AvailabilityCodeBadge code={u.code} /></td>
                       <td style={{ fontSize: 12.5 }}>{u.configuration ?? "LISO"}</td>
-                      <td style={{ fontSize: 12.5 }}>{u.has_subalares ? "Sim" : "—"}</td>
                       <td style={{ fontSize: 12.5 }}>{u.reason ?? "—"}</td>
                       <td style={{ fontSize: 12.5 }}>{u.recorded_by_name ?? "—"}</td>
                       <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{formatDateTime(u.created_at)}</td>
@@ -434,7 +429,7 @@ export default function AvailabilityPage() {
                     </tr>
                   ))}
                   {selectedHistory.length === 0 && (
-                    <tr><td colSpan={8} style={{ color: "var(--text-secondary)" }}>Nenhuma configuração lançada para esta aeronave ainda.</td></tr>
+                    <tr><td colSpan={7} style={{ color: "var(--text-secondary)" }}>Nenhuma configuração lançada para esta aeronave ainda.</td></tr>
                   )}
                 </tbody>
               </table>

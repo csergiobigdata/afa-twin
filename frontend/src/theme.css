@@ -53,6 +53,12 @@
   --side-nav-bg: #9aa0a6;
   --side-nav-text: #20242b;
   --side-nav-text-secondary: #454b55;
+
+  /* Informa ao navegador qual paleta os controles nativos (ícone do
+     calendário de <input type="date">, barra de rolagem, etc.) devem
+     seguir - sem isso, o ícone do calendário renderiza sempre escuro por
+     padrão, ficando quase invisível sobre o fundo escuro do modo Noturno. */
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -72,6 +78,7 @@
     --side-nav-bg: #aac8ef;
     --side-nav-text: #0d2038;
     --side-nav-text-secondary: #1c3b5c;
+    color-scheme: dark;
   }
 }
 
@@ -89,6 +96,11 @@
   --side-nav-bg: #aac8ef;
   --side-nav-text: #0d2038;
   --side-nav-text-secondary: #1c3b5c;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
