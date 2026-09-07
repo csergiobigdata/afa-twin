@@ -514,9 +514,9 @@ export default function AvailabilityPage() {
 
             <div style={{ flex: "1 1 320px", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 14 }}>
               <h3 style={{ fontSize: 13.5, margin: "0 0 10px", color: "var(--text-primary)" }}>Configuração Automática</h3>
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
-                <label style={FIELD_LABEL_STYLE}>
-                  Configuração
+              <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                <label style={{ ...FIELD_LABEL_STYLE, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  Código
                   <select
                     value={selectedCodeId} onChange={(e) => setSelectedCodeId(e.target.value ? Number(e.target.value) : "")}
                     style={{ minWidth: 170 }} disabled={!manualAircraftId}
@@ -528,8 +528,9 @@ export default function AvailabilityPage() {
                 <button
                   type="button" className="btn btn-outline btn-sm" disabled={!selectedCode || launchingCode}
                   onClick={cadastrarConfiguracaoAutomatica} title="Substitui a configuração atual da aeronave pela deste código"
+                  style={{ color: "#fff" }}
                 >
-                  {launchingCode ? "Cadastrando…" : "Cadastrar Configuração"}
+                  {launchingCode ? "Cadastrando…" : "+ Cadastrar Configuração"}
                 </button>
               </div>
             </div>
