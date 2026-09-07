@@ -794,3 +794,65 @@ def seed_authorized_configurations_if_empty(db: Session) -> None:
         for svg, equipment, status in _AUTHORIZED_CONFIG_SEED
     ])
     db.commit()
+
+
+# --------------------------------------------------------------------------
+# Códigos de Configuração - combinações padronizadas de equipamento por
+# estação (5, 4, 3, 2, 1), transcritas manualmente das 30 linhas do
+# documento de referência docs/"configurações da aeronave atual.pdf"
+# (cada linha do documento já veio como uma imagem própria, uma por
+# configuração, o que permitiu conferir cada estação individualmente em
+# vez de ler a tabela inteira de uma vez). Nenhuma delas usa as estações 5
+# e 1 neste conjunto - mantidas no modelo mesmo assim porque a tabela de
+# referência as define (podem vir a ser usadas por um código futuro). Os
+# nomes de equipamento usam o mesmo texto de _AUTHORIZED_CONFIG_SEED acima,
+# para o símbolo aparecer certo na tela (ver AuthorizedConfigSymbol.tsx).
+# --------------------------------------------------------------------------
+
+_CONFIGURATION_CODE_SEED: list[tuple[str, str | None, str | None, str | None, str | None, str | None]] = [
+    # code, estação 5, estação 4, estação 3, estação 2, estação 1
+    ("0", None, None, "PILONE VENTRAL VAZIO", None, None),
+    ("0I", None, "PILONE SUBALAR VAZIO", "PILONE VENTRAL VAZIO", "PILONE SUBALAR VAZIO", None),
+    ("1", None, None, "PILONE VENTRAL VAZIO", None, None),
+    ("1I", None, "PILONE SUBALAR VAZIO", "PILONE VENTRAL VAZIO", "PILONE SUBALAR VAZIO", None),
+    ("12", None, "LANÇADOR DE FOGUETES 70 X 7 (EQ-LMF-70/7 AP)", "LANÇADOR - SUU-20 (SOMENTE 6 BOMBAS BEX11)",
+     "LANÇADOR DE FOGUETES 70 X 7 (EQ-LMF-70/7 AP)", None),
+    ("13", None, None, "ALVO AÉREO NP-AV CAA", None, None),
+    ("13I", None, "PILONE SUBALAR VAZIO", "ALVO AÉREO NP-AV CAA", "PILONE SUBALAR VAZIO", None),
+    ("19", None, "BOMBA BAFG-230", "BOMBA BAFG-230", "BOMBA BAFG-230", None),
+    ("20", None, "BOMBA BAFG-230", "PILONE VENTRAL VAZIO", "BOMBA BAFG-230", None),
+    ("21", None, None, "BOMBA BAFG-230", None, None),
+    ("21I", None, "PILONE SUBALAR VAZIO", "BOMBA BAFG-230", "PILONE SUBALAR VAZIO", None),
+    ("24", None, "ALVO AÉREO NP-AV CAA", "BOMBA BAFG-230", "ALVO AÉREO NP-AV CAA", None),
+    ("25", None, "ALVO AÉREO NP-AV CAA", "ALVO AÉREO NP-AV CAA", "ALVO AÉREO NP-AV CAA", None),
+    ("26", None, "ALVO AÉREO NP-AV CAA", "PILONE VENTRAL VAZIO", "ALVO AÉREO NP-AV CAA", None),
+    ("27", None, None, "ALVO AÉREO NP-AV CAA", None, None),
+    ("27I", None, "PILONE SUBALAR VAZIO", "ALVO AÉREO NP-AV CAA", "PILONE SUBALAR VAZIO", None),
+    ("31", None, "LANÇADOR DE FOGUETES 70 X 19 (EQ-LMF-70/19)", "ALVO AÉREO NP-AV CAA",
+     "LANÇADOR DE FOGUETES 70 X 19 (EQ-LMF-70/19)", None),
+    ("32", None, "LANÇADOR DE FOGUETES 70 X 7 (EQ-LMF-70/7 AP)", "PILONE VENTRAL VAZIO",
+     "LANÇADOR DE FOGUETES 70 X 7 (EQ-LMF-70/7 AP)", None),
+    ("33", None, None, "LANÇADOR - SUU-20 (SOMENTE 6 BOMBAS BEX11)", None, None),
+    ("33I", None, "PILONE SUBALAR VAZIO", "LANÇADOR - SUU-20 (SOMENTE 6 BOMBAS BEX11)", "PILONE SUBALAR VAZIO", None),
+    ("40", None, "ALVO AÉREO NP-AV CAA", "BOMBA BINC-300", "ALVO AÉREO NP-AV CAA", None),
+    ("41", None, "ALVO AÉREO NP-AV CAA", "ALVO AÉREO NP-AV CAA", "ALVO AÉREO NP-AV CAA", None),
+    ("42", None, "ALVO AÉREO NP-AV CAA", "PILONE VENTRAL VAZIO", "ALVO AÉREO NP-AV CAA", None),
+    ("43", None, None, "ALVO AÉREO NP-AV CAA", None, None),
+    ("43I", None, "PILONE SUBALAR VAZIO", "ALVO AÉREO NP-AV CAA", "PILONE SUBALAR VAZIO", None),
+    ("49", None, "BOMBA BLG-252", "BOMBA BLG-252", "BOMBA BLG-252", None),
+    ("50", None, "BOMBA BLG-252", "PILONE VENTRAL VAZIO", "BOMBA BLG-252", None),
+    ("51", None, None, "BOMBA BLG-252", None, None),
+    ("51I", None, "PILONE SUBALAR VAZIO", "BOMBA BLG-252", "PILONE SUBALAR VAZIO", None),
+    ("52", None, "BOMBA BLG-252", "ALVO AÉREO NP-AV CAA", "BOMBA BLG-252", None),
+    ("54", None, "ALVO AÉREO NP-AV CAA", "BOMBA BLG-252", "ALVO AÉREO NP-AV CAA", None),
+]
+
+
+def seed_configuration_codes_if_empty(db: Session) -> None:
+    if db.query(models.ConfigurationCode).count() > 0:
+        return
+    db.add_all([
+        models.ConfigurationCode(code=code, station_5=s5, station_4=s4, station_3=s3, station_2=s2, station_1=s1)
+        for code, s5, s4, s3, s2, s1 in _CONFIGURATION_CODE_SEED
+    ])
+    db.commit()

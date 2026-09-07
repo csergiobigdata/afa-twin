@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type {
   Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityCode, AvailabilityLocation,
-  AvailabilityUpdate, AvailabilityUpdateCreate,
+  AvailabilityUpdate, AvailabilityUpdateCreate, ConfigurationCode,
 } from "../api/types";
 import { useLookupValues } from "../api/useLookup";
 import { useAuth } from "../auth/AuthContext";
@@ -10,6 +10,7 @@ import { ROLE_PERMISSIONS } from "../auth/AuthContext";
 import AuthorizedConfigSelect from "../components/AuthorizedConfigSelect";
 import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
 import { AvailabilityCodeBadge } from "../components/Badges";
+import ConfigurationDiagram from "../components/ConfigurationDiagram";
 import SplashScreen from "../components/SplashScreen";
 import StatCard from "../components/StatCard";
 import { parseAvailabilityBoardText, type ParsedAvailabilityRow } from "./availabilityParser";
@@ -17,11 +18,15 @@ import { parseAvailabilityBoardText, type ParsedAvailabilityRow } from "./availa
 const CODES: AvailabilityCode[] = ["DI", "DO", "IN"];
 const LOCATIONS: AvailabilityLocation[] = ["Estação Ventral", "Tanque Subalar", "Asas (Dir/Esq)"];
 const CONFIG_CATEGORY = "Configuração de Disponibilidade (asas/hardpoints)" as const;
-// Imagem de referência fixa mostrada enquanto uma configuração é montada no
-// lançamento manual (ver Aeronaves → Configurações Autorizadas para o
-// cadastro dos símbolos). Por enquanto é uma única imagem fixa; no futuro
-// cada configuração/local poderá ter sua própria imagem.
-const CONFIG_REFERENCE_IMAGE = "/reference/configuracao-exemplo.png";
+// Estações centrais (3) mapeiam para "Estação Ventral"; as demais (5/4/2/1,
+// todas nas asas) mapeiam para "Asas (Dir/Esq)" - usado ao lançar um Código
+// de Configuração inteiro de uma vez (ver launchConfigurationCode).
+type StationKey = "station_5" | "station_4" | "station_3" | "station_2" | "station_1";
+const STATION_KEYS: StationKey[] = ["station_5", "station_4", "station_3", "station_2", "station_1"];
+const STATION_TO_LOCATION: Record<StationKey, AvailabilityLocation> = {
+  station_5: "Asas (Dir/Esq)", station_4: "Asas (Dir/Esq)", station_3: "Estação Ventral",
+  station_2: "Asas (Dir/Esq)", station_1: "Asas (Dir/Esq)",
+};
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -57,6 +62,17 @@ export default function AvailabilityPage() {
   function configSymbol(equipment: string | null | undefined): string | undefined {
     return equipment ? allConfigs.find((c) => c.equipment === equipment)?.symbol_svg : undefined;
   }
+
+  // Catálogo de Códigos de Configuração (combinação padronizada de
+  // equipamento por estação, ex.: "12", "21I") - ver Aeronaves →
+  // Configurações Autorizadas → Códigos de Configuração.
+  const [configCodes, setConfigCodes] = useState<ConfigurationCode[]>([]);
+  useEffect(() => {
+    api.get<ConfigurationCode[]>("/configuration-codes").then(setConfigCodes).catch(() => setConfigCodes([]));
+  }, []);
+  const [selectedCodeId, setSelectedCodeId] = useState<number | "">("");
+  const selectedCode = configCodes.find((c) => c.id === selectedCodeId) ?? null;
+  const [launchingCode, setLaunchingCode] = useState(false);
 
   function reload() {
     Promise.all([
@@ -179,6 +195,30 @@ export default function AvailabilityPage() {
     if (!confirm("Remover este lançamento de disponibilidade?")) return;
     await api.del(`/availability-updates/${id}`);
     reload();
+  }
+
+  // Lança, de uma vez, um AvailabilityUpdate por estação preenchida do
+  // Código de Configuração selecionado (ex.: "12" lança 3 lançamentos:
+  // estações 4, 3 e 2) - forma mais simples de registrar uma configuração
+  // padronizada inteira sem montar cada estação manualmente.
+  async function launchConfigurationCode() {
+    if (!manualAircraftId || !selectedCode) return;
+    const payload: AvailabilityUpdateCreate[] = STATION_KEYS
+      .filter((s) => selectedCode[s])
+      .map((s) => ({
+        aircraft_id: Number(manualAircraftId), report_date: todayIso(), code: manualCode,
+        configuration: selectedCode[s] as string, has_subalares: false,
+        reason: `Código de configuração ${selectedCode.code}`, location: STATION_TO_LOCATION[s],
+      }));
+    if (payload.length === 0) return;
+    setLaunchingCode(true);
+    try {
+      await api.post("/availability-updates/bulk", payload);
+      setSelectedCodeId("");
+      reload();
+    } finally {
+      setLaunchingCode(false);
+    }
   }
 
   if (loading) return <SplashScreen fullscreen={false} />;
@@ -392,18 +432,29 @@ export default function AvailabilityPage() {
             </button>
           </form>
 
-          {/* Imagem de referência da configuração sendo montada - por
-              enquanto uma única imagem fixa (ver CONFIG_REFERENCE_IMAGE);
-              aparece assim que o usuário começa a escolher a Configuração
-              ou o Local. No futuro cada combinação poderá ter sua própria
-              imagem. */}
-          {(manualConfig || manualLocation) && (
-            <div style={{ flex: "0 0 auto", textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 4 }}>Exemplo de configuração</div>
-              <img
-                src={CONFIG_REFERENCE_IMAGE} alt="Exemplo de configuração de asas/hardpoints"
-                style={{ maxWidth: 220, borderRadius: 8, border: "1px solid var(--border-subtle)", background: "#fff" }}
-              />
+          {/* Painel da configuração - sempre visível assim que uma aeronave
+              é selecionada (não só ao escolher algo), com a silhueta da
+              aeronave e a faixa de estações (5 a 1) do Código de
+              Configuração escolhido logo abaixo (ver ConfigurationDiagram e
+              docs/03-modelo-de-dados.md). */}
+          {manualAircraftId && (
+            <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <select
+                  value={selectedCodeId} onChange={(e) => setSelectedCodeId(e.target.value ? Number(e.target.value) : "")}
+                  style={{ minWidth: 170 }} title="Código de Configuração"
+                >
+                  <option value="">Código de Configuração…</option>
+                  {configCodes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+                </select>
+                <button
+                  type="button" className="btn btn-outline btn-sm" disabled={!selectedCode || launchingCode}
+                  onClick={launchConfigurationCode} title="Lança um registro por estação preenchida deste código"
+                >
+                  {launchingCode ? "Lançando…" : "Lançar código"}
+                </button>
+              </div>
+              <ConfigurationDiagram code={selectedCode} symbolFor={(eq) => configSymbol(eq)} />
             </div>
           )}
           </div>
@@ -414,7 +465,11 @@ export default function AvailabilityPage() {
             Configurações Autorizadas para a Aeronave
             {manualAircraftId && (() => {
               const a = fleet.find((x) => x.id === Number(manualAircraftId));
-              return a ? ` — ${a.tail_number} · ${a.model}` : "";
+              return a ? (
+                <span className="badge badge-warn" style={{ marginLeft: 8, fontSize: 13 }}>
+                  {a.tail_number} · {a.model}
+                </span>
+              ) : null;
             })()}
           </h2>
           <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 0, marginBottom: 12 }}>

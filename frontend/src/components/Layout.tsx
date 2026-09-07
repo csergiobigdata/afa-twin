@@ -1,18 +1,19 @@
 import type { CSSProperties } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import NavIcon, { type NavIconName } from "./NavIcons";
 
-const NAV_ITEMS = [
-  { to: "/", label: "Painel", icon: "📊", end: true },
-  { to: "/aeronaves", label: "Aeronaves", icon: "🛩️" },
-  { to: "/manutencao", label: "Manutenção", icon: "🔧" },
-  { to: "/diagnostico", label: "Diagnóstico", icon: "🩺" },
-  { to: "/planejamento", label: "Planejamento", icon: "📈" },
-  { to: "/disponibilidade", label: "Disponibilidade", icon: "🛫" },
-  { to: "/pessoal", label: "Usuários", icon: "🎖️" },
-  { to: "/protocolos", label: "Protocolos", icon: "📋" },
-  { to: "/auditoria", label: "Auditoria", icon: "🕵️" },
-  { to: "/sobre", label: "Sobre", icon: "ℹ️" },
+const NAV_ITEMS: { to: string; label: string; icon: NavIconName; end?: boolean }[] = [
+  { to: "/", label: "Painel", icon: "painel", end: true },
+  { to: "/aeronaves", label: "Aeronaves", icon: "aeronaves" },
+  { to: "/manutencao", label: "Manutenção", icon: "manutencao" },
+  { to: "/diagnostico", label: "Diagnóstico", icon: "diagnostico" },
+  { to: "/planejamento", label: "Planejamento", icon: "planejamento" },
+  { to: "/disponibilidade", label: "Disponibilidade", icon: "disponibilidade" },
+  { to: "/pessoal", label: "Usuários", icon: "usuarios" },
+  { to: "/protocolos", label: "Protocolos", icon: "protocolos" },
+  { to: "/auditoria", label: "Auditoria", icon: "auditoria" },
+  { to: "/sobre", label: "Sobre", icon: "sobre" },
 ];
 
 export default function Layout() {
@@ -71,7 +72,7 @@ export default function Layout() {
                 fontWeight: 600, fontSize: 14.5,
               })}
             >
-              <span style={{ fontSize: 18 }}>{item.icon}</span>
+              <NavIcon name={item.icon} size={19} />
               {item.label}
             </NavLink>
           ))}
@@ -101,7 +102,7 @@ export default function Layout() {
               fontSize: 11, fontWeight: 700, flex: 1, padding: "8px 0",
             })}
           >
-            <span style={{ fontSize: 19 }}>{item.icon}</span>
+            <NavIcon name={item.icon} size={21} />
             {item.label}
           </NavLink>
         ))}

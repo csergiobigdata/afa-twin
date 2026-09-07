@@ -468,6 +468,19 @@ export interface AuthorizedConfigPdfLoadResult {
   items: AuthorizedConfiguration[];
 }
 
+// Código de Configuração - combinação padronizada de equipamento por
+// estação (5, 4, 3, 2, 1) - ver backend/app/models.py::ConfigurationCode.
+export interface ConfigurationCode {
+  id: number;
+  code: string;
+  station_5?: string | null;
+  station_4?: string | null;
+  station_3?: string | null;
+  station_2?: string | null;
+  station_1?: string | null;
+  created_at: string;
+}
+
 export type LookupCategory =
   | "Organização" | "Posto / Graduação / Cargo" | "Especialidade" | "Esquadrão / Unidade"
   | "Componente Associado (padrão)" | "Tipo de Intervalo de Manutenção"

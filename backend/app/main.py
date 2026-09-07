@@ -17,7 +17,7 @@ from . import seed
 from .routers import (
     aircraft, people, components, assignments, maintenance, checklists, flightlogs,
     dashboard, auth, inspections, diagnostics, planning, notifications, groups,
-    lookups, audit, media, availability, admin, authorized_configs,
+    lookups, audit, media, availability, admin, authorized_configs, configuration_codes,
 )
 
 app = FastAPI(
@@ -104,6 +104,7 @@ def on_startup():
     try:
         seed.seed_if_empty(db)
         seed.seed_authorized_configurations_if_empty(db)
+        seed.seed_configuration_codes_if_empty(db)
     finally:
         db.close()
 
@@ -128,6 +129,7 @@ app.include_router(media.router)
 app.include_router(availability.router)
 app.include_router(admin.router)
 app.include_router(authorized_configs.router)
+app.include_router(configuration_codes.router)
 app.include_router(dashboard.router)
 
 

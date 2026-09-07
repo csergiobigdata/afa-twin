@@ -7,6 +7,7 @@ models.py::AuthorizedConfiguration.
 import os
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .. import audit, models, schemas, security
@@ -45,6 +46,11 @@ def create_configuration(
     payload: schemas.AuthorizedConfigurationCreate, db: Session = Depends(get_db),
     actor: models.User = Depends(security.get_current_user),
 ):
+    existing = db.query(models.AuthorizedConfiguration).filter(
+        func.lower(models.AuthorizedConfiguration.equipment) == payload.equipment.strip().lower()
+    ).first()
+    if existing:
+        raise HTTPException(400, f"Já existe uma configuração autorizada chamada '{existing.equipment}'.")
     item = models.AuthorizedConfiguration(**payload.model_dump())
     db.add(item)
     db.commit()
@@ -117,6 +123,12 @@ def update_configuration(
     actor: models.User = Depends(security.get_current_user),
 ):
     item = _get_or_404(db, config_id)
+    if payload.equipment and payload.equipment.strip().lower() != item.equipment.strip().lower():
+        existing = db.query(models.AuthorizedConfiguration).filter(
+            func.lower(models.AuthorizedConfiguration.equipment) == payload.equipment.strip().lower()
+        ).first()
+        if existing:
+            raise HTTPException(400, f"Já existe uma configuração autorizada chamada '{existing.equipment}'.")
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(item, key, value)
     db.commit()

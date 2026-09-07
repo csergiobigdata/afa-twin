@@ -2,6 +2,7 @@ import mimetypes
 import os
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .. import audit, models, schemas, security
@@ -114,6 +115,11 @@ def create_person(
     payload: schemas.PersonCreate, db: Session = Depends(get_db),
     actor: models.User = Depends(security.get_current_user),
 ):
+    existing = db.query(models.Person).filter(
+        func.lower(models.Person.full_name) == payload.full_name.strip().lower()
+    ).first()
+    if existing:
+        raise HTTPException(400, f"Já existe um usuário cadastrado com o nome '{existing.full_name}'.")
     p = models.Person(**payload.model_dump())
     db.add(p)
     db.commit()
@@ -131,6 +137,12 @@ def update_person(
     p = db.get(models.Person, person_id)
     if not p:
         raise HTTPException(404, "Pessoa não encontrada")
+    if payload.full_name and payload.full_name.strip().lower() != p.full_name.strip().lower():
+        existing = db.query(models.Person).filter(
+            func.lower(models.Person.full_name) == payload.full_name.strip().lower()
+        ).first()
+        if existing:
+            raise HTTPException(400, f"Já existe um usuário cadastrado com o nome '{existing.full_name}'.")
     changes = payload.model_dump(exclude_unset=True)
     was_active = p.active
     for key, value in changes.items():

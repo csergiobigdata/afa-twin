@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from .. import audit, models, schemas, security
@@ -45,6 +46,11 @@ def create_group(
     payload: schemas.ResponsibleGroupCreate, db: Session = Depends(get_db),
     actor: models.User = Depends(security.get_current_user),
 ):
+    existing = db.query(models.ResponsibleGroup).filter(
+        func.lower(models.ResponsibleGroup.name) == payload.name.strip().lower()
+    ).first()
+    if existing:
+        raise HTTPException(400, f"Já existe um grupo/equipe chamado '{existing.name}'.")
     g = models.ResponsibleGroup(name=payload.name, description=payload.description)
     db.add(g)
     db.flush()
@@ -64,6 +70,12 @@ def update_group(group_id: int, payload: schemas.ResponsibleGroupUpdate, db: Ses
     g = db.get(models.ResponsibleGroup, group_id)
     if not g:
         raise HTTPException(404, "Grupo não encontrado")
+    if payload.name and payload.name.strip().lower() != g.name.strip().lower():
+        existing = db.query(models.ResponsibleGroup).filter(
+            func.lower(models.ResponsibleGroup.name) == payload.name.strip().lower()
+        ).first()
+        if existing:
+            raise HTTPException(400, f"Já existe um grupo/equipe chamado '{existing.name}'.")
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(g, key, value)
     db.commit()

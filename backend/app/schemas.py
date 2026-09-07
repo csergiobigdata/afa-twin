@@ -689,6 +689,35 @@ class AuthorizedConfigPdfLoadResult(BaseModel):
     items: list[AuthorizedConfigurationOut]
 
 
+# ---------------- Códigos de Configuração ----------------
+
+class ConfigurationCodeBase(BaseModel):
+    code: str = Field(..., examples=["12", "21I"])
+    station_5: Optional[str] = None
+    station_4: Optional[str] = None
+    station_3: Optional[str] = None
+    station_2: Optional[str] = None
+    station_1: Optional[str] = None
+
+
+class ConfigurationCodeCreate(ConfigurationCodeBase):
+    pass
+
+
+class ConfigurationCodeUpdate(BaseModel):
+    code: Optional[str] = None
+    station_5: Optional[str] = None
+    station_4: Optional[str] = None
+    station_3: Optional[str] = None
+    station_2: Optional[str] = None
+    station_1: Optional[str] = None
+
+
+class ConfigurationCodeOut(ConfigurationCodeBase, ORMModel):
+    id: int
+    created_at: dt.datetime
+
+
 # ---------------- Auditoria ----------------
 
 class AuditLogOut(ORMModel):

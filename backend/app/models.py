@@ -588,6 +588,32 @@ class AuthorizedConfiguration(Base):
 
 
 # --------------------------------------------------------------------------
+# Códigos de Configuração - catálogo de combinações padronizadas de
+# equipamento por estação (5, 4, 3, 2, 1), como o esquadrão já nomeia com um
+# código curto (ex.: "12", "19", "21I") - ver docs/03-modelo-de-dados.md e
+# routers/configuration_codes.py. Cada campo estacao_N guarda o texto do
+# equipamento (mesmo vocabulário de AuthorizedConfiguration.equipment) ou
+# fica vazio quando aquela estação não é usada nesse código. Selecionar um
+# código no lançamento manual de disponibilidade lança, de uma vez, um
+# AvailabilityUpdate por estação preenchida (ver AvailabilityPage.tsx) -
+# forma mais simples, e explicitamente aceita como alternativa, a deixar o
+# usuário montar manualmente cada estação.
+# --------------------------------------------------------------------------
+
+class ConfigurationCode(Base):
+    __tablename__ = "configuration_codes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(10), unique=True, index=True)  # ex.: "0", "0I", "12", "21I"
+    station_5: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    station_4: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    station_3: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    station_2: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    station_1: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+
+
+# --------------------------------------------------------------------------
 # Usuário (autenticação simplificada do piloto de testes)
 # --------------------------------------------------------------------------
 

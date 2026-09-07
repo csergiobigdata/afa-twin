@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
-import type { AuthorizedConfiguration, AuthorizedConfigPdfLoadResult } from "../api/types";
+import type { AuthorizedConfiguration, AuthorizedConfigPdfLoadResult, ConfigurationCode } from "../api/types";
 import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
+import ConfigurationDiagram from "../components/ConfigurationDiagram";
 
 /** Ícone de documento PDF (troca o emoji de câmera anterior, de quando a
  * carga era feita por imagem) - marcação estática do próprio app, não dado
@@ -39,6 +40,20 @@ export default function AuthorizedConfigurationsPage() {
       .then(setItems).finally(() => setLoading(false));
   }
   useEffect(reload, []);
+
+  // Códigos de Configuração (ex.: "12", "21I") - catálogo consultável de
+  // combinações padronizadas de equipamento por estação (ver
+  // ConfigurationDiagram e AvailabilityPage → Lançamento manual, onde um
+  // código pode ser lançado de uma vez).
+  const [codes, setCodes] = useState<ConfigurationCode[]>([]);
+  useEffect(() => {
+    api.get<ConfigurationCode[]>("/configuration-codes").then(setCodes).catch(() => setCodes([]));
+  }, []);
+  const [previewCodeId, setPreviewCodeId] = useState<number | "">("");
+  const previewCode = codes.find((c) => c.id === previewCodeId) ?? null;
+  function symbolFor(equipment: string): string | undefined {
+    return items.find((i) => i.equipment === equipment)?.symbol_svg;
+  }
 
   async function toggleStatus(item: AuthorizedConfiguration) {
     await api.put(`/authorized-configurations/${item.id}`, {
@@ -150,6 +165,31 @@ export default function AuthorizedConfigurationsPage() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: 18, marginTop: 18 }}>
+        <h2 style={{ fontSize: 15.5, margin: "0 0 4px" }}>Códigos de Configuração</h2>
+        <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14, maxWidth: 640 }}>
+          Combinações padronizadas de equipamento por estação (5 a 1), como o esquadrão já nomeia com um
+          código curto (ex.: "12", "21I"). Consulte a composição de qualquer código abaixo - no lançamento
+          manual de disponibilidade (Disponibilidade → Lançamento manual) é possível lançar um código
+          inteiro de uma vez. {codes.length} código(s) cadastrado(s).
+        </p>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-start" }}>
+          <div style={{ flex: "1 1 220px", maxWidth: 260 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>
+              Selecione um código
+            </label>
+            <select
+              value={previewCodeId} onChange={(e) => setPreviewCodeId(e.target.value ? Number(e.target.value) : "")}
+              style={{ width: "100%" }}
+            >
+              <option value="">— Selecione —</option>
+              {codes.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+            </select>
+          </div>
+          <ConfigurationDiagram code={previewCode} symbolFor={symbolFor} />
         </div>
       </div>
     </div>
