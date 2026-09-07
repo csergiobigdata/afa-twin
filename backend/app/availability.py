@@ -88,7 +88,7 @@ def to_out(u: models.AvailabilityUpdate) -> schemas.AvailabilityUpdateOut:
     return schemas.AvailabilityUpdateOut(
         id=u.id, aircraft_id=u.aircraft_id, aircraft_tail_number=u.aircraft.tail_number,
         report_date=u.report_date, code=u.code, configuration=u.configuration,
-        has_subalares=u.has_subalares, reason=u.reason, location=u.location,
+        has_subalares=u.has_subalares, reason=u.reason, location=u.location, station=u.station,
         recorded_by_id=u.recorded_by_id, recorded_by_name=u.recorded_by.full_name if u.recorded_by else None,
         created_at=u.created_at,
     )

@@ -1,4 +1,4 @@
-import type { ConfigurationCode } from "../api/types";
+import type { StationEquipmentDisplay, StationKey } from "../api/types";
 import AuthorizedConfigSymbol from "./AuthorizedConfigSymbol";
 
 // Silhueta real da aeronave vista de frente, recortada da imagem de
@@ -8,7 +8,7 @@ import AuthorizedConfigSymbol from "./AuthorizedConfigSymbol";
 // abaixo (ver ConfigurationDiagram).
 const AIRCRAFT_SILHOUETTE_IMAGE = "/reference/aeronave-silhueta.png";
 
-const STATIONS: { key: "station_5" | "station_4" | "station_3" | "station_2" | "station_1"; label: string }[] = [
+const STATIONS: { key: StationKey; label: string }[] = [
   { key: "station_5", label: "Estação 5" },
   { key: "station_4", label: "Estação 4" },
   { key: "station_3", label: "Estação 3" },
@@ -24,7 +24,7 @@ const STATIONS: { key: "station_5" | "station_4" | "station_3" | "station_2" | "
  * vazias - o painel fica sempre visível (não só depois de escolher algo). */
 export default function ConfigurationDiagram({
   code, symbolFor,
-}: { code: ConfigurationCode | null; symbolFor: (equipment: string) => string | undefined }) {
+}: { code: StationEquipmentDisplay | null; symbolFor: (equipment: string) => string | undefined }) {
   return (
     <div style={{ textAlign: "center" }}>
       <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 4 }}>

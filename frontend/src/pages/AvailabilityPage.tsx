@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from
 import { api } from "../api/client";
 import type {
   Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityCode, AvailabilityLocation,
-  AvailabilityUpdate, AvailabilityUpdateCreate, ConfigurationCode,
+  AvailabilityUpdate, AvailabilityUpdateCreate, ConfigurationCode, StationEquipmentDisplay, StationKey,
 } from "../api/types";
 import { useLookupValues } from "../api/useLookup";
 import { useAuth } from "../auth/AuthContext";
@@ -20,9 +20,13 @@ const LOCATIONS: AvailabilityLocation[] = ["Estação Ventral", "Tanque Subalar"
 const CONFIG_CATEGORY = "Configuração de Disponibilidade (asas/hardpoints)" as const;
 // Estações centrais (3) mapeiam para "Estação Ventral"; as demais (5/4/2/1,
 // todas nas asas) mapeiam para "Asas (Dir/Esq)" - usado ao cadastrar um
-// Código de Configuração inteiro de uma vez (ver cadastrarConfiguracaoAutomatica).
-type StationKey = "station_5" | "station_4" | "station_3" | "station_2" | "station_1";
+// Código de Configuração inteiro de uma vez (ver cadastrarConfiguracaoAutomatica)
+// e para pré-preencher "Local" ao escolher uma "Estação" na Configuração Manual.
 const STATION_KEYS: StationKey[] = ["station_5", "station_4", "station_3", "station_2", "station_1"];
+const STATION_LABELS: Record<StationKey, string> = {
+  station_5: "Estação 5", station_4: "Estação 4", station_3: "Estação 3",
+  station_2: "Estação 2", station_1: "Estação 1",
+};
 const STATION_TO_LOCATION: Record<StationKey, AvailabilityLocation> = {
   station_5: "Asas (Dir/Esq)", station_4: "Asas (Dir/Esq)", station_3: "Estação Ventral",
   station_2: "Asas (Dir/Esq)", station_1: "Asas (Dir/Esq)",
@@ -156,8 +160,18 @@ export default function AvailabilityPage() {
   const [manualCode, setManualCode] = useState<AvailabilityCode>("DI");
   const [manualConfig, setManualConfig] = useState("");
   const [manualLocation, setManualLocation] = useState<AvailabilityLocation | "">("");
+  const [manualStation, setManualStation] = useState<StationKey | "">("");
   const [manualReason, setManualReason] = useState("");
   const [manualSaving, setManualSaving] = useState(false);
+
+  // Ao escolher uma Estação na Configuração Manual, pré-preenche "Local" a
+  // partir dela (STATION_TO_LOCATION) - o usuário ainda pode trocar Local
+  // manualmente depois (ex.: um item de Tanque Subalar que não é de uma
+  // estação específica).
+  function handleManualStationChange(value: StationKey | "") {
+    setManualStation(value);
+    if (value) setManualLocation(STATION_TO_LOCATION[value]);
+  }
 
   // Valor padrão ao abrir o módulo: pré-seleciona a FAB 5962 assim que a
   // frota carrega, sem sobrescrever uma escolha manual do usuário depois.
@@ -185,6 +199,23 @@ export default function AvailabilityPage() {
       .finally(() => setSelectedHistoryLoading(false));
   }, [manualAircraftId, board]);
 
+  // Configuração ATUAL da aeronave selecionada, reconstruída estação a
+  // estação a partir do histórico (o mais recente lançamento com essa
+  // estação preenchida vence, já que `selectedHistory` vem ordenado do mais
+  // novo para o mais antigo) - mostrada no mesmo diagrama usado para
+  // consultar um Código de Configuração do catálogo, tanto para
+  // lançamentos feitos na Configuração Manual quanto na Automática.
+  const currentConfigDisplay = useMemo<StationEquipmentDisplay | null>(() => {
+    if (!manualAircraftId) return null;
+    const bySlot: Partial<Record<StationKey, string>> = {};
+    for (const u of selectedHistory) {
+      if (u.station && u.configuration && !(u.station in bySlot)) {
+        bySlot[u.station] = u.configuration;
+      }
+    }
+    return { code: "Atual", ...bySlot };
+  }, [manualAircraftId, selectedHistory]);
+
   async function submitManual(e: FormEvent) {
     e.preventDefault();
     if (!manualAircraftId) return;
@@ -196,9 +227,9 @@ export default function AvailabilityPage() {
       await api.post<AvailabilityUpdate>("/availability-updates", {
         aircraft_id: Number(manualAircraftId), report_date: todayIso(), code: manualCode,
         configuration: manualConfig || null, has_subalares: false, reason: manualReason || null,
-        location: manualLocation || null,
+        location: manualLocation || null, station: manualStation || null,
       });
-      setManualReason(""); setManualConfig(""); setManualLocation("");
+      setManualReason(""); setManualConfig(""); setManualLocation(""); setManualStation("");
       reload();
     } finally {
       setManualSaving(false);
@@ -232,7 +263,7 @@ export default function AvailabilityPage() {
         .map((s) => ({
           aircraft_id: Number(manualAircraftId), report_date: todayIso(), code: manualCode,
           configuration: selectedCode[s] as string, has_subalares: false,
-          reason: `Código de configuração ${selectedCode.code}`, location: STATION_TO_LOCATION[s],
+          reason: `Código de configuração ${selectedCode.code}`, location: STATION_TO_LOCATION[s], station: s,
         }));
       if (payload.length > 0) {
         await api.post("/availability-updates/bulk", payload);
@@ -448,6 +479,16 @@ export default function AvailabilityPage() {
                   <AuthorizedConfigSelect options={activeConfigs} value={manualConfig} onChange={setManualConfig} />
                 </label>
                 <label style={FIELD_LABEL_STYLE}>
+                  Estação
+                  <select
+                    value={manualStation} onChange={(e) => handleManualStationChange(e.target.value as StationKey | "")}
+                    style={{ minWidth: 130 }} title="Estação do diagrama (5 a 1) - opcional"
+                  >
+                    <option value="">— Nenhuma —</option>
+                    {STATION_KEYS.map((s) => <option key={s} value={s}>{STATION_LABELS[s]}</option>)}
+                  </select>
+                </label>
+                <label style={FIELD_LABEL_STYLE}>
                   Local
                   <select value={manualLocation} onChange={(e) => setManualLocation(e.target.value as AvailabilityLocation | "")} style={{ minWidth: 160 }}>
                     <option value="">— Selecione —</option>
@@ -491,7 +532,11 @@ export default function AvailabilityPage() {
                   </button>
                 </div>
                 <div style={{ alignSelf: "center" }}>
-                  <ConfigurationDiagram code={selectedCode} symbolFor={(eq) => configSymbol(eq)} />
+                  {/* Sem um código em preview (Automática), mostra a configuração
+                      ATUAL da aeronave (currentConfigDisplay) - lançada manual ou
+                      automaticamente - para o usuário sempre poder visualizá-la,
+                      não só ao escolher um código novo para aplicar. */}
+                  <ConfigurationDiagram code={selectedCode ?? currentConfigDisplay} symbolFor={(eq) => configSymbol(eq)} />
                 </div>
               </div>
             )}
@@ -523,7 +568,7 @@ export default function AvailabilityPage() {
             <div className="scroll-x">
               <table>
                 <thead>
-                  <tr><th></th><th>Código</th><th>Configuração</th><th>Local</th><th>Motivo/Obs</th><th></th></tr>
+                  <tr><th></th><th>Código</th><th>Configuração</th><th>Estação</th><th>Local</th><th>Motivo/Obs</th><th></th></tr>
                 </thead>
                 <tbody>
                   {selectedHistory.map((u) => (
@@ -533,6 +578,7 @@ export default function AvailabilityPage() {
                       </td>
                       <td><AvailabilityCodeBadge code={u.code} /></td>
                       <td style={{ fontSize: 12.5 }}>{u.configuration ?? "LISO"}</td>
+                      <td style={{ fontSize: 12.5 }}>{u.station ? STATION_LABELS[u.station] : "—"}</td>
                       <td style={{ fontSize: 12.5 }}>{u.location ?? "—"}</td>
                       <td style={{ fontSize: 12.5 }}>{u.reason ?? "—"}</td>
                       <td>
@@ -541,7 +587,7 @@ export default function AvailabilityPage() {
                     </tr>
                   ))}
                   {selectedHistory.length === 0 && (
-                    <tr><td colSpan={6} style={{ color: "var(--text-secondary)" }}>Nenhuma configuração lançada para esta aeronave ainda.</td></tr>
+                    <tr><td colSpan={7} style={{ color: "var(--text-secondary)" }}>Nenhuma configuração lançada para esta aeronave ainda.</td></tr>
                   )}
                 </tbody>
               </table>

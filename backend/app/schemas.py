@@ -10,7 +10,7 @@ from .models import (
     AircraftCategory, AircraftStatus, PersonRole, ComponentCategory,
     MonitoringType, Criticality, MaintenanceType, OrderStatus, AssignmentRole,
     RiskLevel, DefectType, NotificationChannel, NotificationReason, NotificationStatus,
-    LookupCategory, AuditAction, AvailabilityCode, AvailabilityLocation, ConfigDispStatus,
+    LookupCategory, AuditAction, AvailabilityCode, AvailabilityLocation, StationKey, ConfigDispStatus,
 )
 
 # Palavras/trechos que nunca devem aparecer num SVG de símbolo aceito pela
@@ -380,6 +380,9 @@ class AvailabilityUpdateBase(BaseModel):
     has_subalares: bool = False
     reason: Optional[str] = Field(None, description="Motivo/observação, ex.: 'TREM DE POUSO', 'não aciona com UFT à diesel'.")
     location: Optional[AvailabilityLocation] = Field(None, description="Local de instalação do equipamento.")
+    station: Optional[StationKey] = Field(
+        None, description="Estação do diagrama de Configuração (5 a 1) que este lançamento ocupa, se houver."
+    )
 
 
 class AvailabilityUpdateCreate(AvailabilityUpdateBase):

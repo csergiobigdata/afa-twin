@@ -96,6 +96,26 @@ class AvailabilityLocation(str, enum.Enum):
     ASAS = "Asas (Dir/Esq)"
 
 
+class StationKey(str, enum.Enum):
+    """Qual das 5 estações (hardpoints) do diagrama de Configuração (ver
+    ConfigurationCode/ConfigurationDiagram) um lançamento de disponibilidade
+    ocupa - opcional: nem todo lançamento é equipamento de uma estação
+    específica (ex.: um DI/DO simples sem carga, ou um item de
+    AvailabilityLocation.TANQUE_SUBALAR que não corresponde a nenhuma das 5
+    estações). É o que permite reconstruir, estação a estação, a
+    configuração ATUAL de uma aeronave (lançada manualmente ou de uma vez
+    via Configuração Automática) no mesmo diagrama usado para consultar um
+    Código de Configuração do catálogo - ver AvailabilityPage no frontend.
+    Guardado como texto simples (não SAEnum nativo), mesmo raciocínio de
+    `location`/`configuration` acima: migração aditiva sem exigir tipo
+    nativo no Postgres de produção."""
+    ESTACAO_5 = "station_5"
+    ESTACAO_4 = "station_4"
+    ESTACAO_3 = "station_3"
+    ESTACAO_2 = "station_2"
+    ESTACAO_1 = "station_1"
+
+
 class PersonRole(str, enum.Enum):
     PILOTO = "Piloto"
     MECANICO = "Mecânico"
@@ -547,6 +567,11 @@ class AvailabilityUpdate(Base):
     # aditiva (sync_missing_columns) sem exigir criar um tipo nativo no
     # Postgres de produção.
     location: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    # Estação do diagrama (ver StationKey) que este lançamento ocupa - opcional
+    # (nem todo lançamento é equipamento de uma estação específica). Usado
+    # para reconstruir a configuração ATUAL da aeronave, estação a estação,
+    # no mesmo diagrama de um Código de Configuração do catálogo.
+    station: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     recorded_by_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)

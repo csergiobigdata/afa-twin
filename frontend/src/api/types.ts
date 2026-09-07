@@ -283,6 +283,13 @@ export type AvailabilityCode = "DI" | "DO" | "IN";
 // ventral ou num pilone subalar.
 export type AvailabilityLocation = "Estação Ventral" | "Tanque Subalar" | "Asas (Dir/Esq)";
 
+// Estação do diagrama de Configuração (5 a 1) que um lançamento de
+// disponibilidade ocupa, se houver (ver backend/app/models.py::StationKey) -
+// permite reconstruir a configuração ATUAL de uma aeronave, estação a
+// estação, no mesmo diagrama usado para o catálogo de Códigos de
+// Configuração (ver ConfigurationCode/ConfigurationDiagram).
+export type StationKey = "station_5" | "station_4" | "station_3" | "station_2" | "station_1";
+
 export interface AvailabilityUpdate {
   id: number;
   aircraft_id: number;
@@ -293,6 +300,7 @@ export interface AvailabilityUpdate {
   has_subalares: boolean;
   reason?: string | null;
   location?: AvailabilityLocation | null;
+  station?: StationKey | null;
   recorded_by_id?: number | null;
   recorded_by_name?: string | null;
   created_at: string;
@@ -306,6 +314,7 @@ export interface AvailabilityUpdateCreate {
   has_subalares: boolean;
   reason?: string | null;
   location?: AvailabilityLocation | null;
+  station?: StationKey | null;
 }
 
 export interface AvailabilityBoardEntry {
@@ -480,6 +489,21 @@ export interface ConfigurationCode {
   station_1?: string | null;
   status_disp: ConfigDispStatus;
   created_at: string;
+}
+
+// Formato mínimo que o ConfigurationDiagram precisa para desenhar a faixa de
+// estações (5 a 1) - um ConfigurationCode do catálogo satisfaz isso
+// naturalmente, mas também serve para montar, "na mão", a configuração
+// ATUAL de uma aeronave a partir do histórico de lançamentos de
+// disponibilidade (ver AvailabilityPage), sem precisar de um id/status_disp
+// reais.
+export interface StationEquipmentDisplay {
+  code: string;
+  station_5?: string | null;
+  station_4?: string | null;
+  station_3?: string | null;
+  station_2?: string | null;
+  station_1?: string | null;
 }
 
 export type LookupCategory =
