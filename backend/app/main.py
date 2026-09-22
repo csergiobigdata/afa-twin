@@ -85,21 +85,26 @@ async def optional_access_key_gate(request: Request, call_next):
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
-    # Em Postgres (nuvem), create_all() cria tabelas/tipos novos mas nunca
-    # altera um tipo ENUM nativo já existente para acrescentar um valor novo
-    # (ex.: nova categoria de LookupItem) - ver nota completa em
-    # database.py::sync_postgres_enum_types. Sem custo no SQLite local (a
-    # função só age em Postgres).
-    sync_postgres_enum_types()
-    # Mesma lógica para índices acrescentados a colunas de tabelas que já
-    # existiam (ver nota em database.py::sync_missing_indexes) - reduz
-    # latência dos filtros ?aircraft_id=/?component_id= usados em quase
-    # todo router, à medida que o volume de dados crescer.
-    sync_missing_indexes()
-    # Mesma lógica para colunas acrescentadas depois a um modelo cuja tabela
-    # já existia (ex.: AvailabilityUpdate.location) - ver nota em
-    # database.py::sync_missing_columns.
-    sync_missing_columns()
+    # sync_postgres_enum_types/sync_missing_indexes/sync_missing_columns (ver
+    # database.py) cada uma faz de 1 a ~15 round-trips ao banco (uma consulta
+    # de introspecção por tipo enum, por índice, por tabela). Medido na
+    # prática: as três juntas custam ~43s de um cold start de ~48s no Vercel,
+    # porque cada round-trip paga a latência do Neon (Postgres gratuito)
+    # ainda acordando de uma suspensão por inatividade - a chamada de
+    # /api/health (que nem toca o banco) esperava por elas mesmo assim, pois
+    # o startup do FastAPI roda inteiro antes de QUALQUER rota responder.
+    # Como o próprio Vercel já não aplica essas sincronizações de forma
+    # confiável no startup (ver nota em routers/admin.py e docs/06, seção 3),
+    # rodá-las aqui automaticamente já não trazia garantia nenhuma - só
+    # custo. Em Postgres, ficam então só sob demanda via
+    # POST /api/admin/sync-schema (chamar manualmente depois de qualquer
+    # deploy que altere models.py). Em SQLite local (sem latência de rede
+    # nem suspensão), o custo é desprezível - mantidas automáticas aqui por
+    # conveniência do desenvolvedor.
+    if engine.dialect.name != "postgresql":
+        sync_postgres_enum_types()
+        sync_missing_indexes()
+        sync_missing_columns()
     db = SessionLocal()
     try:
         seed.seed_if_empty(db)

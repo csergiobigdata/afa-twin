@@ -26,11 +26,11 @@ import io
 import logging
 import re
 
-from pypdf import PdfReader
-
-# Avisos de fonte (CFF/fontTools ausente) que o pypdf emite via logging ao
-# extrair texto de PDFs gerados por CAD/DGN como o de referência - não
-# afetam a extração de texto em si, só a métrica exata de largura de glifo.
+# pypdf só é importado dentro de extract_marks() (não aqui no topo do
+# módulo): este módulo é importado por routers/authorized_configs.py, que é
+# carregado incondicionalmente no startup da API - adiar o import poupa
+# esse custo (~0.1s local; mais em cold start serverless) de todo request
+# que não faz upload de PDF, a grande maioria.
 logging.getLogger("pypdf").setLevel(logging.ERROR)
 
 _OTFN_PATTERN = re.compile(r"OTFN", re.IGNORECASE)
@@ -63,6 +63,7 @@ def extract_marks(pdf_bytes: bytes, catalog_equipment: list[str]) -> tuple[list[
     mesma ordem da lista recebida; nota de transparência sobre a página
     usada). Levanta ConfigPdfError se o documento não for um PDF legível,
     não contiver "OTFN", ou não tiver a página de legenda esperada."""
+    from pypdf import PdfReader
     try:
         reader = PdfReader(io.BytesIO(pdf_bytes))
         if reader.is_encrypted:

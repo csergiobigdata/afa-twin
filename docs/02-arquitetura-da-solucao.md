@@ -85,6 +85,25 @@ efetivamente imutável enquanto a URL estiver em uso — o `ETag` cobre com segu
 um `id` poderia ser reaproveitado (SQLite pode reciclar o rowid de uma linha excluída), já que a data de
 criação muda junto e invalida o `ETag` antigo automaticamente.
 
+### 3.2. Cold start do backend em nuvem (Vercel + Neon)
+
+Medido na prática (v0.3): a primeira chamada à API depois de um período ocioso podia levar **~48
+segundos**, mesmo em rotas que não tocam o banco (ex.: `/api/health`) — porque o evento de startup do
+FastAPI (`@app.on_event("startup")`) roda por inteiro antes de qualquer rota responder, e ~43 desses 48s
+eram gastos nas rotinas `sync_postgres_enum_types`/`sync_missing_indexes`/`sync_missing_columns`
+(`backend/app/database.py`), que juntas fazem dezenas de consultas de introspecção sequenciais ao
+Postgres — cada uma pagando a latência do Neon (banco gratuito) ainda acordando de uma suspensão por
+inatividade. Corrigido: essas três rotinas deixaram de rodar automaticamente em Postgres (continuam
+automáticas em SQLite local, onde são instantâneas) — ver nota completa em `main.py::on_startup` e o
+aviso em [docs/06](06-implantacao-nuvem.md), seção 3, sobre chamar `/api/admin/sync-schema`
+manualmente depois de um deploy que altera `models.py`. `Base.metadata.create_all()` (criação de
+tabelas/tipos novos) e as verificações de seed continuam automáticas, por serem poucas consultas.
+Restante do cold start (alguns segundos): import do Python de todo o grafo de módulos (FastAPI,
+SQLAlchemy, etc., medido em ~4-5s localmente) + o próprio Neon acordando para a primeira consulta real
+— inerente à camada gratuita "scale-to-zero" de ambos os serviços; evoluir para planos pagos com
+instância sempre ativa eliminaria esse tempo por completo, se a exigência de performance justificar o
+custo.
+
 ## 4. Por que não usar [outras opções]
 
 - **Node.js/Express no backend**: descartado como escolha primária porque a evolução planejada do

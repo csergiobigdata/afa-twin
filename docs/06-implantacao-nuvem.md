@@ -81,13 +81,16 @@ O script é seguro para rodar mais de uma vez: ele reaproveita o repositório, o
 o site Netlify já criados (por nome), em vez de duplicá-los — útil para publicar uma nova versão depois
 de alterações no código.
 
-> **Importante ao adicionar/alterar uma tabela, um tipo enum (`SAEnum`) ou um índice em `models.py`:**
-> na teoria, `Base.metadata.create_all()` mais as rotinas `sync_postgres_enum_types()`/
-> `sync_missing_indexes()` (`backend/app/database.py`) rodariam sozinhas a cada novo deploy, via
-> `@app.on_event("startup")` do FastAPI. **Na prática, confirmamos que esse hook de startup não é
-> confiável no runtime serverless do Vercel** - uma alteração de esquema publicada não apareceu no
-> Postgres de produção até ser aplicada manualmente. Por isso, depois de um deploy que altera
-> `models.py`, chame explicitamente (autenticado como Gestor):
+> **Importante ao adicionar/alterar uma tabela, um tipo enum (`SAEnum`), um índice ou uma coluna em
+> `models.py`:** em Postgres (nuvem), as rotinas `sync_postgres_enum_types()`/`sync_missing_indexes()`/
+> `sync_missing_columns()` (`backend/app/database.py`) **não rodam mais sozinhas** no startup da API -
+> por dois motivos: (1) confirmamos na prática que esse hook não era confiável no runtime serverless do
+> Vercel para esse fim (alteração de esquema publicada não aparecia no Postgres de produção até ser
+> aplicada manualmente); (2) medimos que as três juntas custam dezenas de round-trips de introspecção
+> ao banco - **~43 segundos de um cold start de ~48s**, pois cada round-trip paga a latência do Neon
+> (gratuito) ainda acordando de uma suspensão por inatividade. `Base.metadata.create_all()` (criação de
+> tabelas/tipos novos) continua automática; só as alterações a algo que já existe ficam manuais. Por
+> isso, depois de todo deploy que altera `models.py`, chame explicitamente (autenticado como Gestor):
 > ```bash
 > curl -X POST https://SEU-BACKEND.vercel.app/api/admin/sync-schema \
 >   -H "Authorization: Bearer <token do login como gestor>"
