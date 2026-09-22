@@ -73,6 +73,17 @@ Detalhes completos, incluindo como instalar como aplicativo em um tablet: [`docs
 - ✅ **Inspeção Fotográfica** (fundação manual do módulo de visão computacional) com histórico visual.
 - ✅ **Diagnóstico Inteligente** heurístico (busca por similaridade textual no histórico da frota).
 - ✅ **Disponibilidade da Frota** projetada e **Análise Prospectiva de Manutenção** ("e se eu adiar?").
+- ✅ **Atualização de Disponibilidade**: boletim diário/por turno de linha de voo do esquadrão (código
+  DI/DO/IN por aeronave, configuração de asas/hardpoints e cargas subalares), lançado aeronave a
+  aeronave ou colando o boletim em texto livre (ex.: "5906 - DO (EEXD TREM DE POUSO)") com
+  reconhecimento heurístico revisável linha a linha antes de salvar.
+- ✅ **Configurações Autorizadas para Aeronaves**: cadastro mestre dos equipamentos/cargas de asas e
+  hardpoints (símbolo, nome, status Ativo/Inativo) que alimenta o seletor de "Configuração" do boletim de
+  disponibilidade, atualizável em lote a partir de um PDF de referência (Ordem Técnica/OTFN) validado por
+  autenticidade antes da carga.
+- ✅ **Códigos de Configuração**: catálogo de combinações padronizadas de equipamento por estação
+  (5 a 1), consultável no mesmo diagrama da aeronave e lançável de uma só vez no boletim de
+  disponibilidade.
 - ✅ **Vigência de peças**: tempo de uso, vigência por calendário e intervalo de manutenção preventiva
   por componente, com alerta automático no Painel quando o vencimento se aproxima ou já passou.
 - ✅ **Histórico de manutenção por peça**: ordens de serviço, equipe envolvida, responsável e
@@ -101,6 +112,9 @@ Detalhes completos, incluindo como instalar como aplicativo em um tablet: [`docs
   notificar todos os responsáveis pendentes de uma só vez, no Painel e por aeronave.
 - ✅ **Gráfico de categorias de manutenção** no Painel (pizza/barras/linhas, alternável), a partir dos
   alertas ativos da frota.
+- ✅ **Módulo Sobre**: identificação do aplicativo (nome, desenvolvedor, versão) e alternância entre modo
+  noturno (cores históricas do app) e modo diurno (telas mais claras, para uso em ambientes com luz
+  forte como um hangar), com a escolha salva no dispositivo.
 - ✅ Aplicativo web instalável em tablets (PWA), identidade visual FAB, sem custo de infraestrutura.
 - ✅ **Manual do usuário em PDF** com telas de exemplo de cada módulo ([`docs/AFA-TWIN-Manual-do-Usuario.pdf`](docs/AFA-TWIN-Manual-do-Usuario.pdf)).
 - ✅ **Publicação automatizada em nuvem gratuita** com acesso restrito aos usuários definidos
