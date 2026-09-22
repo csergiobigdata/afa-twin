@@ -29,7 +29,16 @@ if DATABASE_URL.startswith("sqlite"):
     os.makedirs(DATA_DIR, exist_ok=True)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+# pool_pre_ping/pool_recycle só se aplicam ao Postgres em nuvem: o Neon
+# (camada gratuita) fecha conexões ociosas por trás do SQLAlchemy sem avisar
+# a aplicação; sem pre_ping, a função serverless tenta reusar essa conexão
+# morta e trava até o SO estourar o timeout de socket - na prática, isso
+# aparecia como 504 (Gateway Timeout) intermitente no frontend, mesmo com o
+# backend/banco saudáveis. pre_ping testa a conexão com um SELECT 1 leve
+# antes de cada uso e reconecta se necessário; recycle descarta conexões mais
+# velhas que 5 min preventivamente (mesma janela de auto-suspensão do Neon).
+engine_kwargs = {} if DATABASE_URL.startswith("sqlite") else {"pool_pre_ping": True, "pool_recycle": 280}
+engine = create_engine(DATABASE_URL, connect_args=connect_args, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
