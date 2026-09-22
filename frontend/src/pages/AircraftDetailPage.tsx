@@ -2,14 +2,17 @@ import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type {
-  Aircraft, AircraftDetailBundle, AircraftGroupAssignment, Assignment, AssignmentRole, Component,
-  ComponentCategory, Criticality, DefectType, FlightLog, InspectionFinding, MaintenanceOrder,
-  MonitoringType, Notification as AppNotification, NotificationChannel, OperationalRiskBreakdown,
-  PendingPartAlert, Person, PersonRole, ReliabilityMetrics, ResponsibleGroup,
+  Aircraft, AircraftDetailBundle, AircraftGroupAssignment, Assignment, AssignmentRole,
+  AuthorizedConfiguration, AvailabilityUpdate, Component, ComponentCategory, Criticality, DefectType,
+  FlightLog, InspectionFinding, MaintenanceOrder, MonitoringType, Notification as AppNotification,
+  NotificationChannel, OperationalRiskBreakdown, PendingPartAlert, Person, PersonRole,
+  ReliabilityMetrics, ResponsibleGroup, StationEquipmentDisplay, StationKey,
 } from "../api/types";
 import AircraftThumbnail from "../components/AircraftThumbnail";
 import AircraftPhotoViewer from "../components/AircraftPhotoViewer";
-import { CriticalityBadge, HealthBar, OrderStatusBadge, RiskBadge, StatusBadge } from "../components/Badges";
+import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
+import { AvailabilityCodeBadge, CriticalityBadge, HealthBar, OrderStatusBadge, RiskBadge, StatusBadge } from "../components/Badges";
+import ConfigurationDiagram from "../components/ConfigurationDiagram";
 import PersonPicker from "../components/PersonPicker";
 import { ROLE_PERMISSIONS, useAuth } from "../auth/AuthContext";
 
@@ -24,7 +27,7 @@ const DEFAULT_ASSIGNMENT_ROLE_BY_PERSON_ROLE: Record<PersonRole, AssignmentRole>
   "Gestor / Responsável Técnico": "Chefe de Manutenção",
 };
 
-type Tab = "geral" | "componentes" | "manutencao" | "confiabilidade" | "inspecao" | "pessoal";
+type Tab = "geral" | "configuracoes" | "componentes" | "manutencao" | "confiabilidade" | "inspecao" | "pessoal";
 
 const COMPONENT_CATEGORIES: ComponentCategory[] = [
   "Motor / Grupo Motopropulsor", "Trem de Pouso", "Sistema Hidráulico", "Aviônicos",
@@ -118,18 +121,19 @@ export default function AircraftDetailPage() {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 4, marginTop: 20, borderBottom: "1px solid var(--border-subtle)", flexWrap: "wrap" }}>
+      <div className="card" style={{ display: "flex", gap: 6, marginTop: 20, padding: 6, flexWrap: "wrap" }}>
         {([
-          ["geral", "Visão Geral"], ["componentes", `Componentes (${components.length})`],
+          ["geral", "Visão Geral"], ["configuracoes", "Configurações Autorizadas"],
+          ["componentes", `Componentes (${components.length})`],
           ["manutencao", `Manutenção (${orders.length})`], ["confiabilidade", "Confiabilidade & Risco"],
           ["inspecao", "Inspeção Fotográfica"], ["pessoal", `Pessoal (${assignments.length})`],
         ] as [Tab, string][]).map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
                   className="btn btn-sm"
                   style={{
-                    background: "transparent", border: "none", borderRadius: 0,
-                    borderBottom: tab === key ? "3px solid var(--fab-navy-900)" : "3px solid transparent",
-                    color: tab === key ? "var(--fab-navy-900)" : "var(--text-secondary)", fontWeight: 700,
+                    border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13.5, fontWeight: 700,
+                    background: tab === key ? "var(--fab-navy-900)" : "transparent",
+                    color: tab === key ? "#fff" : "var(--text-secondary)",
                   }}>
             {label}
           </button>
@@ -138,6 +142,7 @@ export default function AircraftDetailPage() {
 
       <div style={{ marginTop: 18 }}>
         {tab === "geral" && <GeneralTab aircraft={aircraft} flightLogs={flightLogs} people={people} onReload={reload} />}
+        {tab === "configuracoes" && <ConfigurationsTab aircraft={aircraft} />}
         {tab === "componentes" && <ComponentsTab aircraftId={aircraft.id} components={components} orders={orders} people={people} onReload={reload} />}
         {tab === "manutencao" && <OrdersTab aircraftId={aircraft.id} orders={orders} components={components} />}
         {tab === "confiabilidade" && <ReliabilityRiskTab aircraftId={aircraft.id} />}
@@ -231,6 +236,101 @@ function GeneralTab({ aircraft, flightLogs, people, onReload }: { aircraft: Airc
         </div>
       </div>
       <style>{`@media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr !important; } }`}</style>
+    </div>
+  );
+}
+
+// ---------------- Configurações Autorizadas (somente leitura, por aeronave) ----------------
+// Mesma leitura (lançamentos + diagrama da configuração ATUAL) que o módulo
+// Disponibilidade já mostra para a aeronave selecionada ali - aqui fica
+// direto no cadastro da aeronave, sem precisar navegar até Disponibilidade
+// para consultar. O lançamento/edição continua só em Disponibilidade (ver
+// "Cadastro de Configuração da Aeronave" lá) - esta aba é consulta.
+const CONFIG_STATION_LABELS: Record<StationKey, string> = {
+  station_5: "Estação 5", station_4: "Estação 4", station_3: "Estação 3",
+  station_2: "Estação 2", station_1: "Estação 1",
+};
+
+function ConfigurationsTab({ aircraft }: { aircraft: Aircraft }) {
+  const { role } = useAuth();
+  const canManage = ROLE_PERMISSIONS.canManageRecords(role);
+  const [allConfigs, setAllConfigs] = useState<AuthorizedConfiguration[]>([]);
+  const [history, setHistory] = useState<AvailabilityUpdate[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  function reload() {
+    Promise.all([
+      api.get<AuthorizedConfiguration[]>("/authorized-configurations"),
+      api.get<AvailabilityUpdate[]>(`/availability-updates?aircraft_id=${aircraft.id}&limit=50`),
+    ]).then(([configs, updates]) => { setAllConfigs(configs); setHistory(updates); }).finally(() => setLoading(false));
+  }
+  useEffect(reload, [aircraft.id]);
+
+  function configSymbol(equipment: string | null | undefined): string | undefined {
+    return equipment ? allConfigs.find((c) => c.equipment === equipment)?.symbol_svg : undefined;
+  }
+
+  async function removeUpdate(id: number) {
+    if (!confirm("Remover este lançamento de disponibilidade?")) return;
+    await api.del(`/availability-updates/${id}`);
+    reload();
+  }
+
+  // Configuração ATUAL, reconstruída estação a estação a partir do
+  // lançamento mais recente que preenche cada uma (mesmo raciocínio de
+  // AvailabilityPage.tsx::currentConfigDisplay).
+  const currentConfigDisplay: StationEquipmentDisplay = { code: "Atual" };
+  for (const u of history) {
+    if (u.station && u.configuration && !(u.station in currentConfigDisplay)) {
+      currentConfigDisplay[u.station] = u.configuration;
+    }
+  }
+
+  if (loading) return <p>Carregando configurações…</p>;
+
+  return (
+    <div>
+      <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginBottom: 12 }}>
+        Equipamentos/cargas de asas e hardpoints lançados para esta aeronave no boletim de
+        disponibilidade. Para lançar ou remover uma configuração, use o módulo{" "}
+        <Link to="/disponibilidade">Disponibilidade</Link>.
+      </p>
+
+      <div className="card" style={{ padding: 18, marginBottom: 18 }}>
+        <h3 style={{ fontSize: 14.5, margin: "0 0 4px" }}>Configurações Autorizadas</h3>
+        <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 0, marginBottom: 12 }}>
+          Lançamentos de disponibilidade desta aeronave.
+        </p>
+        <div className="scroll-x">
+          <table>
+            <thead>
+              <tr><th></th><th>Código</th><th>Configuração</th><th>Estação</th><th>Local</th><th>Motivo/Obs</th>{canManage && <th></th>}</tr>
+            </thead>
+            <tbody>
+              {history.map((u) => (
+                <tr key={u.id}>
+                  <td>{configSymbol(u.configuration) && <AuthorizedConfigSymbol svg={configSymbol(u.configuration)!} size={20} />}</td>
+                  <td><AvailabilityCodeBadge code={u.code} /></td>
+                  <td style={{ fontSize: 12.5 }}>{u.configuration ?? "LISO"}</td>
+                  <td style={{ fontSize: 12.5 }}>{u.station ? CONFIG_STATION_LABELS[u.station] : "—"}</td>
+                  <td style={{ fontSize: 12.5 }}>{u.location ?? "—"}</td>
+                  <td style={{ fontSize: 12.5 }}>{u.reason ?? "—"}</td>
+                  {canManage && (
+                    <td><button className="btn btn-outline btn-sm" onClick={() => removeUpdate(u.id)}>Remover</button></td>
+                  )}
+                </tr>
+              ))}
+              {history.length === 0 && (
+                <tr><td colSpan={canManage ? 7 : 6} style={{ color: "var(--text-secondary)" }}>Nenhuma configuração lançada para esta aeronave ainda.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="card" style={{ padding: 18, textAlign: "center" }}>
+        <ConfigurationDiagram code={currentConfigDisplay} symbolFor={(eq) => configSymbol(eq)} />
+      </div>
     </div>
   );
 }
