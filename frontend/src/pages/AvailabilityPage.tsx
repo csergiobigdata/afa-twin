@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { api } from "../api/client";
 import type {
-  Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityCode, AvailabilityLocation,
-  AvailabilityUpdate, AvailabilityUpdateCreate, ConfigurationCode, StationEquipmentDisplay, StationKey,
+  Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityCode, AvailabilityCodeCatalog,
+  AvailabilityLocation, AvailabilityUpdate, AvailabilityUpdateCreate, ConfigurationCode,
+  StationEquipmentDisplay, StationKey,
 } from "../api/types";
 import { useLookupValues } from "../api/useLookup";
 import { useAuth } from "../auth/AuthContext";
@@ -15,8 +16,13 @@ import SplashScreen from "../components/SplashScreen";
 import StatCard from "../components/StatCard";
 import { parseAvailabilityBoardText, type ParsedAvailabilityRow } from "./availabilityParser";
 
-const CODES: AvailabilityCode[] = ["DI", "DO", "IN"];
 const LOCATIONS: AvailabilityLocation[] = ["Estação Ventral", "Tanque Subalar", "Asas (Dir/Esq)"];
+// Cor de destaque do StatCard de cada código (ver Badges.tsx::AVAILABILITY_
+// CODE_TONE) - um código novo cadastrado sem entrada aqui cai no tom neutro
+// padrão do StatCard (tone undefined), não quebra.
+const CODE_STAT_TONE: Record<string, "ok" | "warn" | "critical" | "info"> = {
+  DI: "ok", DO: "warn", IN: "critical", IS: "info",
+};
 const CONFIG_CATEGORY = "Configuração de Disponibilidade (asas/hardpoints)" as const;
 // Estações centrais (3) mapeiam para "Estação Ventral"; as demais (5/4/2/1,
 // todas nas asas) mapeiam para "Asas (Dir/Esq)" - usado ao cadastrar um
@@ -92,6 +98,16 @@ export default function AvailabilityPage() {
   const selectedCode = configCodes.find((c) => c.id === selectedCodeId) ?? null;
   const [launchingCode, setLaunchingCode] = useState(false);
 
+  // Cadastro de Códigos de Disponibilidade (DI/DO/IN/IS de fábrica,
+  // extensível - ver Aeronaves → Configurações Autorizadas → Códigos de
+  // Disponibilidade) - alimenta os seletores "Código" abaixo e o
+  // reconhecimento do texto colado, em vez de uma lista fixa no código.
+  const [availabilityCodes, setAvailabilityCodes] = useState<AvailabilityCodeCatalog[]>([]);
+  useEffect(() => {
+    api.get<AvailabilityCodeCatalog[]>("/availability-codes").then(setAvailabilityCodes).catch(() => setAvailabilityCodes([]));
+  }, []);
+  const codeValues = useMemo(() => availabilityCodes.map((c) => c.code), [availabilityCodes]);
+
   function reload() {
     Promise.all([
       api.get<AvailabilityBoard>("/availability-updates/board"),
@@ -109,7 +125,7 @@ export default function AvailabilityPage() {
   const [saveResult, setSaveResult] = useState<string | null>(null);
 
   function analyze() {
-    const rows = parseAvailabilityBoardText(pasteText, fleet);
+    const rows = parseAvailabilityBoardText(pasteText, fleet, codeValues);
     setParsedRows(rows);
     setIncludedKeys(new Set(rows.filter((r) => !r.unrecognized && r.aircraft && r.code).map((r) => r.key)));
     setSaveResult(null);
@@ -295,14 +311,17 @@ export default function AvailabilityPage() {
       </div>
 
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 18 }}>
-        <StatCard label="DI" value={board.di_count} tone="ok" sub="Disponível" />
-        <StatCard label="DO" value={board.do_count} tone="warn" sub="Indisponível (causa operacional)" />
-        <StatCard label="IN" value={board.in_count} tone="critical" sub="Indisponível" />
+        {availabilityCodes.map((c) => (
+          <StatCard
+            key={c.code} label={c.code} value={board.code_counts[c.code] ?? 0}
+            tone={CODE_STAT_TONE[c.code]} sub={c.description}
+          />
+        ))}
         <StatCard label="Subalares" value={board.subalares_count} tone="info" sub="Cargas subalares (fora ADA)" />
         {board.report_date && <StatCard label="Boletim mais recente" value={formatDate(board.report_date)} />}
       </div>
 
-      {board.di_count + board.do_count > 0 && (
+      {(board.code_counts["DI"] ?? 0) + (board.code_counts["DO"] ?? 0) > 0 && (
         <div className="card" style={{ padding: 16, marginBottom: 18 }}>
           <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Configuração DI/DO (asas/hardpoints)</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -408,7 +427,7 @@ export default function AvailabilityPage() {
                         <td>
                           <select value={r.code ?? ""} onChange={(e) => patchRow(r.key, { code: (e.target.value || null) as AvailabilityCode | null })} style={{ minWidth: 80 }}>
                             <option value="">—</option>
-                            {CODES.map((c) => <option key={c} value={c}>{c}</option>)}
+                            {codeValues.map((c) => <option key={c} value={c}>{c}</option>)}
                           </select>
                         </td>
                         <td>
@@ -478,7 +497,7 @@ export default function AvailabilityPage() {
                 <label style={FIELD_LABEL_STYLE}>
                   Código
                   <select value={manualCode} onChange={(e) => setManualCode(e.target.value as AvailabilityCode)} style={{ minWidth: 90 }}>
-                    {CODES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    {codeValues.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </label>
                 <label style={FIELD_LABEL_STYLE}>

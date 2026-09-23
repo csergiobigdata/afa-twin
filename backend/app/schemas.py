@@ -10,7 +10,7 @@ from .models import (
     AircraftCategory, AircraftStatus, PersonRole, ComponentCategory,
     MonitoringType, Criticality, MaintenanceType, OrderStatus, AssignmentRole,
     RiskLevel, DefectType, NotificationChannel, NotificationReason, NotificationStatus,
-    LookupCategory, AuditAction, AvailabilityCode, AvailabilityLocation, StationKey, ConfigDispStatus,
+    LookupCategory, AuditAction, AvailabilityLocation, StationKey, ConfigDispStatus,
 )
 
 # Palavras/trechos que nunca devem aparecer num SVG de símbolo aceito pela
@@ -373,7 +373,11 @@ class FlightLogOut(FlightLogBase, ORMModel):
 class AvailabilityUpdateBase(BaseModel):
     aircraft_id: int
     report_date: dt.date
-    code: AvailabilityCode
+    # Texto livre de 2 caracteres, validado no router contra o cadastro
+    # AvailabilityCodeCatalog (ver AvailabilityCodeCatalogOut abaixo) - não é
+    # mais um Enum Python fixo, para permitir um código novo sem alterar
+    # código nenhum (ver nota em models.py, antes de AvailabilityUpdate).
+    code: str = Field(min_length=1, max_length=2)
     configuration: Optional[str] = Field(
         None, description="Configuração de asas/hardpoints no momento (ex.: LISO, ADA, EEXD, VENTRAL, CAA)."
     )
@@ -404,7 +408,7 @@ class AvailabilityBoardEntry(BaseModel):
     aircraft_model: str
     availability_update_id: int
     report_date: dt.date
-    code: AvailabilityCode
+    code: str
     configuration: Optional[str] = None
     has_subalares: bool = False
     reason: Optional[str] = None
@@ -414,15 +418,35 @@ class AvailabilityBoardEntry(BaseModel):
 class AvailabilityBoard(BaseModel):
     """Quadro de disponibilidade da frota: última atualização de cada
     aeronave + totais, no mesmo formato do boletim de esquadrão (Totais
-    DI/DO/IN, Configuração DI/DO, SUBALARES)."""
+    DI/DO/IN/IS, Configuração DI/DO, SUBALARES). `code_counts` é dinâmico
+    (chave = código do cadastro AvailabilityCodeCatalog) em vez de um campo
+    fixo por código, para comportar um código novo cadastrado no futuro sem
+    precisar alterar este schema."""
     report_date: Optional[dt.date] = None
     entries: list[AvailabilityBoardEntry]
-    di_count: int = 0
-    do_count: int = 0
-    in_count: int = 0
+    code_counts: dict[str, int] = {}
     subalares_count: int = 0
     configuration_counts: dict[str, int] = {}
     aircraft_without_update: list[str] = []
+
+
+class AvailabilityCodeCatalogOut(ORMModel):
+    """Item do cadastro de Códigos de Disponibilidade (ver
+    models.py::AvailabilityCodeCatalog e routers/availability_codes.py)."""
+    id: int
+    code: str
+    description: str
+    created_at: dt.datetime
+
+
+class AvailabilityCodeCatalogCreate(BaseModel):
+    code: str = Field(min_length=1, max_length=2)
+    description: str = Field(min_length=1, max_length=40)
+
+
+class AvailabilityCodeCatalogUpdate(BaseModel):
+    code: Optional[str] = Field(None, min_length=1, max_length=2)
+    description: Optional[str] = Field(None, min_length=1, max_length=40)
 
 
 # ---------------- Auth ----------------

@@ -16,7 +16,11 @@ from sqlalchemy.orm import Session, joinedload
 
 from . import models, schemas
 
-_DI_DO_CODES = (models.AvailabilityCode.DI, models.AvailabilityCode.DO)
+# Só DI/DO contam no total "Configuração DI/DO" do boletim original (ver
+# nota abaixo) - qualquer outro código (IN, IS, ou um futuro cadastrado em
+# AvailabilityCodeCatalog) fica de fora dessa contagem específica, mesmo
+# raciocínio já aplicado a IN antes da v0.3.
+_DI_DO_CODES = ("DI", "DO")
 
 
 def compute_availability_board(db: Session) -> schemas.AvailabilityBoard:
@@ -38,7 +42,8 @@ def compute_availability_board(db: Session) -> schemas.AvailabilityBoard:
         latest_by_aircraft.setdefault(u.aircraft_id, u)
 
     entries: list[schemas.AvailabilityBoardEntry] = []
-    di = do = in_ = subalares = 0
+    code_counts: dict[str, int] = {}
+    subalares = 0
     configuration_counts: dict[str, int] = {}
     report_dates = []
 
@@ -53,12 +58,7 @@ def compute_availability_board(db: Session) -> schemas.AvailabilityBoard:
             configuration=u.configuration, has_subalares=u.has_subalares, reason=u.reason,
             created_at=u.created_at,
         ))
-        if u.code == models.AvailabilityCode.DI:
-            di += 1
-        elif u.code == models.AvailabilityCode.DO:
-            do += 1
-        else:
-            in_ += 1
+        code_counts[u.code] = code_counts.get(u.code, 0) + 1
         if u.has_subalares:
             subalares += 1
         # "Configuração DI/DO" no boletim original só soma as aeronaves
@@ -77,7 +77,7 @@ def compute_availability_board(db: Session) -> schemas.AvailabilityBoard:
     return schemas.AvailabilityBoard(
         report_date=max(report_dates) if report_dates else None,
         entries=entries,
-        di_count=di, do_count=do, in_count=in_,
+        code_counts=code_counts,
         subalares_count=subalares,
         configuration_counts=configuration_counts,
         aircraft_without_update=without_update,

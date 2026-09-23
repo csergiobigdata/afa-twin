@@ -5,6 +5,7 @@ import type { Aircraft } from "../api/types";
 import AircraftThumbnail from "../components/AircraftThumbnail";
 import AircraftPhotoViewer from "../components/AircraftPhotoViewer";
 import { HealthBar, RiskBadge, StatusBadge } from "../components/Badges";
+import { formatHoursHHMM } from "../utils/format";
 
 type ViewMode = "lista" | "grade";
 const VIEW_MODE_KEY = "afa_twin_aircraft_view_mode";
@@ -89,7 +90,7 @@ export default function AircraftListPage() {
                   <td><StatusBadge status={a.status} /></td>
                   <td style={{ minWidth: 150 }}><HealthBar value={a.health_index} /></td>
                   <td><RiskBadge level={a.risk_level} /></td>
-                  <td style={{ fontSize: 12.5 }}>{a.total_flight_hours.toLocaleString("pt-BR")} h</td>
+                  <td style={{ fontSize: 12.5 }}>{formatHoursHHMM(a.total_flight_hours)} h</td>
                   <td style={{ display: "flex", gap: 6 }}>
                     <AircraftPhotoViewer aircraft={a} />
                     <Link to={`/aeronaves/${a.id}`} className="btn btn-outline btn-sm">Abrir</Link>
@@ -119,7 +120,7 @@ export default function AircraftListPage() {
                 </div>
                 <div style={{ marginTop: 12 }}><HealthBar value={a.health_index} /></div>
                 <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 8 }}>
-                  {a.total_flight_hours.toLocaleString("pt-BR")} h de voo acumuladas
+                  {formatHoursHHMM(a.total_flight_hours)} h de voo acumuladas
                 </div>
               </Link>
               <div style={{ marginTop: 12 }}>

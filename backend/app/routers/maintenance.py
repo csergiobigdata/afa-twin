@@ -16,11 +16,14 @@ _TERMINAL_STATUSES = (models.OrderStatus.CONCLUIDA, models.OrderStatus.CANCELADA
 
 
 def _next_order_number(db: Session) -> str:
+    # Formato "AAAA/NNNN" (ex.: "2026/0002") - só o número da OS, sem a
+    # sigla "OS-" (removida a pedido do usuário; o próprio módulo já se
+    # chama "Ordem de Serviço", a sigla no número era redundante).
     year = dt.datetime.now().year
     count = db.query(models.MaintenanceOrder).filter(
-        models.MaintenanceOrder.order_number.like(f"OS-{year}-%")
+        models.MaintenanceOrder.order_number.like(f"{year}/%")
     ).count()
-    return f"OS-{year}-{count + 1:04d}"
+    return f"{year}/{count + 1:04d}"
 
 
 @router.get("", response_model=list[schemas.MaintenanceOrderOut])

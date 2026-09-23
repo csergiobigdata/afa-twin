@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { Aircraft, Component, FleetAvailabilityForecast, ProspectiveAnalysisResult } from "../api/types";
+import { formatHoursHHMM } from "../utils/format";
 
 export default function PlanningPage() {
   return (
@@ -147,7 +148,7 @@ function ProspectiveAnalysisSection() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
             <MiniStat label="Saúde atual → projetada" value={`${result.current_health_index}% → ${result.projected_health_index}%`} />
             <MiniStat label="Risco atual → projetado" value={`${result.current_risk_level} → ${result.projected_risk_level}`} />
-            <MiniStat label="Horas extras estimadas" value={`${result.extra_flight_hours_estimated} h`} />
+            <MiniStat label="Horas extras estimadas" value={`${formatHoursHHMM(result.extra_flight_hours_estimated)} h`} />
             <MiniStat label="Aumento na prob. de falha" value={`+${result.increased_failure_probability_pct}%`} />
             <MiniStat label="Impacto na disponibilidade" value={`-${result.availability_impact_pct} p.p.`} />
             <MiniStat label="Impacto financeiro estimado" value={result.estimated_financial_impact_brl.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} />

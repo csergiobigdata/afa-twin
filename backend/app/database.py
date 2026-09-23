@@ -9,6 +9,7 @@ como camada de abstração. Ver docs/02-arquitetura-da-solucao.md.
 """
 import enum
 import os
+import re
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from sqlalchemy.types import Enum as SAEnum
@@ -176,3 +177,53 @@ def sync_missing_columns() -> None:
                     f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" '
                     f'{ddl_type}{default_clause}{nullability}'
                 ))
+
+
+_OLD_ORDER_NUMBER_PATTERN = re.compile(r"^OS-(\d{4})-(\d+)$")
+
+
+def reformat_order_numbers() -> None:
+    """Migra números de OS do formato antigo "OS-AAAA-NNNN" (ex.:
+    "OS-2026-0002") para "AAAA/NNNN" (ex.: "2026/0002") - sigla "OS-"
+    removida e "-" entre ano e sequência virou "/", a pedido do usuário. Ver
+    o gerador atual em routers/maintenance.py::_next_order_number. Barata
+    (uma consulta com LIKE + updates só das linhas ainda no formato antigo,
+    nenhuma depois da primeira vez) - roda automaticamente no startup, em
+    qualquer dialeto; idempotente."""
+    with engine.begin() as conn:
+        rows = conn.execute(text(
+            "SELECT id, order_number FROM maintenance_orders WHERE order_number LIKE 'OS-%'"
+        )).fetchall()
+        for row_id, order_number in rows:
+            m = _OLD_ORDER_NUMBER_PATTERN.match(order_number)
+            if not m:
+                continue
+            conn.execute(
+                text("UPDATE maintenance_orders SET order_number = :new WHERE id = :id"),
+                {"new": f"{m.group(1)}/{m.group(2)}", "id": row_id},
+            )
+
+
+def migrate_availability_code_column() -> None:
+    """`availability_updates.code` era um tipo ENUM nativo do Postgres fixo
+    (DI/DO/IN definidos em código) - passou a ser VARCHAR(2) livre, validado
+    contra o cadastro editável `availability_codes` (ver
+    routers/availability_codes.py), para permitir acrescentar um código novo
+    (ex.: "IS") sem depender de alterar um tipo nativo do banco a cada vez.
+    Só age em Postgres (SQLite nunca teve tipo enum nativo aqui) e só quando
+    a coluna ainda está no tipo antigo - barata (uma consulta de
+    introspecção; o ALTER TYPE só roda uma vez) e idempotente, segura no
+    startup automático."""
+    if engine.dialect.name != "postgresql":
+        return
+    with engine.connect() as conn:
+        conn = conn.execution_options(isolation_level="AUTOCOMMIT")
+        current_type = conn.execute(text(
+            "SELECT data_type FROM information_schema.columns "
+            "WHERE table_name = 'availability_updates' AND column_name = 'code'"
+        )).scalar()
+        if current_type != "USER-DEFINED":
+            return  # já migrada (VARCHAR), ou tabela/coluna ainda não existe
+        conn.execute(text(
+            "ALTER TABLE availability_updates ALTER COLUMN code TYPE VARCHAR(2) USING code::text"
+        ))

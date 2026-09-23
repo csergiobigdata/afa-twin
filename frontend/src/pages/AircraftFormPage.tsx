@@ -173,15 +173,15 @@ export default function AircraftFormPage({ mode }: { mode: "create" | "edit" }) 
         <SectionTitle>Desempenho</SectionTitle>
         <div className="form-grid">
           <div className="field">
-            <label>Velocidade máxima (km/h)</label>
+            <label>Velocidade máxima (kcas)</label>
             <input type="number" value={form.max_speed_kmh ?? ""} onChange={(e) => set("max_speed_kmh", e.target.value ? Number(e.target.value) : undefined)} />
           </div>
           <div className="field">
-            <label>Teto de serviço (m)</label>
+            <label>Altitude (pés)</label>
             <input type="number" value={form.service_ceiling_m ?? ""} onChange={(e) => set("service_ceiling_m", e.target.value ? Number(e.target.value) : undefined)} />
           </div>
           <div className="field">
-            <label>Alcance máximo (km)</label>
+            <label>Milhas Náuticas</label>
             <input type="number" value={form.max_range_km ?? ""} onChange={(e) => set("max_range_km", e.target.value ? Number(e.target.value) : undefined)} />
           </div>
         </div>

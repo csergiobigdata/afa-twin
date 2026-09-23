@@ -15,6 +15,7 @@ import { AvailabilityCodeBadge, CriticalityBadge, HealthBar, OrderStatusBadge, R
 import ConfigurationDiagram from "../components/ConfigurationDiagram";
 import PersonPicker from "../components/PersonPicker";
 import { ROLE_PERMISSIONS, useAuth } from "../auth/AuthContext";
+import { formatHoursHHMM } from "../utils/format";
 
 // Função na aeronave sugerida automaticamente ao escolher uma Pessoa em
 // "Vínculos individuais", a partir do cargo dela (PersonRole) - só um
@@ -110,7 +111,7 @@ export default function AircraftDetailPage() {
             <span>Confiabilidade: <strong style={{ color: "var(--text-primary)" }}>{aircraft.reliability_pct?.toFixed(0)}%</strong></span>
           </div>
           <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 8 }}>
-            {aircraft.total_flight_hours.toLocaleString("pt-BR")} h de voo acumuladas
+            {formatHoursHHMM(aircraft.total_flight_hours)} h de voo acumuladas
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -185,9 +186,9 @@ function GeneralTab({ aircraft, flightLogs, people, onReload }: { aircraft: Airc
         <SpecRow label="Motor" value={aircraft.engine_config} />
         <SpecRow label="Aviônicos" value={aircraft.avionics_config} />
         <SpecRow label="Armamento" value={aircraft.armament_config} />
-        <SpecRow label="Velocidade máxima" value={aircraft.max_speed_kmh ? `${aircraft.max_speed_kmh} km/h` : undefined} />
-        <SpecRow label="Teto de serviço" value={aircraft.service_ceiling_m ? `${aircraft.service_ceiling_m} m` : undefined} />
-        <SpecRow label="Alcance máximo" value={aircraft.max_range_km ? `${aircraft.max_range_km} km` : undefined} />
+        <SpecRow label="Velocidade máxima (kcas)" value={aircraft.max_speed_kmh ? `${aircraft.max_speed_kmh} kcas` : undefined} />
+        <SpecRow label="Altitude (pés)" value={aircraft.service_ceiling_m ? `${aircraft.service_ceiling_m} pés` : undefined} />
+        <SpecRow label="Milhas Náuticas" value={aircraft.max_range_km ? `${aircraft.max_range_km} NM` : undefined} />
         <SpecRow label="Tripulação" value={aircraft.crew_capacity?.toString()} />
         <SpecRow label="Ano de fabricação" value={aircraft.manufacture_year?.toString()} />
         {aircraft.notes && <SpecRow label="Observações" value={aircraft.notes} />}
@@ -229,7 +230,7 @@ function GeneralTab({ aircraft, flightLogs, people, onReload }: { aircraft: Airc
           {flightLogs.length === 0 && <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Nenhum voo registrado ainda.</p>}
           {flightLogs.map((fl) => (
             <div key={fl.id} style={{ borderBottom: "1px solid var(--border-subtle)", paddingBottom: 8 }}>
-              <div style={{ fontSize: 13, fontWeight: 700 }}>{new Date(fl.date).toLocaleDateString("pt-BR")} · {fl.duration_hours}h {fl.mission_type ? `· ${fl.mission_type}` : ""}</div>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{new Date(fl.date).toLocaleDateString("pt-BR")} · {formatHoursHHMM(fl.duration_hours)}h {fl.mission_type ? `· ${fl.mission_type}` : ""}</div>
               {fl.discrepancies && <div style={{ fontSize: 12, color: "var(--status-warn)" }}>⚠ {fl.discrepancies}</div>}
             </div>
           ))}
@@ -918,8 +919,8 @@ function ReliabilityRiskTab({ aircraftId }: { aircraftId: number }) {
         ) : reliability && (
           <>
             <SpecRow label="Amostra" value={`${reliability.sample_size} manutenção(ões) corretiva(s)`} />
-            <SpecRow label="MTBF" value={reliability.mtbf_hours != null ? `${reliability.mtbf_hours} h` : undefined} />
-            <SpecRow label="MTTR" value={reliability.mttr_hours != null ? `${reliability.mttr_hours} h` : undefined} />
+            <SpecRow label="MTBF" value={reliability.mtbf_hours != null ? `${formatHoursHHMM(reliability.mtbf_hours)} h` : undefined} />
+            <SpecRow label="MTTR" value={reliability.mttr_hours != null ? `${formatHoursHHMM(reliability.mttr_hours)} h` : undefined} />
             <SpecRow label="Taxa de falha (λ)" value={reliability.failure_rate_per_hour != null ? `${reliability.failure_rate_per_hour}/h` : undefined} />
             <SpecRow label="Confiabilidade (100h)" value={reliability.reliability_pct_next_100h != null ? `${reliability.reliability_pct_next_100h}%` : undefined} />
             <SpecRow label="Disponibilidade Intrínseca" value={reliability.availability_intrinsic_pct != null ? `${reliability.availability_intrinsic_pct}%` : undefined} />

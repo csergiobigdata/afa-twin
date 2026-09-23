@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { api } from "../api/client";
-import type { AuthorizedConfiguration, AuthorizedConfigPdfLoadResult, ConfigurationCode } from "../api/types";
+import type {
+  AuthorizedConfiguration, AuthorizedConfigPdfLoadResult, AvailabilityCodeCatalog, ConfigurationCode,
+} from "../api/types";
 import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
 import ConfigurationDiagram from "../components/ConfigurationDiagram";
 
@@ -54,6 +56,70 @@ export default function AuthorizedConfigurationsPage() {
   const [codeStatusFilter, setCodeStatusFilter] = useState<"" | "A" | "I">("");
   function symbolFor(equipment: string): string | undefined {
     return items.find((i) => i.equipment === equipment)?.symbol_svg;
+  }
+
+  // Códigos de Disponibilidade (DI/DO/IN/IS de fábrica, extensível) - ver
+  // AvailabilityPage → StatCards/seletores "Código" e
+  // models.py::AvailabilityCodeCatalog.
+  const [availabilityCodes, setAvailabilityCodes] = useState<AvailabilityCodeCatalog[]>([]);
+  const [loadingAvailabilityCodes, setLoadingAvailabilityCodes] = useState(true);
+  function reloadAvailabilityCodes() {
+    api.get<AvailabilityCodeCatalog[]>("/availability-codes")
+      .then(setAvailabilityCodes).finally(() => setLoadingAvailabilityCodes(false));
+  }
+  useEffect(reloadAvailabilityCodes, []);
+  const [newCode, setNewCode] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [savingCode, setSavingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [editingCodeId, setEditingCodeId] = useState<number | null>(null);
+  const [editCode, setEditCode] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+
+  async function addAvailabilityCode(e: FormEvent) {
+    e.preventDefault();
+    setSavingCode(true);
+    setCodeError(null);
+    try {
+      await api.post("/availability-codes", { code: newCode.trim(), description: newDescription.trim() });
+      setNewCode("");
+      setNewDescription("");
+      reloadAvailabilityCodes();
+    } catch (err) {
+      setCodeError(err instanceof Error ? err.message : "Erro ao cadastrar código.");
+    } finally {
+      setSavingCode(false);
+    }
+  }
+
+  function startEditCode(c: AvailabilityCodeCatalog) {
+    setEditingCodeId(c.id);
+    setEditCode(c.code);
+    setEditDescription(c.description);
+  }
+
+  async function saveEditCode(id: number) {
+    setSavingCode(true);
+    setCodeError(null);
+    try {
+      await api.put(`/availability-codes/${id}`, { code: editCode.trim(), description: editDescription.trim() });
+      setEditingCodeId(null);
+      reloadAvailabilityCodes();
+    } catch (err) {
+      setCodeError(err instanceof Error ? err.message : "Erro ao alterar código.");
+    } finally {
+      setSavingCode(false);
+    }
+  }
+
+  async function removeAvailabilityCode(c: AvailabilityCodeCatalog) {
+    if (!confirm(`Remover o código "${c.code}" (${c.description})?`)) return;
+    try {
+      await api.del(`/availability-codes/${c.id}`);
+      reloadAvailabilityCodes();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao remover código.");
+    }
   }
 
   async function toggleStatus(item: AuthorizedConfiguration) {
@@ -217,6 +283,68 @@ export default function AuthorizedConfigurationsPage() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="card" style={{ padding: 18, marginTop: 18 }}>
+        <h2 style={{ fontSize: 15.5, margin: "0 0 4px" }}>Códigos de Disponibilidade</h2>
+        <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14, maxWidth: 640 }}>
+          Códigos aceitos no boletim de disponibilidade (DI/DO/IN/IS de fábrica) - alimentam os
+          seletores "Código" e o reconhecimento do texto colado em Disponibilidade. Cadastre aqui um
+          código novo, se for preciso, sem precisar de nova versão do sistema.
+        </p>
+        {loadingAvailabilityCodes ? <p>Carregando…</p> : (
+          <div className="scroll-x" style={{ marginBottom: 14 }}>
+            <table>
+              <thead><tr><th style={{ width: 70 }}>Código</th><th>Descrição</th><th></th></tr></thead>
+              <tbody>
+                {availabilityCodes.map((c) => (
+                  <tr key={c.id}>
+                    {editingCodeId === c.id ? (
+                      <>
+                        <td>
+                          <input value={editCode} maxLength={2} onChange={(e) => setEditCode(e.target.value.toUpperCase())}
+                                 style={{ width: 60, minHeight: 30, fontSize: 12.5, padding: "4px 8px" }} />
+                        </td>
+                        <td>
+                          <input value={editDescription} maxLength={40} onChange={(e) => setEditDescription(e.target.value)}
+                                 style={{ width: "100%", minHeight: 30, fontSize: 12.5, padding: "4px 8px" }} />
+                        </td>
+                        <td style={{ display: "flex", gap: 6 }}>
+                          <button className="btn btn-primary btn-sm" disabled={savingCode} onClick={() => saveEditCode(c.id)}>Salvar</button>
+                          <button className="btn btn-outline btn-sm" onClick={() => setEditingCodeId(null)}>Cancelar</button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td><span className="badge badge-neutral">{c.code}</span></td>
+                        <td style={{ fontSize: 13 }}>{c.description}</td>
+                        <td style={{ display: "flex", gap: 6 }}>
+                          <button className="btn btn-outline btn-sm" onClick={() => startEditCode(c)}>Editar</button>
+                          <button className="btn btn-outline btn-sm" onClick={() => removeAvailabilityCode(c)}>Remover</button>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+                {availabilityCodes.length === 0 && (
+                  <tr><td colSpan={3} style={{ color: "var(--text-secondary)" }}>Nenhum código cadastrado.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <form onSubmit={addAvailabilityCode} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div className="field" style={{ maxWidth: 100 }}>
+            <label>Código (2 letras)</label>
+            <input required maxLength={2} value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())} placeholder="ex.: IS" />
+          </div>
+          <div className="field" style={{ flex: "1 1 280px" }}>
+            <label>Descrição (até 40 caracteres)</label>
+            <input required maxLength={40} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="ex.: Inspeção" />
+          </div>
+          <button type="submit" className="btn btn-primary btn-sm" disabled={savingCode}>+ Adicionar</button>
+        </form>
+        {codeError && <p style={{ color: "var(--status-critical)", fontSize: 12.5, marginTop: 10 }}>{codeError}</p>}
       </div>
     </div>
   );

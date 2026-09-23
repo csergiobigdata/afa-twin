@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends
 
 from .. import models, security
-from ..database import Base, engine, sync_missing_columns, sync_missing_indexes, sync_postgres_enum_types
+from ..database import (
+    Base, engine, sync_missing_columns, sync_missing_indexes, sync_postgres_enum_types,
+    reformat_order_numbers, migrate_availability_code_column,
+)
 
 router = APIRouter(prefix="/api/admin", tags=["administração"])
 
@@ -28,4 +31,8 @@ def sync_schema():
     sync_postgres_enum_types()
     sync_missing_indexes()
     sync_missing_columns()
+    # Já rodam automaticamente no startup (baratas) - chamadas aqui também
+    # para permitir forçar sem esperar um redeploy/reinício.
+    reformat_order_numbers()
+    migrate_availability_code_column()
     return {"status": "ok", "detail": "Tabelas, tipos enum, índices e colunas sincronizados."}

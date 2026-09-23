@@ -274,9 +274,31 @@ export interface ReliabilityMetrics {
 
 // ---------------- Atualização de Disponibilidade ----------------
 // Boletim diário/por turno de linha de voo do esquadrão (ex.: "5906 - DO
-// (EEXD TREM DE POUSO)"), complementar ao AircraftStatus. Ver nota em
-// backend/app/models.py::AvailabilityCode sobre a origem do vocabulário.
-export type AvailabilityCode = "DI" | "DO" | "IN";
+// (EEXD TREM DE POUSO)"), complementar ao AircraftStatus. O código (DI/DO/
+// IN/IS de fábrica) não é mais uma união fixa de literais - vem do cadastro
+// editável AvailabilityCodeCatalog (ver backend/app/models.py), por isso é
+// só `string` aqui: um código novo cadastrado não exige alterar este tipo.
+export type AvailabilityCode = string;
+
+// Item do cadastro de Códigos de Disponibilidade (Aeronaves → Configurações
+// Autorizadas → Códigos de Disponibilidade) - ver backend/app/models.py::
+// AvailabilityCodeCatalog.
+export interface AvailabilityCodeCatalog {
+  id: number;
+  code: string;
+  description: string;
+  created_at: string;
+}
+
+export interface AvailabilityCodeCatalogCreate {
+  code: string;
+  description: string;
+}
+
+export interface AvailabilityCodeCatalogUpdate {
+  code?: string;
+  description?: string;
+}
 
 // Local de instalação do equipamento/carga (ver backend/app/models.py::
 // AvailabilityLocation) - ex.: um tanque externo pode ir na estação
@@ -333,9 +355,7 @@ export interface AvailabilityBoardEntry {
 export interface AvailabilityBoard {
   report_date?: string | null;
   entries: AvailabilityBoardEntry[];
-  di_count: number;
-  do_count: number;
-  in_count: number;
+  code_counts: Record<string, number>;
   subalares_count: number;
   configuration_counts: Record<string, number>;
   aircraft_without_update: string[];

@@ -26,13 +26,19 @@ function findAircraftByTailDigits(fleet: Aircraft[], tailDigits: string): Aircra
 /** Interpreta uma linha do boletim, ex.: "5906 - DO (EEXD TREM DE POUSO)".
  * Heurística transparente e revisável (o usuário confere/edita cada linha
  * antes de salvar) - não é um parser formal de gramática, pois o boletim é
- * texto livre digitado por pessoas. */
-export function parseAvailabilityLine(line: string, fleet: Aircraft[], index: number): ParsedAvailabilityRow | null {
+ * texto livre digitado por pessoas. `knownCodes` vem do cadastro
+ * AvailabilityCodeCatalog (ver AvailabilityPage.tsx) - não é mais fixo em
+ * "DI|DO|IN", para reconhecer um código novo cadastrado (ex.: "IS") sem
+ * alterar este parser. */
+export function parseAvailabilityLine(
+  line: string, fleet: Aircraft[], index: number, knownCodes: string[],
+): ParsedAvailabilityRow | null {
   const raw = line.trim();
   if (!raw) return null;
 
   const key = `${index}-${raw}`;
-  const match = raw.match(/^(\d{2,6})\s*-\s*(DI|DO|IN)\b(.*)$/i);
+  const codePattern = knownCodes.length ? knownCodes.join("|") : "DI|DO|IN";
+  const match = raw.match(new RegExp(`^(\\d{2,6})\\s*-\\s*(${codePattern})\\b(.*)$`, "i"));
   if (!match) {
     return { key, raw, tailDigits: "", aircraft: null, code: null, configuration: null, hasSubalares: false, reason: null, unrecognized: true };
   }
@@ -80,9 +86,9 @@ export function parseAvailabilityLine(line: string, fleet: Aircraft[], index: nu
   };
 }
 
-export function parseAvailabilityBoardText(text: string, fleet: Aircraft[]): ParsedAvailabilityRow[] {
+export function parseAvailabilityBoardText(text: string, fleet: Aircraft[], knownCodes: string[]): ParsedAvailabilityRow[] {
   return text
     .split("\n")
-    .map((line, i) => parseAvailabilityLine(line, fleet, i))
+    .map((line, i) => parseAvailabilityLine(line, fleet, i, knownCodes))
     .filter((row): row is ParsedAvailabilityRow => row !== null);
 }

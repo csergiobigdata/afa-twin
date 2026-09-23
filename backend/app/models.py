@@ -66,22 +66,17 @@ class AircraftStatus(str, enum.Enum):
     EM_MODERNIZACAO = "Em Modernização"
 
 
-class AvailabilityCode(str, enum.Enum):
-    """Código do boletim diário/por turno de disponibilidade de linha de voo
-    do esquadrão (módulo "Atualização de Disponibilidade"), no formato usado
-    pela própria unidade (ex.: "5906 - DO (EEXD TREM DE POUSO)"). É um
-    conceito DIFERENTE de AircraftStatus (mais estável, ligado ao cadastro/
-    Ordens de Serviço): este código reflete a leitura operacional do dia,
-    informada manualmente, e pode divergir do status de cadastro por um
-    tempo até uma OS ser aberta para o mesmo problema. A definição exata de
-    cada código segue a convenção da própria unidade - não fixamos aqui um
-    glossário autoritativo (ex. "disponível"/"indisponível") por não termos
-    confirmação formal do esquadrão sobre a distinção precisa entre DO e IN;
-    ver docs/03-modelo-de-dados.md, seção sobre Atualização de
-    Disponibilidade."""
-    DI = "DI"
-    DO = "DO"
-    IN = "IN"
+# Código do boletim diário/por turno de disponibilidade de linha de voo do
+# esquadrão (módulo "Atualização de Disponibilidade"), no formato usado pela
+# própria unidade (ex.: "5906 - DO (EEXD TREM DE POUSO)"). Conceito DIFERENTE
+# de AircraftStatus (mais estável, ligado ao cadastro/Ordens de Serviço):
+# este código reflete a leitura operacional do dia, informada manualmente, e
+# pode divergir do status de cadastro por um tempo até uma OS ser aberta para
+# o mesmo problema. NÃO é mais um enum Python fixo (era DI/DO/IN até a v0.3) -
+# passou a ser um cadastro editável (`AvailabilityCodeCatalog`, ver abaixo),
+# para permitir acrescentar um código novo (ex.: "IS") sem alterar código
+# nem o tipo nativo do banco. `AvailabilityUpdate.code` guarda só o texto do
+# código (2 caracteres); ver docs/03-modelo-de-dados.md.
 
 
 class AvailabilityLocation(str, enum.Enum):
@@ -544,7 +539,8 @@ class FlightLog(Base):
 # do esquadrão (ex.: "5906 - DO (EEXD TREM DE POUSO)"), com totais de
 # disponibilidade (DI/DO/IN) e de configuração de asas/hardpoints
 # (LISO/ADA/EEXD/VENTRAL/CAA + SUBALARES). Complementa - sem substituir -
-# Aircraft.status: ver nota em AvailabilityCode e docs/03-modelo-de-dados.md.
+# Aircraft.status: ver nota acima (antes de AircraftStatus) e
+# docs/03-modelo-de-dados.md.
 # --------------------------------------------------------------------------
 
 class AvailabilityUpdate(Base):
@@ -553,7 +549,11 @@ class AvailabilityUpdate(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"), index=True)
     report_date: Mapped[dt.date] = mapped_column(default=lambda: now_utc().date())
-    code: Mapped[AvailabilityCode] = mapped_column(SAEnum(AvailabilityCode))
+    # Texto livre (2 caracteres), validado no router contra o cadastro
+    # `AvailabilityCodeCatalog` - não é mais um enum nativo do Postgres (ver
+    # nota acima, antes de AircraftStatus) para permitir acrescentar um
+    # código novo (ex.: "IS") sem alterar o tipo do banco.
+    code: Mapped[str] = mapped_column(String(2))
 
     # Configuração de asas/hardpoints no momento do boletim (ex.: LISO, ADA,
     # EEXD, VENTRAL, CAA) - cadastro auxiliar editável (LookupItem, categoria
@@ -578,6 +578,23 @@ class AvailabilityUpdate(Base):
 
     aircraft: Mapped["Aircraft"] = relationship(back_populates="availability_updates")
     recorded_by: Mapped["Person | None"] = relationship()
+
+
+# --------------------------------------------------------------------------
+# Códigos de Disponibilidade - cadastro editável dos códigos aceitos em
+# AvailabilityUpdate.code (DI/DO/IN/IS de fábrica, ver seed.py), para que um
+# código novo possa ser acrescentado no futuro sem alterar código nem o tipo
+# do banco - ver nota completa acima de AvailabilityUpdate e
+# routers/availability_codes.py.
+# --------------------------------------------------------------------------
+
+class AvailabilityCodeCatalog(Base):
+    __tablename__ = "availability_codes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(2), unique=True, index=True)  # ex.: "DI", "IS"
+    description: Mapped[str] = mapped_column(String(40))  # ex.: "Disponível sem restrições"
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
 
 
 # --------------------------------------------------------------------------

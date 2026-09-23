@@ -355,7 +355,7 @@ def seed_if_empty(db: Session) -> None:
     # ---------------- Ordens de serviço ----------------
     db.add_all([
         models.MaintenanceOrder(
-            order_number="OS-2026-0001", aircraft_id=aircraft_objs["FAB 4824"].id,
+            order_number="2026/0001", aircraft_id=aircraft_objs["FAB 4824"].id,
             component_id=component_objs[4].id,  # longarina F-5EM
             type=models.MaintenanceType.INSPECAO_ROTINA, priority=models.Criticality.CRITICA,
             status=models.OrderStatus.EM_ANDAMENTO,
@@ -370,7 +370,7 @@ def seed_if_empty(db: Session) -> None:
             findings="Indícios de fadiga próximos ao limite estabelecido pelo fabricante.",
         ),
         models.MaintenanceOrder(
-            order_number="OS-2026-0002", aircraft_id=aircraft_objs["FAB 2464"].id,
+            order_number="2026/0002", aircraft_id=aircraft_objs["FAB 2464"].id,
             component_id=component_objs[7].id,  # T56 C-130
             type=models.MaintenanceType.OVERHAUL, priority=models.Criticality.ALTA,
             status=models.OrderStatus.AGUARDANDO_PECA,
@@ -385,7 +385,7 @@ def seed_if_empty(db: Session) -> None:
             parts_used="Kit de vedação, rolamentos - aguardando remessa do almoxarifado central",
         ),
         models.MaintenanceOrder(
-            order_number="OS-2026-0003", aircraft_id=aircraft_objs["FAB 5962"].id,
+            order_number="2026/0003", aircraft_id=aircraft_objs["FAB 5962"].id,
             type=models.MaintenanceType.PREVENTIVA_PROGRAMADA, priority=models.Criticality.MEDIA,
             status=models.OrderStatus.CONCLUIDA,
             title="Inspeção de 100 horas",
@@ -399,7 +399,7 @@ def seed_if_empty(db: Session) -> None:
             actions_taken="Inspeção realizada sem discrepâncias relevantes.",
         ),
         models.MaintenanceOrder(
-            order_number="OS-2026-0004", aircraft_id=aircraft_objs["FAB 4100"].id,
+            order_number="2026/0004", aircraft_id=aircraft_objs["FAB 4100"].id,
             type=models.MaintenanceType.BOLETIM_AD_SB, priority=models.Criticality.BAIXA,
             status=models.OrderStatus.ABERTA,
             title="Aplicação de boletim de serviço (atualização de software de aviônicos)",
@@ -430,49 +430,49 @@ def seed_if_empty(db: Session) -> None:
         )
 
     db.add_all([
-        _corrective("OS-2025-0031", "FAB 5962", 340, 6,
+        _corrective("2025/0031", "FAB 5962", 340, 6,
                     "Luz de alerta FUEL PRESS acesa em voo de cruzeiro",
                     "Piloto reportou luz FUEL PRESS acesa de forma intermitente durante cruzeiro.",
                     "Pressão de combustível oscilando fora da faixa nominal na válvula reguladora.",
                     "Substituição da válvula reguladora de pressão de combustível.",
                     "1x válvula reguladora de pressão de combustível (P/N compatível AMM Cap. 28)",
                     "Maj Av Bruno Castro Vieira", "Cap Esp Mec Douglas Nogueira Prado", "AMM A-29 Cap. 28"),
-        _corrective("OS-2025-0044", "FAB 5962", 120, 10,
+        _corrective("2025/0044", "FAB 5962", 120, 10,
                     "Vibração anômala do motor durante o táxi",
                     "Mecânico reportou vibração fora do padrão durante rolagem antes da decolagem.",
                     "Desbalanceamento leve identificado na hélice.",
                     "Balanceamento da hélice e inspeção do eixo do redutor.",
                     "Kit de balanceamento de hélice",
                     "Cap Esp Mec Douglas Nogueira Prado", "Cap Esp Mec Douglas Nogueira Prado", "AMM A-29 Cap. 61"),
-        _corrective("OS-2025-0052", "FAB 4100", 200, 5,
+        _corrective("2025/0052", "FAB 4100", 200, 5,
                     "Indicador FUEL PRESS intermitente no painel",
                     "Alerta FUEL PRESS surgiu de forma intermitente durante missão de treinamento.",
                     "Válvula reguladora de pressão com resposta fora da especificação.",
                     "Substituição da válvula reguladora de pressão de combustível.",
                     "1x válvula reguladora de pressão de combustível",
                     "Ten Cel Av Marina Duque Estrada", "Eng. Camila Rezende Sales", "AMM F-39E Cap. 28"),
-        _corrective("OS-2025-0067", "FAB 4824", 400, 14,
+        _corrective("2025/0067", "FAB 4824", 400, 14,
                     "Luz FUEL PRESS permanece acesa em voo de cruzeiro",
                     "Luz de alerta FUEL PRESS permaneceu acesa durante todo o trecho de cruzeiro.",
                     "Confirmado defeito na válvula reguladora de pressão (histórico recorrente na frota).",
                     "Substituição da válvula reguladora de pressão de combustível.",
                     "1x válvula reguladora de pressão de combustível",
                     "Cap Esp Mec Douglas Nogueira Prado", "Eng. Felipe Augusto Kimura", "AMM F-5EM Cap. 28"),
-        _corrective("OS-2025-0071", "FAB 5237", 260, 8,
+        _corrective("2025/0071", "FAB 5237", 260, 8,
                     "Alerta FUEL PRESS acionado no painel",
                     "Alerta FUEL PRESS acionado logo após a decolagem, missão abortada por precaução.",
                     "Válvula reguladora de pressão fora da faixa aceitável de operação.",
                     "Substituição da válvula reguladora de pressão de combustível.",
                     "1x válvula reguladora de pressão de combustível",
                     "1S BMA Elias Tavares Cunha", "Eng. Felipe Augusto Kimura", "AMM A-1M Cap. 28"),
-        _corrective("OS-2025-0083", "FAB 2856", 90, 4,
+        _corrective("2025/0083", "FAB 2856", 90, 4,
                     "Luz FUEL PRESS acesa durante a subida",
                     "Luz FUEL PRESS acendeu durante a subida inicial, missão concluída sem outras anomalias.",
                     "Sensor de pressão fora de calibração; válvula reguladora testada dentro da especificação.",
                     "Ajuste de calibração do sensor de pressão (não foi necessário substituir a válvula).",
                     "Nenhuma peça substituída",
                     "1S BMA Elias Tavares Cunha", "1S BMA Elias Tavares Cunha", "AMM KC-390 Cap. 28"),
-        _corrective("OS-2025-0019", "FAB 2464", 500, 20,
+        _corrective("2025/0019", "FAB 2464", 500, 20,
                     "Luz FUEL PRESS acesa de forma intermitente",
                     "Luz FUEL PRESS relatada como intermitente em três voos consecutivos.",
                     "Válvula reguladora de pressão apresentando desgaste acima do esperado.",
@@ -544,7 +544,7 @@ def seed_if_empty(db: Session) -> None:
             probable_cause="Fadiga estrutural associada à alta acumulação de horas de célula.",
             amm_reference="AMM F-5EM Cap. 57", recorded_by_id=people_objs["Eng. Felipe Augusto Kimura"].id,
             recorded_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=6),
-            notes="Imagem ilustrativa de exemplo (piloto de testes) - registrada junto à OS-2026-0001.",
+            notes="Imagem ilustrativa de exemplo (piloto de testes) - registrada junto à 2026/0001.",
         ),
         models.InspectionFinding(
             aircraft_id=aircraft_objs["FAB 2464"].id, component_id=None,
@@ -662,8 +662,8 @@ def seed_if_empty(db: Session) -> None:
         ),
         models.AuditLog(
             actor_username="mecanico", actor_person_name="Cap Esp Mec Douglas Nogueira Prado",
-            entity_type="Ordem de Serviço", entity_id=1, entity_label="OS-2026-0001",
-            action=models.AuditAction.CRIACAO, summary='OS-2026-0001 criada: "Inspeção estrutural da longarina principal (IAM)".',
+            entity_type="Ordem de Serviço", entity_id=1, entity_label="2026/0001",
+            action=models.AuditAction.CRIACAO, summary='2026/0001 criada: "Inspeção estrutural da longarina principal (IAM)".',
             created_at=dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=5),
         ),
     ])
@@ -911,3 +911,28 @@ def seed_configuration_codes_if_empty(db: Session) -> None:
             row.status_disp = models.ConfigDispStatus.ATIVO
 
     db.commit()
+
+
+# Código -> descrição (até 40 caracteres) do cadastro de Códigos de
+# Disponibilidade (ver models.py::AvailabilityCodeCatalog). "IS" (Inspeção)
+# acrescentado na v0.3 além dos DI/DO/IN originais do boletim do esquadrão.
+_AVAILABILITY_CODE_SEED = [
+    ("DI", "Disponível sem restrições"),
+    ("DO", "Disponível com restrição"),
+    ("IN", "Indisponível"),
+    ("IS", "Inspeção"),
+]
+
+
+def seed_availability_codes_if_empty(db: Session) -> None:
+    # Upsert por código, mesmo raciocínio de seed_configuration_codes_if_empty
+    # acima (idempotente - acrescenta só os códigos que ainda não existem).
+    existing = {c.code.upper() for c in db.query(models.AvailabilityCodeCatalog).all()}
+    to_add = [
+        models.AvailabilityCodeCatalog(code=code, description=description)
+        for code, description in _AVAILABILITY_CODE_SEED
+        if code not in existing
+    ]
+    if to_add:
+        db.add_all(to_add)
+        db.commit()

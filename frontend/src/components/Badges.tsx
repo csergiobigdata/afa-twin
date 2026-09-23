@@ -43,11 +43,15 @@ export function RiskBadge({ level }: { level?: string | null }) {
 }
 
 /** Código do boletim de disponibilidade (módulo Atualização de
- * Disponibilidade) - DI/DO/IN, conforme convenção da própria unidade (ver
- * nota em backend/app/models.py::AvailabilityCode). */
+ * Disponibilidade) - DI/DO/IN/IS de fábrica, mas vem do cadastro editável
+ * AvailabilityCodeCatalog (ver Aeronaves → Configurações Autorizadas →
+ * Códigos de Disponibilidade), por isso o mapa de cores abaixo tem
+ * fallback neutro para um código novo cadastrado sem cor própria ainda. */
+const AVAILABILITY_CODE_TONE: Record<string, string> = {
+  DI: "badge-ok", DO: "badge-warn", IN: "badge-critical", IS: "badge-info",
+};
 export function AvailabilityCodeBadge({ code }: { code: AvailabilityCode }) {
-  const map: Record<AvailabilityCode, string> = { DI: "badge-ok", DO: "badge-warn", IN: "badge-critical" };
-  return <span className={`badge ${map[code] ?? "badge-neutral"}`}>{code}</span>;
+  return <span className={`badge ${AVAILABILITY_CODE_TONE[code] ?? "badge-neutral"}`}>{code}</span>;
 }
 
 export function HealthBar({ value }: { value?: number | null }) {

@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import type { Aircraft } from "../api/types";
 import { exampleArtUrl, uploadedPhotoUrl } from "../components/aircraftArt";
 import { HealthBar, RiskBadge, StatusBadge } from "../components/Badges";
+import { formatHoursHHMM } from "../utils/format";
 
 export default function AircraftSearchPage() {
   const [fleet, setFleet] = useState<Aircraft[]>([]);
@@ -102,7 +103,7 @@ export default function AircraftSearchPage() {
                   <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 4 }}>Saúde</div>
                   <HealthBar value={a.health_index} />
                   <div style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 6 }}>
-                    {a.total_flight_hours.toLocaleString("pt-BR")} h
+                    {formatHoursHHMM(a.total_flight_hours)} h
                   </div>
                 </div>
 

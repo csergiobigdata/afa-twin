@@ -20,6 +20,19 @@ def _get_aircraft_or_404(db: Session, aircraft_id: int) -> models.Aircraft:
     return a
 
 
+def _validate_code(db: Session, code: str) -> None:
+    code = code.strip().upper()
+    exists = db.query(models.AvailabilityCodeCatalog).filter(
+        models.AvailabilityCodeCatalog.code == code
+    ).first()
+    if not exists:
+        raise HTTPException(
+            400,
+            f"Código de disponibilidade '{code}' não cadastrado. "
+            "Cadastre-o em Aeronaves → Configurações Autorizadas → Códigos de Disponibilidade.",
+        )
+
+
 @router.get("/board", response_model=schemas.AvailabilityBoard)
 def board(db: Session = Depends(get_db)):
     """Quadro de disponibilidade da frota (última atualização de cada
@@ -52,6 +65,7 @@ def create_update(
     actor: models.User = Depends(security.get_current_user),
 ):
     aircraft = _get_aircraft_or_404(db, payload.aircraft_id)
+    _validate_code(db, payload.code)
     u = models.AvailabilityUpdate(
         **payload.model_dump(),
         recorded_by_id=actor.person_id,
@@ -62,7 +76,7 @@ def create_update(
     audit.log_action(
         db, actor, "Atualização de Disponibilidade", u.id, models.AuditAction.CRIACAO,
         f"Lançamento de disponibilidade para {aircraft.tail_number} em {payload.report_date.strftime('%d/%m/%Y')}: "
-        f"{payload.code.value}" + (f" ({payload.configuration})" if payload.configuration else "") + ".",
+        f"{payload.code}" + (f" ({payload.configuration})" if payload.configuration else "") + ".",
         entity_label=aircraft.tail_number,
     )
     return availability_service.to_out(u)
@@ -81,6 +95,7 @@ def create_bulk(
     created: list[models.AvailabilityUpdate] = []
     for item in payload:
         aircraft = _get_aircraft_or_404(db, item.aircraft_id)
+        _validate_code(db, item.code)
         u = models.AvailabilityUpdate(
             **item.model_dump(),
             recorded_by_id=actor.person_id,

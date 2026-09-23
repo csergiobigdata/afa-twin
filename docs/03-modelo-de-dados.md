@@ -151,7 +151,7 @@ erDiagram
     }
     MAINTENANCE_ORDER {
         int id PK
-        string order_number "OS-AAAA-NNNN"
+        string order_number "AAAA/NNNN"
         int aircraft_id FK
         int component_id FK "nullable"
         enum type
@@ -215,7 +215,7 @@ erDiagram
         int id PK
         int aircraft_id FK
         date report_date
-        enum code "DI, DO ou IN"
+        string code "2 chars, ex. DI/DO/IN/IS - ver AVAILABILITY_CODE_CATALOG"
         string configuration "nullable, ex. LISO/ADA/EEXD/VENTRAL/CAA"
         bool has_subalares
         text reason "nullable, ex. TREM DE POUSO"
@@ -244,7 +244,6 @@ erDiagram
 | `NotificationStatus` | Enviada · Simulada · Falha no Envio |
 | `LookupCategory` | Organização · Posto/Graduação/Cargo · Especialidade · Esquadrão/Unidade · Componente Associado (padrão) · Tipo de Intervalo de Manutenção · Categoria de Alerta de Manutenção Preventiva · Configuração de Disponibilidade (asas/hardpoints) — cada uma vira uma aba editável em Usuários → Cadastros Auxiliares (ou em Manutenção → Cadastro de Manutenção, para as três últimas) |
 | `AuditAction` | Criação · Alteração · Inativação · Reativação · Cancelamento |
-| `AvailabilityCode` | DI · DO · IN — código do boletim de linha de voo do esquadrão (módulo Atualização de Disponibilidade); ver nota abaixo |
 | `ConfigDispStatus` | A (Ativo) · I (Inativo) — status_disp de `AuthorizedConfiguration`; só itens "A" aparecem como opção selecionável no lançamento manual de disponibilidade |
 
 > **Nota sobre `organization` em `Person`**: deixou de ser um enum fixo e passou a ser um campo de
@@ -255,13 +254,16 @@ erDiagram
 (hard-time / on-condition / condition-monitoring), usada tanto na aviação civil quanto militar para
 classificar como a vida de um componente é controlada.
 
-> **Nota sobre `AvailabilityCode` (DI/DO/IN)**: o significado exato de cada código segue a convenção da
-> própria unidade que emite o boletim de disponibilidade — não fixamos aqui um glossário autoritativo
-> (ex. uma definição formal e diferenciada entre "DO" e "IN") por não termos confirmação direta do
-> esquadrão sobre essa distinção; tratamos os três apenas como rótulos estáveis do boletim. O campo
-> `configuration` (LISO/ADA/EEXD/VENTRAL/CAA) é, por isso, um `LookupItem` editável
-> (`LookupCategory.CONFIGURACAO_DISPONIBILIDADE`) e não um enum fixo, para não travar um vocabulário
-> específico de uma unidade/tipo de aeronave no código.
+> **Nota sobre o código do boletim de disponibilidade (DI/DO/IN/IS)**: até a v0.3 era um enum Python
+> fixo (`AvailabilityCode`); passou a vir do cadastro editável `AvailabilityCodeCatalog` (código de 2
+> caracteres + descrição de até 40, ex.: DI="Disponível sem restrições") — ver Aeronaves →
+> Configurações Autorizadas → Códigos de Disponibilidade. `AvailabilityUpdate.code` guarda só o texto
+> do código (`String(2)`, validado no router contra esse cadastro), não mais um tipo ENUM nativo do
+> Postgres, para permitir acrescentar um código novo no futuro sem alterar código nem o banco. O
+> significado exato de cada código segue a convenção da própria unidade que emite o boletim - os quatro
+> de fábrica (DI/DO/IN/IS) refletem a leitura mais comum, sem ser um glossário formal/autoritativo. O
+> campo `configuration` (LISO/ADA/EEXD/VENTRAL/CAA) continua um `LookupItem` editável separado
+> (`LookupCategory.CONFIGURACAO_DISPONIBILIDADE`), pelo mesmo raciocínio.
 
 ## 3. Regras de negócio embutidas no modelo
 
@@ -269,7 +271,9 @@ classificar como a vida de um componente é controlada.
    de serviço e registros de voo (`cascade="all, delete-orphan"`) — decisão deliberada para o piloto, já
    que manter órfãos sem aeronave não agrega valor num teste; **antes de produção**, recomenda-se
    substituir por exclusão lógica (soft delete) para preservar histórico.
-2. **Numeração de OS**: gerada automaticamente no formato `OS-{ano}-{sequencial}` (ex.: `OS-2026-0001`).
+2. **Numeração de OS**: gerada automaticamente no formato `{ano}/{sequencial}` (ex.: `2026/0001`) — até
+   a v0.3 tinha o prefixo "OS-" (`OS-{ano}-{sequencial}`), removido a pedido do usuário; OS já
+   existentes no banco foram migradas para o novo formato (ver `database.py::reformat_order_numbers`).
 3. **Percentual de desgaste (`wear_pct`)**: calculado sob demanda (`hours_since_overhaul / life_limit_hours`)
    apenas para componentes com controle hard-time; componentes on-condition/condition-monitoring não
    têm um percentual de vida linear por definição.

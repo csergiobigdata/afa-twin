@@ -12,12 +12,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from .database import Base, engine, SessionLocal, sync_postgres_enum_types, sync_missing_indexes, sync_missing_columns
+from .database import (
+    Base, engine, SessionLocal, sync_postgres_enum_types, sync_missing_indexes, sync_missing_columns,
+    reformat_order_numbers, migrate_availability_code_column,
+)
 from . import seed
 from .routers import (
     aircraft, people, components, assignments, maintenance, checklists, flightlogs,
     dashboard, auth, inspections, diagnostics, planning, notifications, groups,
     lookups, audit, media, availability, admin, authorized_configs, configuration_codes,
+    availability_codes,
 )
 
 app = FastAPI(
@@ -105,11 +109,17 @@ def on_startup():
         sync_postgres_enum_types()
         sync_missing_indexes()
         sync_missing_columns()
+    # Baratas (poucas linhas/uma consulta de introspecção; viram no-op depois
+    # da primeira vez) - seguras no startup automático em qualquer dialeto,
+    # ao contrário das três rotinas acima. Ver database.py para cada uma.
+    reformat_order_numbers()
+    migrate_availability_code_column()
     db = SessionLocal()
     try:
         seed.seed_if_empty(db)
         seed.seed_authorized_configurations_if_empty(db)
         seed.seed_configuration_codes_if_empty(db)
+        seed.seed_availability_codes_if_empty(db)
     finally:
         db.close()
 
@@ -135,6 +145,7 @@ app.include_router(availability.router)
 app.include_router(admin.router)
 app.include_router(authorized_configs.router)
 app.include_router(configuration_codes.router)
+app.include_router(availability_codes.router)
 app.include_router(dashboard.router)
 
 
