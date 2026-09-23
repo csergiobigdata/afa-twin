@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { api } from "../api/client";
 import type {
-  Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityCode, AvailabilityCodeCatalog,
-  AvailabilityLocation, AvailabilityUpdate, AvailabilityUpdateCreate, ConfigurationCode,
-  StationEquipmentDisplay, StationKey,
+  Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityBoardEntry, AvailabilityCode,
+  AvailabilityCodeCatalog, AvailabilityLocation, AvailabilityUpdate, AvailabilityUpdateCreate,
+  ConfigurationCode, StationEquipmentDisplay, StationKey,
 } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { ROLE_PERMISSIONS } from "../auth/AuthContext";
@@ -12,6 +12,7 @@ import AuthorizedConfigSelect from "../components/AuthorizedConfigSelect";
 import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
 import { AvailabilityCodeBadge } from "../components/Badges";
 import ConfigurationDiagram from "../components/ConfigurationDiagram";
+import SortableTh from "../components/SortableTh";
 import SplashScreen from "../components/SplashScreen";
 import StatCard from "../components/StatCard";
 
@@ -59,6 +60,20 @@ const DEFAULT_MANUAL_AIRCRAFT_TAIL = "FAB 5962";
 
 type AvailTab = "quadro" | "cadastro" | "config-autorizadas";
 
+type QuadroSortKey = "aircraft_tail_number" | "aircraft_model" | "code" | "configuration" | "has_subalares" | "reason" | "report_date";
+
+function quadroSortValue(e: AvailabilityBoardEntry, key: QuadroSortKey): string | number {
+  switch (key) {
+    case "aircraft_tail_number": return e.aircraft_tail_number;
+    case "aircraft_model": return e.aircraft_model;
+    case "code": return e.code;
+    case "configuration": return e.configuration ?? "LISO";
+    case "has_subalares": return e.has_subalares ? 1 : 0;
+    case "reason": return e.reason ?? "";
+    case "report_date": return e.report_date;
+  }
+}
+
 export default function AvailabilityPage() {
   const { role } = useAuth();
   const canManage = ROLE_PERMISSIONS.canManageRecords(role);
@@ -67,6 +82,19 @@ export default function AvailabilityPage() {
   const [fleet, setFleet] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<AvailTab>("quadro");
+
+  // ---------------- Filtro e ordenação do "Quadro — última atualização" ----------------
+  const [quadroAircraftFilter, setQuadroAircraftFilter] = useState("");
+  const [quadroCodeFilter, setQuadroCodeFilter] = useState("");
+  const [quadroConfigFilter, setQuadroConfigFilter] = useState("");
+  const [quadroSubalaresFilter, setQuadroSubalaresFilter] = useState<"" | "sim" | "nao">("");
+  const [quadroReasonFilter, setQuadroReasonFilter] = useState("");
+  const [quadroSortKey, setQuadroSortKey] = useState<QuadroSortKey>("aircraft_tail_number");
+  const [quadroSortDir, setQuadroSortDir] = useState<"asc" | "desc">("asc");
+  function toggleQuadroSort(key: QuadroSortKey) {
+    if (key === quadroSortKey) setQuadroSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setQuadroSortKey(key); setQuadroSortDir("asc"); }
+  }
   // Configurações Autorizadas (cadastro completo) - as ativas (status_disp =
   // "A") populam o seletor de "Configuração" do lançamento manual; o
   // conjunto completo serve para achar o símbolo de um lançamento antigo
@@ -249,6 +277,37 @@ export default function AvailabilityPage() {
       ]
     : [{ key: "quadro", label: "Quadro — Última Atualização" }];
 
+  // Opções dos filtros do Quadro, derivadas dos próprios lançamentos
+  // presentes (não do cadastro completo) - só oferece filtrar por um código/
+  // configuração que de fato aparece no quadro atual.
+  const quadroCodeOptions = Array.from(new Set(board.entries.map((e) => e.code))).sort();
+  const quadroConfigOptions = Array.from(new Set(board.entries.map((e) => e.configuration ?? "LISO"))).sort();
+
+  const quadroEntries = [...board.entries]
+    .filter((e) => {
+      if (quadroAircraftFilter) {
+        const q = quadroAircraftFilter.trim().toLowerCase();
+        if (!`${e.aircraft_tail_number} ${e.aircraft_model}`.toLowerCase().includes(q)) return false;
+      }
+      if (quadroCodeFilter && e.code !== quadroCodeFilter) return false;
+      if (quadroConfigFilter && (e.configuration ?? "LISO") !== quadroConfigFilter) return false;
+      if (quadroSubalaresFilter === "sim" && !e.has_subalares) return false;
+      if (quadroSubalaresFilter === "nao" && e.has_subalares) return false;
+      if (quadroReasonFilter && !(e.reason ?? "").toLowerCase().includes(quadroReasonFilter.trim().toLowerCase())) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const va = quadroSortValue(a, quadroSortKey);
+      const vb = quadroSortValue(b, quadroSortKey);
+      const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb), "pt-BR");
+      return quadroSortDir === "asc" ? cmp : -cmp;
+    });
+  const quadroFiltersActive = !!(quadroAircraftFilter || quadroCodeFilter || quadroConfigFilter || quadroSubalaresFilter || quadroReasonFilter);
+  function clearQuadroFilters() {
+    setQuadroAircraftFilter(""); setQuadroCodeFilter(""); setQuadroConfigFilter("");
+    setQuadroSubalaresFilter(""); setQuadroReasonFilter("");
+  }
+
   return (
     <div>
       <div style={{ marginBottom: 22 }}>
@@ -271,20 +330,22 @@ export default function AvailabilityPage() {
       </div>
 
       {/* Barra de abas + conteúdo unificados num único painel (mesma borda/
-          sombra, sem gap entre eles) - a aba ativa tem um sublinhado que
-          "encosta" no conteúdo, para ficar claro que compõem uma coisa só,
-          não dois blocos soltos. */}
+          sombra, sem gap entre eles), para ficar claro que compõem uma coisa
+          só, não dois blocos soltos. A faixa da barra tem fundo azul claro
+          fixo (independente do tema) - destaca a área clicável de navegação
+          entre abas frente ao conteúdo escuro logo abaixo; a aba ativa vira
+          uma "pastilha" azul-marinho preenchida sobre essa faixa. */}
       <div className="card" style={{ marginBottom: 18, overflow: "hidden" }}>
         {TABS.length > 1 && (
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", padding: "6px 10px 0", borderBottom: "1px solid var(--border-subtle)" }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: 8, background: "#dfeaf9" }}>
             {TABS.map(({ key, label }) => (
               <button
                 key={key} onClick={() => setActiveTab(key)}
                 style={{
-                  border: "none", background: "transparent", cursor: "pointer",
-                  padding: "12px 18px", fontSize: 14, fontWeight: 700, marginBottom: -1,
-                  borderBottom: activeTab === key ? "3px solid var(--fab-yellow-500)" : "3px solid transparent",
-                  color: activeTab === key ? "var(--text-primary)" : "var(--text-label)",
+                  border: "none", cursor: "pointer", borderRadius: 8,
+                  padding: "11px 18px", fontSize: 14, fontWeight: 700,
+                  background: activeTab === key ? "var(--fab-navy-900)" : "transparent",
+                  color: activeTab === key ? "#fff" : "#3d4a63",
                 }}>
                 {label}
               </button>
@@ -296,13 +357,62 @@ export default function AvailabilityPage() {
           {activeTab === "quadro" && (
             <div>
               <h2 style={{ fontSize: 15.5, margin: "0 0 12px" }}>Quadro — última atualização por aeronave</h2>
+
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 14 }}>
+                <label style={{ ...FIELD_LABEL_STYLE, minWidth: 180 }}>
+                  Aeronave
+                  <input value={quadroAircraftFilter} onChange={(e) => setQuadroAircraftFilter(e.target.value)} placeholder="matrícula ou modelo…" />
+                </label>
+                <label style={{ ...FIELD_LABEL_STYLE, minWidth: 120 }}>
+                  Código
+                  <select value={quadroCodeFilter} onChange={(e) => setQuadroCodeFilter(e.target.value)}>
+                    <option value="">Todos</option>
+                    {quadroCodeOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+                <label style={{ ...FIELD_LABEL_STYLE, minWidth: 180 }}>
+                  Configuração
+                  <select value={quadroConfigFilter} onChange={(e) => setQuadroConfigFilter(e.target.value)}>
+                    <option value="">Todas</option>
+                    {quadroConfigOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </label>
+                <label style={{ ...FIELD_LABEL_STYLE, minWidth: 120 }}>
+                  Subalares
+                  <select value={quadroSubalaresFilter} onChange={(e) => setQuadroSubalaresFilter(e.target.value as "" | "sim" | "nao")}>
+                    <option value="">Todos</option>
+                    <option value="sim">Sim</option>
+                    <option value="nao">Não</option>
+                  </select>
+                </label>
+                <label style={{ ...FIELD_LABEL_STYLE, minWidth: 180 }}>
+                  Motivo
+                  <input value={quadroReasonFilter} onChange={(e) => setQuadroReasonFilter(e.target.value)} placeholder="buscar no motivo…" />
+                </label>
+                {quadroFiltersActive && (
+                  <button type="button" className="btn btn-outline btn-sm" onClick={clearQuadroFilters}>Limpar filtros</button>
+                )}
+              </div>
+              <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 0, marginBottom: 8 }}>
+                {quadroEntries.length} de {board.entries.length} aeronave(s).
+              </p>
+
               <div className="scroll-x">
                 <table>
                   <thead>
-                    <tr><th>Aeronave</th><th>Modelo</th><th>Código</th><th>Configuração</th><th>Subalares</th><th>Motivo</th><th>Data</th>{canManage && <th></th>}</tr>
+                    <tr>
+                      <SortableTh label="Aeronave" sortKey="aircraft_tail_number" active={quadroSortKey === "aircraft_tail_number"} dir={quadroSortDir} onClick={toggleQuadroSort} />
+                      <SortableTh label="Modelo" sortKey="aircraft_model" active={quadroSortKey === "aircraft_model"} dir={quadroSortDir} onClick={toggleQuadroSort} />
+                      <SortableTh label="Código" sortKey="code" active={quadroSortKey === "code"} dir={quadroSortDir} onClick={toggleQuadroSort} />
+                      <SortableTh label="Configuração" sortKey="configuration" active={quadroSortKey === "configuration"} dir={quadroSortDir} onClick={toggleQuadroSort} />
+                      <SortableTh label="Subalares" sortKey="has_subalares" active={quadroSortKey === "has_subalares"} dir={quadroSortDir} onClick={toggleQuadroSort} />
+                      <SortableTh label="Motivo" sortKey="reason" active={quadroSortKey === "reason"} dir={quadroSortDir} onClick={toggleQuadroSort} />
+                      <SortableTh label="Data" sortKey="report_date" active={quadroSortKey === "report_date"} dir={quadroSortDir} onClick={toggleQuadroSort} />
+                      {canManage && <th></th>}
+                    </tr>
                   </thead>
                   <tbody>
-                    {board.entries.map((e) => (
+                    {quadroEntries.map((e) => (
                       <tr key={e.availability_update_id}>
                         <td style={{ fontWeight: 700 }}>{e.aircraft_tail_number}</td>
                         <td style={{ fontSize: 12.5 }}>{e.aircraft_model}</td>
@@ -318,8 +428,8 @@ export default function AvailabilityPage() {
                         )}
                       </tr>
                     ))}
-                    {board.entries.length === 0 && (
-                      <tr><td colSpan={canManage ? 8 : 7} style={{ color: "var(--text-secondary)" }}>Nenhum lançamento de disponibilidade ainda.</td></tr>
+                    {quadroEntries.length === 0 && (
+                      <tr><td colSpan={canManage ? 8 : 7} style={{ color: "var(--text-secondary)" }}>Nenhum lançamento de disponibilidade encontrado.</td></tr>
                     )}
                   </tbody>
                 </table>
