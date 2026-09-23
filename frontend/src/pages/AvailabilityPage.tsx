@@ -52,7 +52,7 @@ function formatDate(iso: string): string {
 // mesmo peso/cor/tamanho em todos, para os rótulos ficarem alinhados
 // visualmente entre si, em vez de cada campo com uma aparência diferente.
 const FIELD_LABEL_STYLE: CSSProperties = {
-  fontSize: 12, fontWeight: 600, color: "var(--text-secondary)",
+  fontSize: 12, fontWeight: 600, color: "var(--text-label)",
   display: "flex", flexDirection: "column", gap: 4,
 };
 

@@ -173,7 +173,7 @@ function ProspectiveAnalysisSection() {
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ background: "var(--bg-surface-alt)", borderRadius: 8, padding: "8px 10px" }}>
-      <div style={{ fontSize: 10.5, color: "var(--text-secondary)", fontWeight: 700, textTransform: "uppercase" }}>{label}</div>
+      <div style={{ fontSize: 10.5, color: "var(--text-label)", fontWeight: 700, textTransform: "uppercase" }}>{label}</div>
       <div style={{ fontSize: 14, fontWeight: 700 }}>{value}</div>
     </div>
   );

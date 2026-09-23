@@ -134,7 +134,7 @@ export default function AircraftDetailPage() {
                   style={{
                     border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13.5, fontWeight: 700,
                     background: tab === key ? "var(--fab-navy-900)" : "transparent",
-                    color: tab === key ? "#fff" : "var(--text-secondary)",
+                    color: tab === key ? "#fff" : "var(--text-label)",
                   }}>
             {label}
           </button>
@@ -189,6 +189,7 @@ function GeneralTab({ aircraft, flightLogs, people, onReload }: { aircraft: Airc
         <SpecRow label="Velocidade máxima (kcas)" value={aircraft.max_speed_kmh ? `${aircraft.max_speed_kmh} kcas` : undefined} />
         <SpecRow label="Altitude (pés)" value={aircraft.service_ceiling_m ? `${aircraft.service_ceiling_m} pés` : undefined} />
         <SpecRow label="Milhas Náuticas" value={aircraft.max_range_km ? `${aircraft.max_range_km} NM` : undefined} />
+        <SpecRow label="Horas de voo acumuladas" value={`${formatHoursHHMM(aircraft.total_flight_hours)} h`} />
         <SpecRow label="Tripulação" value={aircraft.crew_capacity?.toString()} />
         <SpecRow label="Ano de fabricação" value={aircraft.manufacture_year?.toString()} />
         {aircraft.notes && <SpecRow label="Observações" value={aircraft.notes} />}
@@ -339,7 +340,7 @@ function ConfigurationsTab({ aircraft }: { aircraft: Aircraft }) {
 function SpecRow({ label, value }: { label: string; value?: string | null }) {
   return (
     <div style={{ display: "flex", gap: 12, padding: "8px 0", borderBottom: "1px solid var(--border-subtle)" }}>
-      <div style={{ width: 140, flexShrink: 0, fontSize: 12.5, color: "var(--text-secondary)", fontWeight: 700 }}>{label}</div>
+      <div style={{ width: 140, flexShrink: 0, fontSize: 12.5, color: "var(--text-label)", fontWeight: 700 }}>{label}</div>
       <div style={{ fontSize: 13.5 }}>{value || "—"}</div>
     </div>
   );

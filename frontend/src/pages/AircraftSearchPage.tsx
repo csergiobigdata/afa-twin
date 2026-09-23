@@ -102,7 +102,7 @@ export default function AircraftSearchPage() {
                 <div style={{ width: 150, flexShrink: 0, display: "none" }} className="search-health-col">
                   <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 4 }}>Saúde</div>
                   <HealthBar value={a.health_index} />
-                  <div style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 6 }}>
+                  <div style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 6, whiteSpace: "nowrap" }}>
                     {formatHoursHHMM(a.total_flight_hours)} h
                   </div>
                 </div>

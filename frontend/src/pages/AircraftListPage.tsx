@@ -90,7 +90,7 @@ export default function AircraftListPage() {
                   <td><StatusBadge status={a.status} /></td>
                   <td style={{ minWidth: 150 }}><HealthBar value={a.health_index} /></td>
                   <td><RiskBadge level={a.risk_level} /></td>
-                  <td style={{ fontSize: 12.5 }}>{formatHoursHHMM(a.total_flight_hours)} h</td>
+                  <td style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>{formatHoursHHMM(a.total_flight_hours)} h</td>
                   <td style={{ display: "flex", gap: 6 }}>
                     <AircraftPhotoViewer aircraft={a} />
                     <Link to={`/aeronaves/${a.id}`} className="btn btn-outline btn-sm">Abrir</Link>

@@ -8,7 +8,7 @@ import { exampleArtUrl, uploadedPhotoUrl } from "./aircraftArt";
  * enviada no cadastro; na ausência dela, mostra a ilustração de exemplo
  * associada ao modelo, deixando isso explícito na legenda.
  */
-export default function AircraftPhotoViewer({ aircraft, label = "📷 Ver foto" }: { aircraft: Aircraft; label?: string }) {
+export default function AircraftPhotoViewer({ aircraft, label = "📷 Imagem" }: { aircraft: Aircraft; label?: string }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"static" | "animated">("static");
 

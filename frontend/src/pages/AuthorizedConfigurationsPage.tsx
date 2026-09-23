@@ -261,7 +261,7 @@ export default function AuthorizedConfigurationsPage() {
                 </button>
               ))}
             </div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-label)", display: "block", marginBottom: 4 }}>
               Selecione um código
             </label>
             <select
