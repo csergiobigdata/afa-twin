@@ -77,17 +77,57 @@ async function upload<T>(path: string, formData: FormData, method: "POST" | "PUT
 // pessoas editando) e invalidação total a cada escrita (POST/PUT/DELETE/
 // upload) - simples e seguro, evita mostrar dado desatualizado após uma
 // edição em troca de não tentar rastrear invalidação por endpoint.
+//
+// Também espelhado em sessionStorage (mesmo TTL): o Map em memória sozinho
+// se perde a cada F5/navegação de URL completa - no plano gratuito (Vercel
+// + Neon "scale to zero"), isso significa pagar o cold start de novo (~10s+
+// medido, ver docs/02, seção 3.2) mesmo revisitando uma tela há poucos
+// segundos. sessionStorage sobrevive a um F5 (mas não a fechar a aba, de
+// propósito - não é um cache "permanente" que mostraria dado velho depois
+// de horas). Cada entrada é gravada individualmente (não o Map inteiro) para
+// não estourar o limite de sessionStorage com um payload muito grande de
+// uma vez; falhas de leitura/escrita (ex.: modo privado) são ignoradas e o
+// cache simplesmente volta a se comportar como só-em-memória.
 const GET_CACHE_TTL_MS = 15_000;
+const SESSION_CACHE_PREFIX = "afa_twin_cache:";
 const getCache = new Map<string, { data: unknown; expiresAt: number }>();
 const inFlightGets = new Map<string, Promise<unknown>>();
 
+function readSessionCache(path: string): { data: unknown; expiresAt: number } | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_CACHE_PREFIX + path);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { data: unknown; expiresAt: number };
+    return parsed.expiresAt > Date.now() ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionCache(path: string, entry: { data: unknown; expiresAt: number }) {
+  try {
+    sessionStorage.setItem(SESSION_CACHE_PREFIX + path, JSON.stringify(entry));
+  } catch {
+    /* sessionStorage indisponível (modo privado) ou cota excedida - cache em memória continua funcionando normalmente */
+  }
+}
+
 function invalidateGetCache() {
   getCache.clear();
+  try {
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const key = sessionStorage.key(i);
+      if (key?.startsWith(SESSION_CACHE_PREFIX)) sessionStorage.removeItem(key);
+    }
+  } catch {
+    /* sessionStorage indisponível - nada a limpar ali */
+  }
 }
 
 function cachedGet<T>(path: string): Promise<T> {
-  const cached = getCache.get(path);
+  const cached = getCache.get(path) ?? readSessionCache(path);
   if (cached && cached.expiresAt > Date.now()) {
+    getCache.set(path, cached);
     return Promise.resolve(cached.data as T);
   }
   const inFlight = inFlightGets.get(path);
@@ -95,7 +135,9 @@ function cachedGet<T>(path: string): Promise<T> {
 
   const promise = request<T>(path)
     .then((data) => {
-      getCache.set(path, { data, expiresAt: Date.now() + GET_CACHE_TTL_MS });
+      const entry = { data, expiresAt: Date.now() + GET_CACHE_TTL_MS };
+      getCache.set(path, entry);
+      writeSessionCache(path, entry);
       return data;
     })
     .finally(() => inFlightGets.delete(path));

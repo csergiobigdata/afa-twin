@@ -14,6 +14,7 @@ import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
 import { AvailabilityCodeBadge, CriticalityBadge, HealthBar, OrderStatusBadge, RiskBadge, StatusBadge } from "../components/Badges";
 import ConfigurationDiagram from "../components/ConfigurationDiagram";
 import PersonPicker from "../components/PersonPicker";
+import SplashScreen from "../components/SplashScreen";
 import { ROLE_PERMISSIONS, useAuth } from "../auth/AuthContext";
 import { formatHoursHHMM } from "../utils/format";
 
@@ -81,7 +82,7 @@ export default function AircraftDetailPage() {
     navigate("/aeronaves");
   }
 
-  if (loading) return <p>Carregando dados da aeronave…</p>;
+  if (loading) return <SplashScreen fullscreen={false} message="Carregando dados da aeronave" />;
   if (!aircraft) return <p>Aeronave não encontrada.</p>;
 
   return (

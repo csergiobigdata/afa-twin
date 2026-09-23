@@ -5,6 +5,7 @@ import type { Aircraft } from "../api/types";
 import AircraftThumbnail from "../components/AircraftThumbnail";
 import AircraftPhotoViewer from "../components/AircraftPhotoViewer";
 import { HealthBar, RiskBadge, StatusBadge } from "../components/Badges";
+import SplashScreen from "../components/SplashScreen";
 import { formatHoursHHMM } from "../utils/format";
 
 type ViewMode = "lista" | "grade";
@@ -66,7 +67,7 @@ export default function AircraftListPage() {
         </div>
       </div>
 
-      {loading ? <p>Carregando frota…</p> : filtered.length === 0 ? (
+      {loading ? <SplashScreen fullscreen={false} message="Carregando frota" /> : filtered.length === 0 ? (
         <p style={{ color: "var(--text-secondary)" }}>Nenhuma aeronave encontrada.</p>
       ) : viewMode === "lista" ? (
         <div className="card scroll-x">

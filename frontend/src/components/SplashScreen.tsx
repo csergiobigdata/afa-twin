@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 /**
  * Flash de entrada do aplicativo: exibido enquanto a sessão é verificada
  * (AuthProvider/ProtectedRoute) e reaproveitado, em versão não-fullscreen,
@@ -19,6 +21,17 @@ export default function SplashScreen({
   fullscreen?: boolean;
   message?: string;
 }) {
+  // Depois de alguns segundos, soma uma dica sobre o motivo mais provável de
+  // uma demora maior: o plano gratuito de nuvem "dorme" o servidor/banco
+  // depois de um tempo sem uso, e a primeira chamada depois disso acorda os
+  // dois (~10s medidos, ver docs/02, seção 3.2) - sem essa dica, uma tela
+  // "Carregando..." parada por vários segundos parece travada/quebrada.
+  const [showSlowHint, setShowSlowHint] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShowSlowHint(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <div
       style={{
@@ -114,6 +127,12 @@ export default function SplashScreen({
         <div style={{ fontSize: 13.5, color: "var(--fab-navy-100, #9aa7c2)", marginTop: 7, opacity: 0.85 }}>
           Gêmeo Digital de Manutenção Aeronáutica
         </div>
+        {showSlowHint && (
+          <div style={{ fontSize: 12.5, color: "var(--fab-yellow-500)", marginTop: 12, maxWidth: 340, opacity: 0.95 }}>
+            Demorando mais que o normal? O servidor gratuito "acorda" após um período sem uso — costuma
+            levar só alguns segundos a mais na primeira vez.
+          </div>
+        )}
       </div>
 
       <style>{`
