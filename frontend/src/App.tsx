@@ -25,6 +25,7 @@ import PlanningPage from "./pages/PlanningPage";
 import AvailabilityPage from "./pages/AvailabilityPage";
 import AuditPage from "./pages/AuditPage";
 import AuthorizedConfigurationsPage from "./pages/AuthorizedConfigurationsPage";
+import AvailabilityCodesPage from "./pages/AvailabilityCodesPage";
 import AboutPage from "./pages/AboutPage";
 
 export default function App() {
@@ -47,6 +48,7 @@ export default function App() {
                 <Route path="cadastro" element={<AircraftListPage />} />
                 <Route path="pesquisa" element={<AircraftSearchPage />} />
                 <Route path="configuracoes" element={<AuthorizedConfigurationsPage />} />
+                <Route path="codigos-disponibilidade" element={<AvailabilityCodesPage />} />
               </Route>
               <Route path="/aeronaves/novo" element={<AircraftFormPage mode="create" />} />
               <Route path="/aeronaves/:id" element={<AircraftDetailPage />} />

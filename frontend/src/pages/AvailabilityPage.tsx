@@ -95,6 +95,11 @@ export default function AvailabilityPage() {
     if (key === quadroSortKey) setQuadroSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setQuadroSortKey(key); setQuadroSortDir("asc"); }
   }
+  // Sub-abas de "Cadastro de Configuração da Aeronave" - Manual e Automática
+  // eram dois cartões lado a lado; viraram abas (a pedido do usuário) para
+  // deixar claro que são duas formas alternativas de fazer a mesma coisa,
+  // não dois passos de um único fluxo.
+  const [configSubTab, setConfigSubTab] = useState<"manual" | "automatica">("manual");
   // Configurações Autorizadas (cadastro completo) - as ativas (status_disp =
   // "A") populam o seletor de "Configuração" do lançamento manual; o
   // conjunto completo serve para achar o símbolo de um lançamento antigo
@@ -455,15 +460,25 @@ export default function AvailabilityPage() {
                 <AircraftPicker fleet={fleet} selectedId={manualAircraftId} onSelect={setManualAircraftId} />
               </label>
 
-              {/* Dois grupos distintos e visualmente separados (cada um com sua
-                  própria borda): Configuração Manual (um equipamento por vez) e
-                  Configuração Automática (aplica um Código de Configuração
-                  inteiro de uma vez). Nenhum dos dois mostra o diagrama aqui -
-                  ele fica sempre visível no final da aba "Configurações
-                  Autorizadas", refletindo a configuração ATUAL da aeronave. */}
-              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
-                <div style={{ flex: "1 1 480px", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 14 }}>
-                  <h3 style={{ fontSize: 13.5, margin: "0 0 10px", color: "var(--text-primary)" }}>Configuração Manual</h3>
+              {/* Configuração Manual (um equipamento por vez) e Configuração
+                  Automática (aplica um Código de Configuração inteiro de uma
+                  vez) são duas formas ALTERNATIVAS de cadastrar - viraram
+                  sub-abas para deixar isso claro, em vez de dois cartões lado
+                  a lado. Nenhuma das duas mostra o diagrama aqui - ele fica
+                  sempre visível na aba "Configurações Autorizadas". */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                {(["manual", "automatica"] as const).map((key) => (
+                  <button
+                    key={key} type="button" onClick={() => setConfigSubTab(key)}
+                    className={`btn btn-sm ${configSubTab === key ? "btn-primary" : "btn-outline"}`}
+                  >
+                    {key === "manual" ? "Configuração Manual" : "Configuração Automática"}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 16 }}>
+                {configSubTab === "manual" ? (
                   <form onSubmit={submitManual} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
                     <label style={FIELD_LABEL_STYLE}>
                       Código
@@ -500,10 +515,7 @@ export default function AvailabilityPage() {
                       {manualSaving ? "Salvando…" : "+ Adicionar"}
                     </button>
                   </form>
-                </div>
-
-                <div style={{ flex: "1 1 320px", border: "1px solid var(--border-subtle)", borderRadius: 10, padding: 14 }}>
-                  <h3 style={{ fontSize: 13.5, margin: "0 0 10px", color: "var(--text-primary)" }}>Configuração Automática</h3>
+                ) : (
                   <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                     <label style={{ ...FIELD_LABEL_STYLE, flexDirection: "row", alignItems: "center", gap: 8 }}>
                       Código
@@ -523,7 +535,7 @@ export default function AvailabilityPage() {
                       {launchingCode ? "Cadastrando…" : "+ Cadastrar Configuração"}
                     </button>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           )}

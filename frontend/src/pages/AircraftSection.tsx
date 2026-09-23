@@ -4,6 +4,7 @@ const SUB_TABS = [
   { to: "/aeronaves/cadastro", label: "Cadastro", icon: "📋", hint: "Lista administrativa: gerenciar, editar e excluir registros" },
   { to: "/aeronaves/pesquisa", label: "Pesquisa", icon: "🔍", hint: "Busca visual pelo modelo, com foto de cada aeronave" },
   { to: "/aeronaves/configuracoes", label: "Configurações Autorizadas", icon: "⚙️", hint: "Equipamentos e cargas de asas/hardpoints autorizados por aeronave" },
+  { to: "/aeronaves/codigos-disponibilidade", label: "Códigos de Disponibilidade", icon: "🏷️", hint: "Cadastro dos códigos DI/DO/IN/IS aceitos no boletim de disponibilidade" },
 ];
 
 export default function AircraftSection() {

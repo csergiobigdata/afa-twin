@@ -5,8 +5,22 @@ import type { Person, PersonRole } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import PersonAvatar from "../components/PersonAvatar";
 import PersonForm, { type PersonFormValues } from "../components/PersonForm";
+import SortableTh from "../components/SortableTh";
 
 const ROLES: PersonRole[] = ["Piloto", "Mecânico", "Engenheiro", "Cientista", "Gestor / Responsável Técnico"];
+
+type SortKey = "full_name" | "role" | "organization" | "email" | "registration_number" | "active";
+
+function sortValue(p: Person, key: SortKey): string | number {
+  switch (key) {
+    case "full_name": return p.full_name;
+    case "role": return p.role;
+    case "organization": return p.organization;
+    case "email": return p.email ?? "";
+    case "registration_number": return p.registration_number ?? "";
+    case "active": return p.active ? 1 : 0;
+  }
+}
 
 function phoneFull(p: Person): string {
   if (p.phone_ddd && p.phone_number) return `(${p.phone_ddd}) ${p.phone_number}`;
@@ -32,6 +46,12 @@ export default function PeoplePage() {
   const [saving, setSaving] = useState(false);
   const [roleFilter, setRoleFilter] = useState("");
   const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("full_name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  function toggleSort(key: SortKey) {
+    if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  }
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editFile, setEditFile] = useState<File | null>(null);
@@ -80,6 +100,12 @@ export default function PeoplePage() {
     const matchQuery = `${p.full_name} ${p.registration_number ?? ""} ${p.specialty ?? ""}`.toLowerCase().includes(query.toLowerCase());
     return matchRole && matchQuery;
   });
+  const sorted = [...filtered].sort((a, b) => {
+    const va = sortValue(a, sortKey);
+    const vb = sortValue(b, sortKey);
+    const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb), "pt-BR");
+    return sortDir === "asc" ? cmp : -cmp;
+  });
 
   return (
     <div>
@@ -113,9 +139,20 @@ export default function PeoplePage() {
       {loading ? <p>Carregando…</p> : (
         <div className="card scroll-x">
           <table>
-            <thead><tr><th></th><th>Nome</th><th>Função</th><th>Organização</th><th>Contato</th><th>Matrícula</th><th>Status</th><th></th></tr></thead>
+            <thead>
+              <tr>
+                <th></th>
+                <SortableTh label="Nome" sortKey="full_name" active={sortKey === "full_name"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Função" sortKey="role" active={sortKey === "role"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Organização" sortKey="organization" active={sortKey === "organization"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Contato" sortKey="email" active={sortKey === "email"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Matrícula" sortKey="registration_number" active={sortKey === "registration_number"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Status" sortKey="active" active={sortKey === "active"} dir={sortDir} onClick={toggleSort} />
+                <th></th>
+              </tr>
+            </thead>
             <tbody>
-              {filtered.map((p) => (
+              {sorted.map((p) => (
                 <Fragment key={p.id}>
                   <tr>
                     <td><PersonAvatar person={p} size={38} /></td>

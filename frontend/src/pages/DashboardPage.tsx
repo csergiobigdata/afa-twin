@@ -9,6 +9,7 @@ import type { DashboardSummary, Notification, NotificationChannel } from "../api
 import { useAuth } from "../auth/AuthContext";
 import AircraftThumbnail from "../components/AircraftThumbnail";
 import { HealthBar, RiskBadge, StatusBadge } from "../components/Badges";
+import SortableTh from "../components/SortableTh";
 import SplashScreen from "../components/SplashScreen";
 import StatCard from "../components/StatCard";
 
@@ -215,11 +216,36 @@ const DASH_TABS: { key: DashTab; label: string }[] = [
   { key: "categorias", label: "Principais Categorias de Manutenção" },
 ];
 
+type NotifSortKey = "channel" | "reason" | "recipient_name" | "aircraft_tail_number" | "status" | "created_at";
+
+function notifSortValue(n: Notification, key: NotifSortKey): string | number {
+  switch (key) {
+    case "channel": return n.channel;
+    case "reason": return n.reason;
+    case "recipient_name": return n.recipient_name ?? "";
+    case "aircraft_tail_number": return n.aircraft_tail_number ?? "";
+    case "status": return n.status;
+    case "created_at": return new Date(n.created_at).getTime();
+  }
+}
+
 export default function DashboardPage() {
   const { personName, personRank, role } = useAuth();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<DashTab>("frota");
+
+  // ---------------- Filtro e ordenação de "Notificações Recentes" ----------------
+  const [notifChannelFilter, setNotifChannelFilter] = useState("");
+  const [notifReasonFilter, setNotifReasonFilter] = useState("");
+  const [notifStatusFilter, setNotifStatusFilter] = useState("");
+  const [notifQuery, setNotifQuery] = useState("");
+  const [notifSortKey, setNotifSortKey] = useState<NotifSortKey>("created_at");
+  const [notifSortDir, setNotifSortDir] = useState<"asc" | "desc">("desc");
+  function toggleNotifSort(key: NotifSortKey) {
+    if (key === notifSortKey) setNotifSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setNotifSortKey(key); setNotifSortDir(key === "created_at" ? "desc" : "asc"); }
+  }
 
   // Uma única chamada monta a tela inteira (totais, frota e notificações
   // recentes já vêm juntos em /dashboard/summary) - antes eram 3 chamadas
@@ -235,6 +261,26 @@ export default function DashboardPage() {
 
   const fleet = summary.fleet;
   const recentNotifications = summary.recent_notifications;
+  const notifChannelOptions = Array.from(new Set(recentNotifications.map((n) => n.channel))).sort();
+  const notifReasonOptions = Array.from(new Set(recentNotifications.map((n) => n.reason))).sort();
+  const notifStatusOptions = Array.from(new Set(recentNotifications.map((n) => n.status))).sort();
+  const filteredNotifications = recentNotifications
+    .filter((n) => {
+      if (notifChannelFilter && n.channel !== notifChannelFilter) return false;
+      if (notifReasonFilter && n.reason !== notifReasonFilter) return false;
+      if (notifStatusFilter && n.status !== notifStatusFilter) return false;
+      if (notifQuery) {
+        const q = notifQuery.trim().toLowerCase();
+        if (!`${n.recipient_name ?? ""} ${n.aircraft_tail_number ?? ""}`.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const va = notifSortValue(a, notifSortKey);
+      const vb = notifSortValue(b, notifSortKey);
+      const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb), "pt-BR");
+      return notifSortDir === "asc" ? cmp : -cmp;
+    });
 
   return (
     <div>
@@ -337,11 +383,37 @@ export default function DashboardPage() {
           {recentNotifications.length === 0 ? (
             <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Nenhuma notificação registrada ainda.</p>
           ) : (
+            <>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+              <input type="text" placeholder="Buscar por destinatário ou aeronave…" value={notifQuery}
+                     onChange={(e) => setNotifQuery(e.target.value)} style={{ maxWidth: 260 }} />
+              <select value={notifChannelFilter} onChange={(e) => setNotifChannelFilter(e.target.value)} style={{ maxWidth: 160 }}>
+                <option value="">Todos os canais</option>
+                {notifChannelOptions.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <select value={notifReasonFilter} onChange={(e) => setNotifReasonFilter(e.target.value)} style={{ maxWidth: 220 }}>
+                <option value="">Todos os motivos</option>
+                {notifReasonOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <select value={notifStatusFilter} onChange={(e) => setNotifStatusFilter(e.target.value)} style={{ maxWidth: 180 }}>
+                <option value="">Todos os status</option>
+                {notifStatusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
             <div className="scroll-x">
               <table>
-                <thead><tr><th>Canal</th><th>Motivo</th><th>Destinatário</th><th>Aeronave</th><th>Status</th><th>Quando</th></tr></thead>
+                <thead>
+                  <tr>
+                    <SortableTh label="Canal" sortKey="channel" active={notifSortKey === "channel"} dir={notifSortDir} onClick={toggleNotifSort} />
+                    <SortableTh label="Motivo" sortKey="reason" active={notifSortKey === "reason"} dir={notifSortDir} onClick={toggleNotifSort} />
+                    <SortableTh label="Destinatário" sortKey="recipient_name" active={notifSortKey === "recipient_name"} dir={notifSortDir} onClick={toggleNotifSort} />
+                    <SortableTh label="Aeronave" sortKey="aircraft_tail_number" active={notifSortKey === "aircraft_tail_number"} dir={notifSortDir} onClick={toggleNotifSort} />
+                    <SortableTh label="Status" sortKey="status" active={notifSortKey === "status"} dir={notifSortDir} onClick={toggleNotifSort} />
+                    <SortableTh label="Data/Hora" sortKey="created_at" active={notifSortKey === "created_at"} dir={notifSortDir} onClick={toggleNotifSort} />
+                  </tr>
+                </thead>
                 <tbody>
-                  {recentNotifications.map((n) => (
+                  {filteredNotifications.map((n) => (
                     <tr key={n.id}>
                       <td>{CHANNEL_ICON[n.channel]} {n.channel}</td>
                       <td style={{ fontSize: 12.5 }}>{n.reason}</td>
@@ -355,9 +427,13 @@ export default function DashboardPage() {
                       <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{new Date(n.created_at).toLocaleString("pt-BR")}</td>
                     </tr>
                   ))}
+                  {filteredNotifications.length === 0 && (
+                    <tr><td colSpan={6} style={{ color: "var(--text-secondary)" }}>Nenhuma notificação encontrada.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
+            </>
           )}
           <p style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 8 }}>
             E-mail é enviado de verdade quando o servidor tem SMTP configurado; sem isso, e sempre para
