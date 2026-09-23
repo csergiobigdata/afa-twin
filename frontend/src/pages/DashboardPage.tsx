@@ -207,10 +207,19 @@ function NotifyAllPendingButton({ alerts, onDone }: { alerts: DashboardSummary["
   );
 }
 
+type DashTab = "frota" | "alertas" | "notificacoes" | "categorias";
+const DASH_TABS: { key: DashTab; label: string }[] = [
+  { key: "frota", label: "Frota — Saúde e Risco Operacional" },
+  { key: "alertas", label: "Alertas de Desgaste e Manutenção" },
+  { key: "notificacoes", label: "Notificações Recentes" },
+  { key: "categorias", label: "Principais Categorias de Manutenção" },
+];
+
 export default function DashboardPage() {
   const { personName, personRank, role } = useAuth();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<DashTab>("frota");
 
   // Uma única chamada monta a tela inteira (totais, frota e notificações
   // recentes já vêm juntos em /dashboard/summary) - antes eram 3 chamadas
@@ -244,7 +253,22 @@ export default function DashboardPage() {
         <StatCard label="Índice médio de saúde" value={`${summary.average_health_index}%`} tone={summary.average_health_index >= 85 ? "ok" : summary.average_health_index >= 65 ? "warn" : "critical"} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: 18, alignItems: "start" }} className="dash-grid">
+      <div className="card" style={{ display: "flex", gap: 6, marginBottom: 18, padding: 6, flexWrap: "wrap" }}>
+        {DASH_TABS.map(({ key, label }) => (
+          <button
+            key={key} onClick={() => setActiveTab(key)}
+            className="btn btn-sm"
+            style={{
+              border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13.5, fontWeight: 700,
+              background: activeTab === key ? "var(--fab-navy-900)" : "transparent",
+              color: activeTab === key ? "#fff" : "var(--text-label)",
+            }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "frota" && (
         <div className="card" style={{ padding: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <h2 style={{ fontSize: 15.5, margin: 0 }}>Frota — Saúde e Risco Operacional</h2>
@@ -271,39 +295,10 @@ export default function DashboardPage() {
               </tbody>
             </table>
           </div>
-
-          <h2 style={{ fontSize: 15.5, margin: "22px 0 12px" }}>📜 Notificações Recentes</h2>
-          {recentNotifications.length === 0 ? (
-            <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Nenhuma notificação registrada ainda.</p>
-          ) : (
-            <div className="scroll-x">
-              <table>
-                <thead><tr><th>Canal</th><th>Motivo</th><th>Destinatário</th><th>Aeronave</th><th>Status</th><th>Quando</th></tr></thead>
-                <tbody>
-                  {recentNotifications.map((n) => (
-                    <tr key={n.id}>
-                      <td>{CHANNEL_ICON[n.channel]} {n.channel}</td>
-                      <td style={{ fontSize: 12.5 }}>{n.reason}</td>
-                      <td style={{ fontSize: 12.5 }}>{n.recipient_name ?? "—"}</td>
-                      <td style={{ fontSize: 12.5 }}>{n.aircraft_tail_number ?? "—"}</td>
-                      <td>
-                        <span className={`badge ${n.status === "Enviada" ? "badge-ok" : n.status === "Falha no Envio" ? "badge-critical" : "badge-neutral"}`}>
-                          {n.status}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{new Date(n.created_at).toLocaleString("pt-BR")}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 8 }}>
-            E-mail é enviado de verdade quando o servidor tem SMTP configurado; sem isso, e sempre para
-            SMS/WhatsApp nesta fase piloto (sem custo), a notificação fica registrada aqui como "Simulada".
-          </p>
         </div>
+      )}
 
+      {activeTab === "alertas" && (
         <div className="card" style={{ padding: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
             <h2 style={{ fontSize: 15.5, margin: 0 }}>Alertas de Desgaste e Manutenção</h2>
@@ -334,11 +329,44 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
-      </div>
+      )}
 
-      <MaintenanceCategoryChart alerts={summary.alerts} />
+      {activeTab === "notificacoes" && (
+        <div className="card" style={{ padding: 18 }}>
+          <h2 style={{ fontSize: 15.5, margin: "0 0 12px" }}>📜 Notificações Recentes</h2>
+          {recentNotifications.length === 0 ? (
+            <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Nenhuma notificação registrada ainda.</p>
+          ) : (
+            <div className="scroll-x">
+              <table>
+                <thead><tr><th>Canal</th><th>Motivo</th><th>Destinatário</th><th>Aeronave</th><th>Status</th><th>Quando</th></tr></thead>
+                <tbody>
+                  {recentNotifications.map((n) => (
+                    <tr key={n.id}>
+                      <td>{CHANNEL_ICON[n.channel]} {n.channel}</td>
+                      <td style={{ fontSize: 12.5 }}>{n.reason}</td>
+                      <td style={{ fontSize: 12.5 }}>{n.recipient_name ?? "—"}</td>
+                      <td style={{ fontSize: 12.5 }}>{n.aircraft_tail_number ?? "—"}</td>
+                      <td>
+                        <span className={`badge ${n.status === "Enviada" ? "badge-ok" : n.status === "Falha no Envio" ? "badge-critical" : "badge-neutral"}`}>
+                          {n.status}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{new Date(n.created_at).toLocaleString("pt-BR")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 8 }}>
+            E-mail é enviado de verdade quando o servidor tem SMTP configurado; sem isso, e sempre para
+            SMS/WhatsApp nesta fase piloto (sem custo), a notificação fica registrada aqui como "Simulada".
+          </p>
+        </div>
+      )}
 
-      <style>{`@media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr !important; } }`}</style>
+      {activeTab === "categorias" && <MaintenanceCategoryChart alerts={summary.alerts} />}
     </div>
   );
 }

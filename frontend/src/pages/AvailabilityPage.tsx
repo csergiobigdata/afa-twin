@@ -59,6 +59,8 @@ const FIELD_LABEL_STYLE: CSSProperties = {
 // Aeronave selecionada por padrão ao abrir o módulo, no lançamento manual.
 const DEFAULT_MANUAL_AIRCRAFT_TAIL = "FAB 5962";
 
+type AvailTab = "quadro" | "colar" | "cadastro" | "config-autorizadas";
+
 export default function AvailabilityPage() {
   const { role } = useAuth();
   const canManage = ROLE_PERMISSIONS.canManageRecords(role);
@@ -67,6 +69,7 @@ export default function AvailabilityPage() {
   const [board, setBoard] = useState<AvailabilityBoard | null>(null);
   const [fleet, setFleet] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<AvailTab>("quadro");
   // Configurações Autorizadas (cadastro completo) - as ativas (status_disp =
   // "A") populam o seletor de "Configuração" do lançamento manual; o
   // conjunto completo serve para achar o símbolo de um lançamento antigo
@@ -300,6 +303,17 @@ export default function AvailabilityPage() {
   const configTagOrder = Array.from(new Set([...configOptions, ...Object.keys(board.configuration_counts)]));
   const configEntries = configTagOrder.map((tag) => [tag, board.configuration_counts[tag] ?? 0] as const);
 
+  // Sem gerenciar cadastros, só há um grupo de informação (Quadro) - sem
+  // sentido mostrar uma barra de aba com um único item.
+  const TABS: { key: AvailTab; label: string }[] = canManage
+    ? [
+        { key: "quadro", label: "Quadro — Última Atualização" },
+        { key: "colar", label: "Colar Boletim do Dia" },
+        { key: "cadastro", label: "Cadastro de Configuração" },
+        { key: "config-autorizadas", label: "Configurações Autorizadas" },
+      ]
+    : [{ key: "quadro", label: "Quadro — Última Atualização" }];
+
   return (
     <div>
       <div style={{ marginBottom: 22 }}>
@@ -332,6 +346,24 @@ export default function AvailabilityPage() {
         </div>
       )}
 
+      {TABS.length > 1 && (
+        <div className="card" style={{ display: "flex", gap: 6, marginBottom: 18, padding: 6, flexWrap: "wrap" }}>
+          {TABS.map(({ key, label }) => (
+            <button
+              key={key} onClick={() => setActiveTab(key)}
+              className="btn btn-sm"
+              style={{
+                border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13.5, fontWeight: 700,
+                background: activeTab === key ? "var(--fab-navy-900)" : "transparent",
+                color: activeTab === key ? "#fff" : "var(--text-label)",
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {activeTab === "quadro" && (
       <div className="card" style={{ padding: 18, marginBottom: 18 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
           <h2 style={{ fontSize: 15.5, margin: 0 }}>Quadro — última atualização por aeronave</h2>
@@ -370,8 +402,9 @@ export default function AvailabilityPage() {
           </p>
         )}
       </div>
+      )}
 
-      {canManage && (
+      {canManage && activeTab === "colar" && (
         <div className="card" style={{ padding: 18, marginBottom: 18 }}>
           <h2 style={{ fontSize: 15.5, margin: "0 0 4px" }}>Colar boletim do dia</h2>
           <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 12 }}>
@@ -466,8 +499,7 @@ export default function AvailabilityPage() {
         </div>
       )}
 
-      {canManage && (
-        <>
+      {canManage && activeTab === "cadastro" && (
         <div className="card" style={{ padding: 18, marginBottom: 18 }}>
           <h2 style={{ fontSize: 15.5, margin: "0 0 4px" }}>Cadastro de Configuração da Aeronave</h2>
           <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14, maxWidth: 640 }}>
@@ -555,7 +587,10 @@ export default function AvailabilityPage() {
             </div>
           </div>
         </div>
+      )}
 
+      {canManage && activeTab === "config-autorizadas" && (
+        <>
         <div className="card" style={{ padding: 18, marginBottom: 18 }}>
           <h2 style={{ fontSize: 15.5, margin: "0 0 2px" }}>
             Configurações Autorizadas:
