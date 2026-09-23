@@ -36,9 +36,8 @@ import os
 import secrets
 import subprocess
 import sys
+import tempfile
 import time
-import urllib.error
-import urllib.request
 import zipfile
 from pathlib import Path
 
@@ -71,6 +70,17 @@ def need_env(name: str) -> str:
 
 def http(method: str, url: str, token: str | None = None, body: dict | list | bytes | None = None,
          headers: dict | None = None, token_scheme: str = "Bearer"):
+    """Chama a API via `curl` (subprocesso), não `urllib.request` - motivo:
+    detectamos nesta máquina um segfault reprodutível (STATUS_ACCESS_
+    VIOLATION) da própria pilha SSL do Python (3.14.6 + OpenSSL 3.5.7) ao
+    conectar especificamente a api.vercel.com (GitHub e Neon funcionavam
+    normalmente; a mesma chamada isolada, sem nada deste script, também
+    travava) - aparenta ser um bug do runtime, não deste código. `curl` é um
+    binário separado, não usa o `ssl` do Python, e funciona normalmente para
+    o mesmo host. O corpo da requisição vai por stdin (nunca como argumento
+    de linha de comando), pois o deploy do backend envia todo o código-fonte
+    em base64 no corpo - passaria do limite de tamanho de linha de comando
+    do Windows."""
     hdrs = {"User-Agent": "afa-twin-deploy-script"}
     if headers:
         hdrs.update(headers)
@@ -82,14 +92,26 @@ def http(method: str, url: str, token: str | None = None, body: dict | list | by
         hdrs.setdefault("Content-Type", "application/json")
     elif isinstance(body, bytes):
         data = body
-    req = urllib.request.Request(url, data=data, headers=hdrs, method=method)
+
+    fd, tmp_path = tempfile.mkstemp(prefix="afa-twin-deploy-")
+    os.close(fd)
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            raw = resp.read()
-            status = resp.status
-    except urllib.error.HTTPError as e:
-        raw = e.read()
-        status = e.code
+        cmd = ["curl", "-s", "-S", "--max-time", "150", "-X", method, "-o", tmp_path, "-w", "%{http_code}"]
+        for k, v in hdrs.items():
+            cmd += ["-H", f"{k}: {v}"]
+        if data is not None:
+            cmd += ["--data-binary", "@-"]
+        cmd.append(url)
+        result = subprocess.run(cmd, input=data, capture_output=True, timeout=170)
+        if result.returncode != 0:
+            die(f"curl falhou (código {result.returncode}) chamando {url}: {result.stderr.decode(errors='replace')}")
+        status = int(result.stdout.decode().strip())
+        raw = Path(tmp_path).read_bytes()
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
     text = raw.decode(errors="replace") if raw else ""
     try:
         parsed = json.loads(text) if text else {}
