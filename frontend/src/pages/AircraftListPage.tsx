@@ -5,17 +5,41 @@ import type { Aircraft } from "../api/types";
 import AircraftThumbnail from "../components/AircraftThumbnail";
 import AircraftPhotoViewer from "../components/AircraftPhotoViewer";
 import { HealthBar, RiskBadge, StatusBadge } from "../components/Badges";
+import SortableTh from "../components/SortableTh";
 import SplashScreen from "../components/SplashScreen";
 import { formatHoursHHMM } from "../utils/format";
 
 type ViewMode = "lista" | "grade";
 const VIEW_MODE_KEY = "afa_twin_aircraft_view_mode";
 
+type SortKey = "tail_number" | "category" | "squadron" | "status" | "health_index" | "risk_level" | "total_flight_hours";
+// Ordem de severidade para ordenar "Risco" de forma útil (não alfabética,
+// que misturaria Alto/Baixo/Crítico/Médio fora de ordem de gravidade).
+const RISK_ORDER: Record<string, number> = { "Baixo": 0, "Médio": 1, "Alto": 2, "Crítico": 3 };
+
+function sortValue(a: Aircraft, key: SortKey): string | number {
+  switch (key) {
+    case "tail_number": return a.tail_number;
+    case "category": return a.category;
+    case "squadron": return a.squadron ?? "";
+    case "status": return a.status;
+    case "health_index": return a.health_index ?? -1;
+    case "risk_level": return RISK_ORDER[a.risk_level ?? ""] ?? -1;
+    case "total_flight_hours": return a.total_flight_hours;
+  }
+}
+
 export default function AircraftListPage() {
   const [fleet, setFleet] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("tail_number");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  function toggleSort(key: SortKey) {
+    if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  }
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     try {
       return (localStorage.getItem(VIEW_MODE_KEY) as ViewMode) || "lista";
@@ -39,6 +63,12 @@ export default function AircraftListPage() {
     const matchQuery = `${a.tail_number} ${a.nickname ?? ""} ${a.model} ${a.manufacturer}`.toLowerCase().includes(query.toLowerCase());
     const matchCategory = !categoryFilter || a.category === categoryFilter;
     return matchQuery && matchCategory;
+  });
+  const sorted = [...filtered].sort((x, y) => {
+    const vx = sortValue(x, sortKey);
+    const vy = sortValue(y, sortKey);
+    const cmp = typeof vx === "number" && typeof vy === "number" ? vx - vy : String(vx).localeCompare(String(vy), "pt-BR");
+    return sortDir === "asc" ? cmp : -cmp;
   });
 
   return (
@@ -74,12 +104,19 @@ export default function AircraftListPage() {
           <table>
             <thead>
               <tr>
-                <th></th><th>Aeronave</th><th>Categoria</th><th>Esquadrão / Base</th>
-                <th>Status</th><th>Saúde</th><th>Risco</th><th>Horas</th><th></th>
+                <th></th>
+                <SortableTh label="Aeronave" sortKey="tail_number" active={sortKey === "tail_number"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Categoria" sortKey="category" active={sortKey === "category"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Esquadrão / Base" sortKey="squadron" active={sortKey === "squadron"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Status" sortKey="status" active={sortKey === "status"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Saúde" sortKey="health_index" active={sortKey === "health_index"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Risco" sortKey="risk_level" active={sortKey === "risk_level"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Horas" sortKey="total_flight_hours" active={sortKey === "total_flight_hours"} dir={sortDir} onClick={toggleSort} />
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((a) => (
+              {sorted.map((a) => (
                 <tr key={a.id}>
                   <td><AircraftThumbnail aircraft={a} width={64} height={40} rounded={6} /></td>
                   <td>

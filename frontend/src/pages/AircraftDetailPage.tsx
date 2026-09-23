@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useState, type CSSProperties, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type {
@@ -908,33 +908,26 @@ function ReliabilityRiskTab({ aircraftId }: { aircraftId: number }) {
 
   if (loading) return <p>Calculando indicadores de confiabilidade e risco…</p>;
 
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }} className="detail-grid">
-      <div className="card" style={{ padding: 18 }}>
-        <h3 style={{ fontSize: 14.5, margin: "0 0 4px" }}>Engenharia de Confiabilidade</h3>
-        <p style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14 }}>
-          MTBF, MTTR e disponibilidade calculados a partir do histórico real de manutenções corretivas
-          concluídas desta aeronave.
-        </p>
-        {reliability && reliability.sample_size === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{reliability.confidence_note}</p>
-        ) : reliability && (
-          <>
-            <SpecRow label="Amostra" value={`${reliability.sample_size} manutenção(ões) corretiva(s)`} />
-            <SpecRow label="MTBF" value={reliability.mtbf_hours != null ? `${formatHoursHHMM(reliability.mtbf_hours)} h` : undefined} />
-            <SpecRow label="MTTR" value={reliability.mttr_hours != null ? `${formatHoursHHMM(reliability.mttr_hours)} h` : undefined} />
-            <SpecRow label="Taxa de falha (λ)" value={reliability.failure_rate_per_hour != null ? `${reliability.failure_rate_per_hour}/h` : undefined} />
-            <SpecRow label="Confiabilidade (100h)" value={reliability.reliability_pct_next_100h != null ? `${reliability.reliability_pct_next_100h}%` : undefined} />
-            <SpecRow label="Disponibilidade Intrínseca" value={reliability.availability_intrinsic_pct != null ? `${reliability.availability_intrinsic_pct}%` : undefined} />
-            <SpecRow label="Disponibilidade Operacional" value={reliability.availability_operational_pct != null ? `${reliability.availability_operational_pct}%` : undefined} />
-            <p style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 10 }}>{reliability.confidence_note}</p>
-          </>
-        )}
-      </div>
+  // Painel "Engenharia de Confiabilidade" pintado de cinza claro fixo (a
+  // pedido do usuário, independente do tema) - as variáveis de cor por tema
+  // (--text-primary/--text-secondary/--text-label/--border-subtle) são
+  // redefinidas localmente neste container, então todo texto/borda dos
+  // descendentes (SpecRow incluso) já herda tons escuros legíveis sobre
+  // fundo claro, sem precisar sobrescrever cada elemento individualmente.
+  const reliabilityPanelStyle: CSSProperties = {
+    padding: 18,
+    background: "#eef0f3",
+    ["--text-primary" as string]: "#1c2230",
+    ["--text-secondary" as string]: "#5a6472",
+    ["--text-label" as string]: "#1c2230",
+    ["--border-subtle" as string]: "#d5d9e2",
+  };
 
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 18 }} className="detail-grid">
       <div className="card" style={{ padding: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-          <h3 style={{ fontSize: 14.5, margin: 0 }}>Risco Operacional Ponderado</h3>
+          <h3 style={{ fontSize: 19, margin: 0 }}>Risco Operacional Ponderado</h3>
           {risk && <RiskBadge level={risk.risk_level} />}
         </div>
         <p style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14 }}>
@@ -958,6 +951,28 @@ function ReliabilityRiskTab({ aircraftId }: { aircraftId: number }) {
               <span>Índice de risco</span>
               <span>{risk.risk_score_pct}%</span>
             </div>
+          </>
+        )}
+      </div>
+
+      <div className="card" style={reliabilityPanelStyle}>
+        <h3 style={{ fontSize: 19, margin: "0 0 4px", color: "#1c2230" }}>Engenharia de Confiabilidade</h3>
+        <p style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14 }}>
+          MTBF, MTTR e disponibilidade calculados a partir do histórico real de manutenções corretivas
+          concluídas desta aeronave.
+        </p>
+        {reliability && reliability.sample_size === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{reliability.confidence_note}</p>
+        ) : reliability && (
+          <>
+            <SpecRow label="Amostra" value={`${reliability.sample_size} manutenção(ões) corretiva(s)`} />
+            <SpecRow label="MTBF" value={reliability.mtbf_hours != null ? `${formatHoursHHMM(reliability.mtbf_hours)} h` : undefined} />
+            <SpecRow label="MTTR" value={reliability.mttr_hours != null ? `${formatHoursHHMM(reliability.mttr_hours)} h` : undefined} />
+            <SpecRow label="Taxa de falha (λ)" value={reliability.failure_rate_per_hour != null ? `${reliability.failure_rate_per_hour}/h` : undefined} />
+            <SpecRow label="Confiabilidade (100h)" value={reliability.reliability_pct_next_100h != null ? `${reliability.reliability_pct_next_100h}%` : undefined} />
+            <SpecRow label="Disponibilidade Intrínseca" value={reliability.availability_intrinsic_pct != null ? `${reliability.availability_intrinsic_pct}%` : undefined} />
+            <SpecRow label="Disponibilidade Operacional" value={reliability.availability_operational_pct != null ? `${reliability.availability_operational_pct}%` : undefined} />
+            <p style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 10 }}>{reliability.confidence_note}</p>
           </>
         )}
       </div>

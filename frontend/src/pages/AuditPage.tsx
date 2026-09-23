@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api/client";
 import type { AuditLogEntry } from "../api/types";
+import SortableTh from "../components/SortableTh";
 
 const ACTION_BADGE: Record<string, string> = {
   "Criação": "badge-ok", "Alteração": "badge-info", "Inativação": "badge-warn",
@@ -22,23 +23,6 @@ function sortValue(e: AuditLogEntry, key: SortKey): string | number {
     case "summary": return e.summary;
     case "actor": return actorName(e);
   }
-}
-
-/** Cabeçalho de coluna clicável - ordena a tabela por aquele campo, alternando
- * crescente/decrescente a cada clique (mesmo campo) ou começando decrescente
- * num campo novo (mais útil por padrão: mais recente/mais "alto" primeiro). */
-function SortableTh({
-  label, sortKey, active, dir, onClick,
-}: { label: string; sortKey: SortKey; active: boolean; dir: "asc" | "desc"; onClick: (key: SortKey) => void }) {
-  return (
-    <th
-      onClick={() => onClick(sortKey)}
-      style={{ cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
-      title="Clique para ordenar por esta coluna"
-    >
-      {label} <span style={{ opacity: active ? 1 : 0.25 }}>{active ? (dir === "asc" ? "▲" : "▼") : "▲"}</span>
-    </th>
-  );
 }
 
 export default function AuditPage() {
