@@ -204,6 +204,17 @@ def reformat_order_numbers() -> None:
             )
 
 
+def cap_max_speed_values() -> None:
+    """`aircraft.max_speed_kmh` (exibido como "kcas") passou a ter no máximo 3
+    dígitos (ver schemas.py::AircraftBase, `le=999`) - corrige em lote
+    valores já cadastrados que excediam isso (ex.: erro de digitação virando
+    um valor absurdo), limitando ao teto em vez de apagar o dado. Barata
+    (um UPDATE condicional; sem linhas depois da primeira vez) e idempotente,
+    segura no startup automático em qualquer dialeto."""
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE aircraft SET max_speed_kmh = 999 WHERE max_speed_kmh > 999"))
+
+
 def migrate_availability_code_column() -> None:
     """`availability_updates.code` era um tipo ENUM nativo do Postgres fixo
     (DI/DO/IN definidos em código) - passou a ser VARCHAR(2) livre, validado

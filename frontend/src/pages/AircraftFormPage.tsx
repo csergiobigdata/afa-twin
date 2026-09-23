@@ -174,7 +174,14 @@ export default function AircraftFormPage({ mode }: { mode: "create" | "edit" }) 
         <div className="form-grid">
           <div className="field">
             <label>Velocidade máxima (kcas)</label>
-            <input type="number" value={form.max_speed_kmh ?? ""} onChange={(e) => set("max_speed_kmh", e.target.value ? Number(e.target.value) : undefined)} />
+            <input
+              type="number" min={0} max={999} value={form.max_speed_kmh ?? ""}
+              onChange={(e) => {
+                const v = e.target.value ? Number(e.target.value) : undefined;
+                // Até 3 dígitos (ex.: 590 kcas) - ver nota em backend/app/schemas.py::AircraftBase.
+                set("max_speed_kmh", v != null ? Math.min(v, 999) : undefined);
+              }}
+            />
           </div>
           <div className="field">
             <label>Altitude (pés)</label>

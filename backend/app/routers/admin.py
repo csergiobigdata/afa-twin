@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from .. import models, security
 from ..database import (
     Base, engine, sync_missing_columns, sync_missing_indexes, sync_postgres_enum_types,
-    reformat_order_numbers, migrate_availability_code_column,
+    reformat_order_numbers, migrate_availability_code_column, cap_max_speed_values,
 )
 
 router = APIRouter(prefix="/api/admin", tags=["administração"])
@@ -35,4 +35,5 @@ def sync_schema():
     # para permitir forçar sem esperar um redeploy/reinício.
     reformat_order_numbers()
     migrate_availability_code_column()
+    cap_max_speed_values()
     return {"status": "ok", "detail": "Tabelas, tipos enum, índices e colunas sincronizados."}

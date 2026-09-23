@@ -40,7 +40,10 @@ class AircraftBase(BaseModel):
     engine_config: Optional[str] = None
     avionics_config: Optional[str] = None
     armament_config: Optional[str] = None
-    max_speed_kmh: Optional[float] = None
+    # Até 3 dígitos (ex.: 590 kcas) - faixa realista de velocidade indicada/
+    # calibrada de aeronaves militares subsônicas/transônicas deste piloto;
+    # evita também um erro de digitação virar um valor absurdo no cadastro.
+    max_speed_kmh: Optional[float] = Field(None, le=999)
     service_ceiling_m: Optional[float] = None
     max_range_km: Optional[float] = None
     crew_capacity: Optional[int] = None
@@ -68,7 +71,7 @@ class AircraftUpdate(BaseModel):
     engine_config: Optional[str] = None
     avionics_config: Optional[str] = None
     armament_config: Optional[str] = None
-    max_speed_kmh: Optional[float] = None
+    max_speed_kmh: Optional[float] = Field(None, le=999)  # ver nota em AircraftBase
     service_ceiling_m: Optional[float] = None
     max_range_km: Optional[float] = None
     crew_capacity: Optional[int] = None
