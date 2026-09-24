@@ -917,9 +917,15 @@ function ReliabilityRiskTab({ aircraftId }: { aircraftId: number }) {
   const reliabilityPanelStyle: CSSProperties = {
     padding: 18,
     background: "#eef0f3",
-    ["--text-primary" as string]: "#1c2230",
-    ["--text-secondary" as string]: "#5a6472",
-    ["--text-label" as string]: "#1c2230",
+    // `color` explícito (não só as custom properties abaixo) porque texto
+    // sem `color` próprio (ex.: o valor em SpecRow) herda o `color`
+    // computado do ancestral mais próximo que o declara (aqui, este card) -
+    // as variáveis --text-* só são recalculadas por descendentes que as
+    // referenciam explicitamente via var(...).
+    color: "#000000",
+    ["--text-primary" as string]: "#000000",
+    ["--text-secondary" as string]: "#000000",
+    ["--text-label" as string]: "#000000",
     ["--border-subtle" as string]: "#d5d9e2",
   };
 
@@ -956,7 +962,7 @@ function ReliabilityRiskTab({ aircraftId }: { aircraftId: number }) {
       </div>
 
       <div className="card" style={reliabilityPanelStyle}>
-        <h3 style={{ fontSize: 19, margin: "0 0 4px", color: "#1c2230" }}>Engenharia de Confiabilidade</h3>
+        <h3 style={{ fontSize: 19, margin: "0 0 4px", color: "#000000" }}>Engenharia de Confiabilidade</h3>
         <p style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14 }}>
           MTBF, MTTR e disponibilidade calculados a partir do histórico real de manutenções corretivas
           concluídas desta aeronave.

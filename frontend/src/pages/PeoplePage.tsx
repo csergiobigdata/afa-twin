@@ -157,7 +157,10 @@ export default function PeoplePage() {
                   <tr>
                     <td><PersonAvatar person={p} size={38} /></td>
                     <td><strong>{p.rank ? `${p.rank} ` : ""}{p.full_name}</strong>{p.squadron && <div style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{p.squadron}</div>}</td>
-                    <td><span className="badge badge-info">{p.role}</span></td>
+                    {/* badge-info padrão (fundo azul translúcido + texto azul) ficava pouco
+                        nítido sobre o fundo escuro da linha da tabela - fundo azul sólido
+                        fixo com texto branco aqui, só nesta coluna. */}
+                    <td><span className="badge" style={{ background: "var(--fab-blue-500)", color: "#fff" }}>{p.role}</span></td>
                     <td style={{ fontSize: 12.5 }}>{p.organization}</td>
                     <td style={{ fontSize: 12 }}>{p.email ?? "—"}<br />{phoneFull(p)}</td>
                     <td style={{ fontSize: 12.5 }}>{p.registration_number ?? "—"}</td>

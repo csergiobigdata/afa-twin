@@ -420,12 +420,14 @@ export default function AvailabilityPage() {
               </div>
               <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 0, marginBottom: 8 }}>
                 {quadroEntries.length} de {board.entries.length} aeronave(s).
+                {canManage && " Clique numa linha para selecionar a aeronave nas abas \"Cadastro de Configuração\" e \"Configurações Autorizadas\"."}
               </p>
 
               <div className="scroll-x">
                 <table>
                   <thead>
                     <tr>
+                      {canManage && <th style={{ width: 30 }}></th>}
                       <SortableTh label="Aeronave" sortKey="aircraft_tail_number" active={quadroSortKey === "aircraft_tail_number"} dir={quadroSortDir} onClick={toggleQuadroSort} />
                       <SortableTh label="Modelo" sortKey="aircraft_model" active={quadroSortKey === "aircraft_model"} dir={quadroSortDir} onClick={toggleQuadroSort} />
                       <SortableTh label="Código" sortKey="code" active={quadroSortKey === "code"} dir={quadroSortDir} onClick={toggleQuadroSort} />
@@ -437,24 +439,53 @@ export default function AvailabilityPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {quadroEntries.map((e) => (
-                      <tr key={e.availability_update_id}>
-                        <td style={{ fontWeight: 700 }}>{e.aircraft_tail_number}</td>
-                        <td style={{ fontSize: 12.5 }}>{e.aircraft_model}</td>
-                        <td><AvailabilityCodeBadge code={e.code} /></td>
-                        <td style={{ fontSize: 12.5 }}>{e.configuration ?? "LISO"}</td>
-                        <td style={{ fontSize: 12.5 }}>{e.has_subalares ? "Sim" : "—"}</td>
-                        <td style={{ fontSize: 12.5 }}>{e.reason ?? "—"}</td>
-                        <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{formatDate(e.report_date)}</td>
-                        {canManage && (
-                          <td>
-                            <button className="btn btn-outline btn-sm" onClick={() => removeUpdate(e.availability_update_id)}>Remover</button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
+                    {quadroEntries.map((e) => {
+                      const isSelected = canManage && manualAircraftId === String(e.aircraft_id);
+                      return (
+                        <tr
+                          key={e.availability_update_id}
+                          onClick={canManage ? () => setManualAircraftId(String(e.aircraft_id)) : undefined}
+                          title={canManage ? "Selecionar esta aeronave para Cadastro de Configuração / Configurações Autorizadas" : undefined}
+                          style={canManage ? {
+                            cursor: "pointer",
+                            background: isSelected ? "rgba(47, 107, 196, 0.16)" : undefined,
+                            boxShadow: isSelected ? "inset 3px 0 0 var(--fab-blue-400)" : undefined,
+                          } : undefined}
+                        >
+                          {canManage && (
+                            <td style={{ textAlign: "center" }}>
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  display: "inline-block", width: 12, height: 12, borderRadius: "50%",
+                                  border: "2px solid " + (isSelected ? "var(--fab-blue-400)" : "var(--border-subtle)"),
+                                  background: isSelected ? "var(--fab-blue-400)" : "transparent",
+                                }}
+                              />
+                            </td>
+                          )}
+                          <td style={{ fontWeight: 700 }}>{e.aircraft_tail_number}</td>
+                          <td style={{ fontSize: 12.5 }}>{e.aircraft_model}</td>
+                          <td><AvailabilityCodeBadge code={e.code} /></td>
+                          <td style={{ fontSize: 12.5 }}>{e.configuration ?? "LISO"}</td>
+                          <td style={{ fontSize: 12.5 }}>{e.has_subalares ? "Sim" : "—"}</td>
+                          <td style={{ fontSize: 12.5 }}>{e.reason ?? "—"}</td>
+                          <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{formatDate(e.report_date)}</td>
+                          {canManage && (
+                            <td>
+                              <button
+                                className="btn btn-outline btn-sm"
+                                onClick={(ev) => { ev.stopPropagation(); removeUpdate(e.availability_update_id); }}
+                              >
+                                Remover
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
                     {quadroEntries.length === 0 && (
-                      <tr><td colSpan={canManage ? 8 : 7} style={{ color: "var(--text-secondary)" }}>Nenhum lançamento de disponibilidade encontrado.</td></tr>
+                      <tr><td colSpan={canManage ? 9 : 7} style={{ color: "var(--text-secondary)" }}>Nenhum lançamento de disponibilidade encontrado.</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -469,11 +500,23 @@ export default function AvailabilityPage() {
 
           {canManage && activeTab === "cadastro" && (
             <div>
-              <h2 style={{ fontSize: 15.5, margin: "0 0 4px" }}>Cadastro de Configuração da Aeronave</h2>
+              <h2 style={{ fontSize: 15.5, margin: "0 0 4px" }}>
+                Cadastro de Configuração da Aeronave
+                {manualAircraftId && (() => {
+                  const a = fleet.find((x) => x.id === Number(manualAircraftId));
+                  return a ? (
+                    <span className="badge badge-warn" style={{ marginLeft: 10, fontSize: 13, verticalAlign: "middle" }}>
+                      {a.tail_number} · {a.model}
+                    </span>
+                  ) : null;
+                })()}
+              </h2>
               <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14, maxWidth: 640 }}>
                 Duas formas de cadastrar o equipamento de uma aeronave: <strong>Configuração Manual</strong> (um
                 equipamento por vez) ou <strong>Configuração Automática</strong> (aplica de uma vez um Código de
-                Configuração já cadastrado, substituindo a configuração atual).
+                Configuração já cadastrado, substituindo a configuração atual). A aeronave selecionada aqui é a
+                mesma nas abas "Quadro de Atualização" (clique numa linha para selecionar) e "Configurações
+                Autorizadas".
               </p>
               <label style={{ ...FIELD_LABEL_STYLE, maxWidth: 260, marginBottom: 18 }}>
                 Aeronave

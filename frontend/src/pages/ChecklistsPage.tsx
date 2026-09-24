@@ -115,14 +115,14 @@ export default function ChecklistsPage() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 15 }}>{c.name}</div>
-                  <div style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
+                  <div style={{ fontSize: 12.5, color: "var(--fab-pink-500)", fontWeight: 600 }}>
                     {c.aircraft_model ?? "Todos os modelos"} · a cada {c.interval_value} {c.interval_type.toLowerCase()}
                   </div>
-                  <div style={{ fontSize: 11.5, color: "var(--fab-blue-500)", marginTop: 2 }}>{c.category}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--fab-yellow-500)", marginTop: 2, fontWeight: 600 }}>{c.category}</div>
                 </div>
                 <button className="btn btn-outline btn-sm" onClick={() => remove(c.id)}>Remover</button>
               </div>
-              {c.reference_doc && <div style={{ fontSize: 12, color: "var(--fab-blue-500)", marginTop: 6, fontWeight: 600 }}>{c.reference_doc}</div>}
+              {c.reference_doc && <div style={{ fontSize: 12, color: "var(--fab-yellow-500)", marginTop: 6, fontWeight: 600 }}>{c.reference_doc}</div>}
               <ul style={{ marginTop: 10, paddingLeft: 18, fontSize: 13 }}>
                 {c.items.map((it, i) => <li key={i} style={{ marginBottom: 4 }}>{it}</li>)}
               </ul>

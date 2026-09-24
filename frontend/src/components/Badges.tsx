@@ -51,7 +51,11 @@ const AVAILABILITY_CODE_TONE: Record<string, string> = {
   DI: "badge-ok", DO: "badge-warn", IN: "badge-critical", IS: "badge-info",
 };
 export function AvailabilityCodeBadge({ code }: { code: AvailabilityCode }) {
-  return <span className={`badge ${AVAILABILITY_CODE_TONE[code] ?? "badge-neutral"}`}>{code}</span>;
+  // Fundo branco fixo (em vez do fundo translúcido padrão de badge-*, que
+  // ficava quase invisível sobre o fundo azul-marinho escuro do Quadro de
+  // Atualização) - mantém a mesma cor de texto de cada tom (ok/warn/
+  // critical/info), só troca o fundo para dar contraste.
+  return <span className={`badge ${AVAILABILITY_CODE_TONE[code] ?? "badge-neutral"}`} style={{ background: "#fff" }}>{code}</span>;
 }
 
 export function HealthBar({ value }: { value?: number | null }) {

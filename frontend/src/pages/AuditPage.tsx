@@ -3,9 +3,13 @@ import { api } from "../api/client";
 import type { AuditLogEntry } from "../api/types";
 import SortableTh from "../components/SortableTh";
 
-const ACTION_BADGE: Record<string, string> = {
-  "Criação": "badge-ok", "Alteração": "badge-info", "Inativação": "badge-warn",
-  "Reativação": "badge-ok", "Cancelamento": "badge-critical",
+// Cores mais vivas que as classes badge-* padrão (mesma família de cor -
+// verde/azul/amarelo/vermelho - só mais saturadas) sobre fundo branco fixo
+// em vez do fundo translúcido padrão: sobre o fundo azul-marinho escuro do
+// tema Noturno, o badge-* translúcido ficava quase invisível nesta coluna.
+const ACTION_BADGE_COLOR: Record<string, string> = {
+  "Criação": "#0fa968", "Reativação": "#0fa968",
+  "Alteração": "#2f6bc4", "Inativação": "#d98c00", "Cancelamento": "#e23c3c",
 };
 
 type SortKey = "created_at" | "action" | "entity_type" | "entity_label" | "summary" | "actor";
@@ -157,7 +161,7 @@ export default function AuditPage() {
                   <td style={{ fontSize: 11.5, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
                     {new Date(e.created_at).toLocaleString("pt-BR")}
                   </td>
-                  <td><span className={`badge ${ACTION_BADGE[e.action] ?? "badge-neutral"}`}>{e.action}</span></td>
+                  <td><span className="badge" style={{ background: "#fff", color: ACTION_BADGE_COLOR[e.action] ?? "#3d4a63" }}>{e.action}</span></td>
                   <td style={{ fontSize: 12.5 }}>{e.entity_type}</td>
                   <td style={{ fontSize: 12.5 }}>{e.entity_label ?? `#${e.entity_id}`}</td>
                   <td style={{ fontSize: 12.5 }}>{e.summary}</td>
