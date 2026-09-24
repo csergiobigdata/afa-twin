@@ -102,13 +102,19 @@ demonstração.
 | `AFA_TWIN_SMTP_USER` | não definida | Usuário/e-mail da conta usada para autenticar no SMTP |
 | `AFA_TWIN_SMTP_PASSWORD` | não definida | Senha (ou senha de aplicativo) da conta SMTP |
 | `AFA_TWIN_SMTP_FROM` | igual a `AFA_TWIN_SMTP_USER` | Endereço de remetente exibido nos e-mails enviados |
+| `AFA_TWIN_TWILIO_ACCOUNT_SID` | não definida | Account SID da conta Twilio, para envio **real** de SMS de notificação |
+| `AFA_TWIN_TWILIO_AUTH_TOKEN` | não definida | Auth Token da conta Twilio |
+| `AFA_TWIN_TWILIO_FROM_NUMBER` | não definida | Número Twilio remetente, em formato internacional (ex.: `+15017122661`) |
 | `AFA_TWIN_ALLOWED_ORIGINS` | não definida (libera qualquer origem) | Lista de URLs (separadas por vírgula) autorizadas a chamar a API por CORS — **defina ao publicar em nuvem** (ver docs/06) |
 | `AFA_TWIN_ACCESS_KEY` | não definida (camada desligada) | Chave extra opcional exigida no cabeçalho `X-AFA-TWIN-Key` de toda chamada à API — reforço de acesso ao publicar em nuvem (ver docs/06) |
 
-Sem essas variáveis de SMTP configuradas, as notificações por e-mail ficam registradas no histórico
-como "Simuladas" (não são perdidas, apenas não são realmente entregues) - útil para testar o fluxo sem
-depender de credenciais reais. Notificações por SMS e WhatsApp são sempre simuladas nesta fase piloto,
-por exigirem contratação de um gateway pago de terceiros (ver docs/04, seção 6).
+Sem essas variáveis de SMTP/Twilio configuradas, as notificações por e-mail/SMS ficam registradas no
+histórico como "Simuladas" (não são perdidas, apenas não são realmente entregues) - útil para testar o
+fluxo sem depender de credenciais reais. Numa conta Twilio *trial* (gratuita, não paga), o SMS só é
+entregue a números verificados manualmente no console do Twilio (Phone Numbers → Verified Caller IDs) -
+para outro número, a tentativa falha com esse detalhe explicado no histórico. WhatsApp continua sempre
+simulado nesta fase piloto, por exigir a API oficial do WhatsApp Business ou um gateway à parte (ver
+docs/04, seção 6).
 
 As duas últimas variáveis (`AFA_TWIN_ALLOWED_ORIGINS` e `AFA_TWIN_ACCESS_KEY`) só fazem sentido ao
 publicar o sistema fora da rede local — para uso local/tablet na mesma rede Wi-Fi, deixe-as sem definir.

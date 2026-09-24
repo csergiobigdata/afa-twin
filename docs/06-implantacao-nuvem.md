@@ -122,6 +122,7 @@ de alterações no código.
    | `AFA_TWIN_ALLOWED_ORIGINS` | URL exata do frontend publicado, ex.: `https://afa-twin.netlify.app` |
    | `AFA_TWIN_ACCESS_KEY` | *(opcional, seção 6)* uma chave extra de acesso |
    | `AFA_TWIN_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `_FROM` | *(opcional)* para e-mails reais de alerta |
+   | `AFA_TWIN_TWILIO_ACCOUNT_SID`, `_AUTH_TOKEN`, `_FROM_NUMBER` | *(opcional)* para SMS reais de alerta via Twilio - conta trial grátis com crédito inicial (depois, pago por mensagem); numa conta trial, o destino precisa estar verificado em console.twilio.com → Phone Numbers → Verified Caller IDs |
 
 4. Deploy. Anote a URL pública gerada (ex.: `https://afa-twin-api.vercel.app`).
 
@@ -185,6 +186,7 @@ por **pessoa** continua sendo o login (seção 1); esta camada é só um reforç
 - [ ] Criar as contas reais de usuário (módulo Usuários, perfil Gestor) e desativar/trocar a senha das
       contas de demonstração (`gestor`, `piloto`, `mecanico`, `engenheiro`, `cientista`).
 - [ ] Configurar `AFA_TWIN_SMTP_*` se o envio real de e-mail de alerta for necessário nesta fase.
+- [ ] Configurar `AFA_TWIN_TWILIO_*` se o envio real de SMS de alerta for necessário nesta fase.
 - [ ] Decidir se a camada extra opcional de chave de acesso (seção 6) será usada.
 - [ ] Confirmar com a área de segurança da informação de cada organização (FAB/ITA/Embraer) que o
       provedor de nuvem escolhido atende às políticas aplicáveis, especialmente antes de inserir
