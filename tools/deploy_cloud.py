@@ -337,7 +337,19 @@ def deploy_to_vercel(token: str, project_id: str, files: list[dict]) -> str:
         print(f"    status: {state}")
         if state == "READY":
             aliases = d.get("alias") or []
-            final_url = aliases[0] if aliases else d.get("url")
+            # Prefere o domínio estável e público do projeto
+            # ("afa-twin-api.vercel.app") entre os aliases retornados - a
+            # conta Vercel pode devolver também um alias de time/preview
+            # (ex.: "afa-twin-api-<time>.vercel.app") que exige login/SSO da
+            # Vercel e devolve 302 em vez da API, quebrando a app se
+            # escolhido aqui (aconteceu em produção em 2026-09-24).
+            preferred = f"{VERCEL_PROJECT_NAME}.vercel.app"
+            if preferred in aliases:
+                final_url = preferred
+            elif aliases:
+                final_url = aliases[0]
+            else:
+                final_url = d.get("url")
             print("  Deploy concluído com sucesso.")
             return f"https://{final_url}"
         if state in ("ERROR", "CANCELED"):
