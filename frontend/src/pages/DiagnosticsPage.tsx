@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { DiagnosticResult } from "../api/types";
+import FlyingJet from "../components/FlyingJet";
 
 const EXAMPLES = [
   "A luz FUEL PRESS permanece acesa em voo de cruzeiro",
@@ -40,7 +41,7 @@ export default function DiagnosticsPage() {
 
       <form onSubmit={submit} className="card" style={{ padding: 18, marginBottom: 20 }}>
         <div className="field">
-          <label>Sintoma observado</label>
+          <label style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>Sintoma observado</label>
           <textarea required minLength={4} value={symptom} onChange={(e) => setSymptom(e.target.value)}
                     placeholder='Ex.: "A luz FUEL PRESS permanece acesa"' rows={3} />
         </div>
@@ -51,10 +52,16 @@ export default function DiagnosticsPage() {
         </div>
         <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? "Pesquisando…" : "Pesquisar ocorrências semelhantes"}</button>
         {error && <div className="badge badge-critical" style={{ display: "block", padding: "8px 12px", marginTop: 12 }}>{error}</div>}
+        {loading && (
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+            <FlyingJet width={130} trackHeight={60} durationS={2.6} />
+          </div>
+        )}
       </form>
 
       {result && (
         <div className="card" style={{ padding: 18 }}>
+          <h2 style={{ fontSize: 19, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 12px" }}>Resultado</h2>
           <div style={{
             background: "var(--bg-surface-alt)", borderRadius: 10, padding: 14, fontWeight: 700, fontSize: 15,
             borderLeft: "4px solid var(--fab-blue-500)",
@@ -70,7 +77,11 @@ export default function DiagnosticsPage() {
                 <tbody>
                   {result.matches.map((m) => (
                     <tr key={m.order_number}>
-                      <td><span className="badge badge-info">{m.similarity_pct}%</span></td>
+                      {/* badge-info padrão (fundo azul translúcido + texto
+                          azul) ficava pouco nítido - fundo azul sólido fixo
+                          com texto branco aqui, só nesta tabela, legível nos
+                          dois temas (claro/escuro). */}
+                      <td><span className="badge" style={{ background: "var(--fab-blue-500)", color: "#fff" }}>{m.similarity_pct}%</span></td>
                       <td>{m.order_number}</td>
                       <td>{m.aircraft_tail_number}</td>
                       <td>{m.title}</td>

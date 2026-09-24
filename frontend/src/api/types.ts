@@ -361,6 +361,17 @@ export interface AvailabilityBoard {
   aircraft_without_update: string[];
 }
 
+// Resposta agregada de GET /availability-updates/bootstrap (mesmo padrão de
+// AircraftDetailBundle) - reúne, numa única chamada, tudo que a tela de
+// Disponibilidade (AvailabilityPage) precisa ao abrir.
+export interface AvailabilityUpdatesBootstrap {
+  board: AvailabilityBoard;
+  fleet: Aircraft[];
+  authorized_configurations: AuthorizedConfiguration[];
+  configuration_codes: ConfigurationCode[];
+  availability_codes: AvailabilityCodeCatalog[];
+}
+
 export interface RiskFactorScore {
   factor: string;
   weight_pct: number;

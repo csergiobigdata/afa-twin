@@ -3,6 +3,7 @@ import { api } from "../api/client";
 import type { AuthorizedConfiguration, AuthorizedConfigPdfLoadResult, ConfigurationCode } from "../api/types";
 import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
 import ConfigurationDiagram from "../components/ConfigurationDiagram";
+import FlyingJet from "../components/FlyingJet";
 
 /** Ícone de documento PDF (troca o emoji de câmera anterior, de quando a
  * carga era feita por imagem) - marcação estática do próprio app, não dado
@@ -124,6 +125,11 @@ export default function AuthorizedConfigurationsPage() {
             </button>
           </div>
         </div>
+        {uploading && (
+          <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
+            <FlyingJet width={130} trackHeight={60} durationS={2.6} />
+          </div>
+        )}
         {result && (
           <div className="card" style={{ marginTop: 14, padding: 12, background: "var(--bg-surface-alt)" }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>

@@ -3,7 +3,7 @@ import { api } from "../api/client";
 import type {
   Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityBoardEntry, AvailabilityCode,
   AvailabilityCodeCatalog, AvailabilityLocation, AvailabilityUpdate, AvailabilityUpdateCreate,
-  ConfigurationCode, StationEquipmentDisplay, StationKey,
+  AvailabilityUpdatesBootstrap, ConfigurationCode, StationEquipmentDisplay, StationKey,
 } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { ROLE_PERMISSIONS } from "../auth/AuthContext";
@@ -36,6 +36,20 @@ const STATION_TO_LOCATION: Record<StationKey, AvailabilityLocation> = {
   station_5: "Asas (Dir/Esq)", station_4: "Asas (Dir/Esq)", station_3: "Estação Ventral",
   station_2: "Asas (Dir/Esq)", station_1: "Asas (Dir/Esq)",
 };
+
+/** Ícone de vassoura (limpar filtros) - o botão "Limpar filtros" do Quadro
+ * virou só ícone a pedido do usuário, para ocupar menos espaço na barra de
+ * filtros. Marcação estática do próprio app (não dado de usuário). */
+function ClearFiltersIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M14.5 3.5 20 9l-8.5 8.5a3 3 0 0 1-4.24 0l-.26-.26a3 3 0 0 1 0-4.24L14.5 3.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M4 20 8 16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M2.5 21.5 4 20" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M11 7l6 6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -106,10 +120,6 @@ export default function AvailabilityPage() {
   // mesmo que o equipamento tenha sido inativado depois (ver Aeronaves →
   // Configurações Autorizadas).
   const [allConfigs, setAllConfigs] = useState<AuthorizedConfiguration[]>([]);
-  useEffect(() => {
-    api.get<AuthorizedConfiguration[]>("/authorized-configurations")
-      .then(setAllConfigs).catch(() => setAllConfigs([]));
-  }, []);
   const activeConfigs = useMemo(() => allConfigs.filter((c) => c.status_disp === "A"), [allConfigs]);
   function configSymbol(equipment: string | null | undefined): string | undefined {
     return equipment ? allConfigs.find((c) => c.equipment === equipment)?.symbol_svg : undefined;
@@ -118,15 +128,12 @@ export default function AvailabilityPage() {
   // Catálogo de Códigos de Configuração (combinação padronizada de
   // equipamento por estação, ex.: "12", "21I") - ver Aeronaves →
   // Configurações Autorizadas → Códigos de Configuração.
+  // Só os códigos "A" (Ativo) - com marcação de bolinha vermelha no boletim
+  // vigente e detalhamento por estação conferido - aparecem como opção
+  // para lançar aqui (ver Aeronaves → Configurações Autorizadas → Códigos
+  // de Configuração para consultar TODOS os códigos, inclusive os "I"
+  // cadastrados só para referência); o bootstrap já traz só os ativos.
   const [configCodes, setConfigCodes] = useState<ConfigurationCode[]>([]);
-  useEffect(() => {
-    // Só os códigos "A" (Ativo) - com marcação de bolinha vermelha no
-    // boletim vigente e detalhamento por estação conferido - aparecem como
-    // opção para lançar aqui (ver Aeronaves → Configurações Autorizadas →
-    // Códigos de Configuração para consultar TODOS os códigos, inclusive
-    // os "I" cadastrados só para referência).
-    api.get<ConfigurationCode[]>("/configuration-codes?status_disp=A").then(setConfigCodes).catch(() => setConfigCodes([]));
-  }, []);
   const [selectedCodeId, setSelectedCodeId] = useState<number | "">("");
   const selectedCode = configCodes.find((c) => c.id === selectedCodeId) ?? null;
   const [launchingCode, setLaunchingCode] = useState(false);
@@ -136,16 +143,23 @@ export default function AvailabilityPage() {
   // Disponibilidade) - alimenta os seletores "Código" abaixo e o
   // reconhecimento do texto colado, em vez de uma lista fixa no código.
   const [availabilityCodes, setAvailabilityCodes] = useState<AvailabilityCodeCatalog[]>([]);
-  useEffect(() => {
-    api.get<AvailabilityCodeCatalog[]>("/availability-codes").then(setAvailabilityCodes).catch(() => setAvailabilityCodes([]));
-  }, []);
   const codeValues = useMemo(() => availabilityCodes.map((c) => c.code), [availabilityCodes]);
 
+  // Um único endpoint consolidado (ver backend/app/routers/availability.py::
+  // bootstrap) no lugar de 5 chamadas separadas no carregamento do módulo -
+  // em nuvem, cada chamada paga o custo de acordar o servidor/banco se
+  // disparada antes de a primeira "aquecer" a função serverless (ver
+  // docs/02, seção 3.2); uma única chamada paga esse custo uma vez só.
   function reload() {
-    Promise.all([
-      api.get<AvailabilityBoard>("/availability-updates/board"),
-      api.get<Aircraft[]>("/aircraft"),
-    ]).then(([b, f]) => { setBoard(b); setFleet(f); }).finally(() => setLoading(false));
+    api.get<AvailabilityUpdatesBootstrap>("/availability-updates/bootstrap")
+      .then((data) => {
+        setBoard(data.board);
+        setFleet(data.fleet);
+        setAllConfigs(data.authorized_configurations);
+        setConfigCodes(data.configuration_codes);
+        setAvailabilityCodes(data.availability_codes);
+      })
+      .finally(() => setLoading(false));
   }
   useEffect(reload, []);
 
@@ -276,11 +290,11 @@ export default function AvailabilityPage() {
   // sentido mostrar uma barra de aba com um único item.
   const TABS: { key: AvailTab; label: string }[] = canManage
     ? [
-        { key: "quadro", label: "Quadro — Última Atualização" },
+        { key: "quadro", label: "Quadro de Atualização" },
         { key: "cadastro", label: "Cadastro de Configuração" },
         { key: "config-autorizadas", label: "Configurações Autorizadas" },
       ]
-    : [{ key: "quadro", label: "Quadro — Última Atualização" }];
+    : [{ key: "quadro", label: "Quadro de Atualização" }];
 
   // Opções dos filtros do Quadro, derivadas dos próprios lançamentos
   // presentes (não do cadastro completo) - só oferece filtrar por um código/
@@ -361,12 +375,12 @@ export default function AvailabilityPage() {
         <div style={{ padding: 18 }}>
           {activeTab === "quadro" && (
             <div>
-              <h2 style={{ fontSize: 15.5, margin: "0 0 12px" }}>Quadro — última atualização por aeronave</h2>
+              <h2 style={{ fontSize: 15.5, margin: "0 0 12px" }}>Quadro de Atualização</h2>
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end", marginBottom: 14 }}>
                 <label style={{ ...FIELD_LABEL_STYLE, minWidth: 180 }}>
                   Aeronave
-                  <input value={quadroAircraftFilter} onChange={(e) => setQuadroAircraftFilter(e.target.value)} placeholder="matrícula ou modelo…" />
+                  <input type="text" value={quadroAircraftFilter} onChange={(e) => setQuadroAircraftFilter(e.target.value)} placeholder="matrícula ou modelo…" />
                 </label>
                 <label style={{ ...FIELD_LABEL_STYLE, minWidth: 120 }}>
                   Código
@@ -392,10 +406,16 @@ export default function AvailabilityPage() {
                 </label>
                 <label style={{ ...FIELD_LABEL_STYLE, minWidth: 180 }}>
                   Motivo
-                  <input value={quadroReasonFilter} onChange={(e) => setQuadroReasonFilter(e.target.value)} placeholder="buscar no motivo…" />
+                  <input type="text" value={quadroReasonFilter} onChange={(e) => setQuadroReasonFilter(e.target.value)} placeholder="buscar no motivo…" />
                 </label>
                 {quadroFiltersActive && (
-                  <button type="button" className="btn btn-outline btn-sm" onClick={clearQuadroFilters}>Limpar filtros</button>
+                  <button
+                    type="button" className="btn btn-outline btn-sm" onClick={clearQuadroFilters}
+                    title="Limpar filtros" aria-label="Limpar filtros"
+                    style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 36, padding: 0 }}
+                  >
+                    <ClearFiltersIcon />
+                  </button>
                 )}
               </div>
               <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 0, marginBottom: 8 }}>

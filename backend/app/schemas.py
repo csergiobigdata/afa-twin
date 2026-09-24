@@ -433,6 +433,23 @@ class AvailabilityBoard(BaseModel):
     aircraft_without_update: list[str] = []
 
 
+class AvailabilityUpdatesBootstrap(BaseModel):
+    """Agrega, numa única resposta, tudo que a tela de Disponibilidade
+    (AvailabilityPage) precisa ao abrir: quadro + frota + configurações
+    autorizadas + códigos de configuração ativos + catálogo de códigos de
+    disponibilidade. Antes eram 5 chamadas separadas no carregamento
+    (`/availability-updates/board`, `/aircraft`, `/authorized-configurations`,
+    `/configuration-codes?status_disp=A`, `/availability-codes`) - em nuvem,
+    cada uma paga o custo de acordar o servidor/banco (ver docs/02, seção
+    3.2) se disparadas antes de a primeira "aquecer" a função serverless;
+    uma única chamada paga esse custo uma vez só."""
+    board: AvailabilityBoard
+    fleet: list["AircraftOut"]
+    authorized_configurations: list["AuthorizedConfigurationOut"]
+    configuration_codes: list["ConfigurationCodeOut"]
+    availability_codes: list[AvailabilityCodeCatalogOut]
+
+
 class AvailabilityCodeCatalogOut(ORMModel):
     """Item do cadastro de Códigos de Disponibilidade (ver
     models.py::AvailabilityCodeCatalog e routers/availability_codes.py)."""

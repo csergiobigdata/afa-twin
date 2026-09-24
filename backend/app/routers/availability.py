@@ -1,11 +1,12 @@
 import datetime as dt
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from .. import audit, models, schemas, security
 from .. import availability as availability_service
 from ..database import get_db
+from .aircraft import _to_out as _aircraft_to_out
 
 router = APIRouter(
     prefix="/api/availability-updates", tags=["atualização de disponibilidade"],
@@ -39,6 +40,28 @@ def board(db: Session = Depends(get_db)):
     aeronave + totais DI/DO/IN e de configuração), no formato do boletim de
     esquadrão."""
     return availability_service.compute_availability_board(db)
+
+
+@router.get("/bootstrap", response_model=schemas.AvailabilityUpdatesBootstrap)
+def bootstrap(db: Session = Depends(get_db)):
+    """Consolida, numa única resposta, tudo que AvailabilityPage precisa ao
+    abrir - ver nota em schemas.AvailabilityUpdatesBootstrap."""
+    fleet = db.query(models.Aircraft).options(
+        selectinload(models.Aircraft.components),
+        selectinload(models.Aircraft.maintenance_orders),
+    ).order_by(models.Aircraft.tail_number).all()
+    authorized_configurations = db.query(models.AuthorizedConfiguration).order_by(models.AuthorizedConfiguration.id).all()
+    configuration_codes = db.query(models.ConfigurationCode).filter(
+        models.ConfigurationCode.status_disp == models.ConfigDispStatus.ATIVO
+    ).order_by(models.ConfigurationCode.id).all()
+    availability_codes = db.query(models.AvailabilityCodeCatalog).order_by(models.AvailabilityCodeCatalog.id).all()
+    return schemas.AvailabilityUpdatesBootstrap(
+        board=availability_service.compute_availability_board(db),
+        fleet=[_aircraft_to_out(a) for a in fleet],
+        authorized_configurations=authorized_configurations,
+        configuration_codes=configuration_codes,
+        availability_codes=availability_codes,
+    )
 
 
 @router.get("", response_model=list[schemas.AvailabilityUpdateOut])

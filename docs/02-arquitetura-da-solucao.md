@@ -104,6 +104,14 @@ SQLAlchemy, etc., medido em ~4-5s localmente) + o próprio Neon acordando para a
 instância sempre ativa eliminaria esse tempo por completo, se a exigência de performance justificar o
 custo.
 
+Um agravante à parte: telas que disparam várias chamadas de API em paralelo no carregamento (ex.:
+Disponibilidade, que consultava `/availability-updates/board`, `/aircraft`,
+`/authorized-configurations`, `/configuration-codes` e `/availability-codes` de uma vez) multiplicam o
+número de invocações "frias" da função serverless que o Vercel pode precisar cobrir simultaneamente.
+Corrigido para Disponibilidade: as 5 chamadas viraram uma única (`GET /availability-updates/bootstrap`,
+ver `schemas.AvailabilityUpdatesBootstrap`), no mesmo padrão de `GET /aircraft/{id}/detail` usado no
+detalhe de aeronave — reduz o módulo a uma única invocação/conexão de banco no carregamento.
+
 ## 4. Por que não usar [outras opções]
 
 - **Node.js/Express no backend**: descartado como escolha primária porque a evolução planejada do
