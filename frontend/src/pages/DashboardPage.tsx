@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -230,6 +230,7 @@ function notifSortValue(n: Notification, key: NotifSortKey): string | number {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const { personName, personRank, role } = useAuth();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -291,11 +292,26 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Os 4 primeiros cartões navegam para o módulo/filtro correspondente
+          (Manutenção → Ordens em aberto; Aeronaves → lista, opcionalmente
+          filtrada por Status) - só o "Índice médio de saúde" fica sem
+          atalho, por não corresponder a uma tela própria. */}
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 22 }}>
-        <StatCard label="Aeronaves na frota" value={summary.total_aircraft} />
-        <StatCard label="Operacionais" value={summary.operational_aircraft} tone="ok" sub={`${summary.average_fleet_availability_pct}% de disponibilidade`} />
-        <StatCard label="Em manutenção/inspeção" value={summary.in_maintenance_aircraft} tone="warn" />
-        <StatCard label="OS em aberto" value={summary.open_orders} tone={summary.critical_orders > 0 ? "critical" : "info"} sub={`${summary.critical_orders} crítica(s)`} />
+        <StatCard label="Aeronaves na frota" value={summary.total_aircraft} onClick={() => navigate("/aeronaves/cadastro")} />
+        <StatCard
+          label="Operacionais" value={summary.operational_aircraft} tone="ok"
+          sub={`${summary.average_fleet_availability_pct}% de disponibilidade`}
+          onClick={() => navigate("/aeronaves/cadastro?status=Operacional")}
+        />
+        <StatCard
+          label="Em manutenção/inspeção" value={summary.in_maintenance_aircraft} tone="warn" valueColor="#fff"
+          onClick={() => navigate("/aeronaves/cadastro?status=manutencao-inspecao")}
+        />
+        <StatCard
+          label="OS em aberto" value={summary.open_orders} tone={summary.critical_orders > 0 ? "critical" : "info"}
+          sub={`${summary.critical_orders} crítica(s)`}
+          onClick={() => navigate("/manutencao/ordens?status=open")}
+        />
         <StatCard label="Índice médio de saúde" value={`${summary.average_health_index}%`} tone={summary.average_health_index >= 85 ? "ok" : summary.average_health_index >= 65 ? "warn" : "critical"} />
       </div>
 

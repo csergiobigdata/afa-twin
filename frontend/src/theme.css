@@ -139,6 +139,12 @@ a { color: var(--fab-blue-400); }
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 }
+.stat-card-clickable { transition: box-shadow .15s, border-color .15s; }
+.stat-card-clickable:hover, .stat-card-clickable:focus-visible {
+  box-shadow: var(--shadow-md);
+  border-color: var(--fab-blue-400);
+  outline: none;
+}
 
 .btn {
   display: inline-flex;

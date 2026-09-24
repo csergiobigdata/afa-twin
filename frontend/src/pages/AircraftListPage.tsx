@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
-import type { Aircraft } from "../api/types";
+import type { Aircraft, AircraftStatus } from "../api/types";
 import AircraftThumbnail from "../components/AircraftThumbnail";
 import AircraftPhotoViewer from "../components/AircraftPhotoViewer";
 import { HealthBar, RiskBadge, StatusBadge } from "../components/Badges";
@@ -16,6 +16,14 @@ type SortKey = "tail_number" | "category" | "squadron" | "status" | "health_inde
 // Ordem de severidade para ordenar "Risco" de forma útil (não alfabética,
 // que misturaria Alto/Baixo/Crítico/Médio fora de ordem de gravidade).
 const RISK_ORDER: Record<string, number> = { "Baixo": 0, "Médio": 1, "Alto": 2, "Crítico": 3 };
+const RISK_LEVELS = ["Baixo", "Médio", "Alto", "Crítico"];
+const STATUSES: AircraftStatus[] = ["Operacional", "Em Manutenção", "Em Inspeção", "Indisponível", "Em Modernização"];
+// Opção combinada no seletor de Status - o Painel manda para cá com
+// ?status=manutencao-inspecao ao clicar no cartão "Em manutenção/inspeção",
+// que soma os dois status (não existe um status único "Em Manutenção/
+// Inspeção" no cadastro).
+const MAINT_STATUSES: AircraftStatus[] = ["Em Manutenção", "Em Inspeção"];
+const MAINT_FILTER_VALUE = "__MAINT__";
 
 function sortValue(a: Aircraft, key: SortKey): string | number {
   switch (key) {
@@ -30,10 +38,19 @@ function sortValue(a: Aircraft, key: SortKey): string | number {
 }
 
 export default function AircraftListPage() {
+  const [searchParams] = useSearchParams();
   const [fleet, setFleet] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  // Pré-preenchidos a partir da URL (ver Painel → StatCards "Operacionais" e
+  // "Em manutenção/inspeção", que navegam para cá já filtrados).
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const s = searchParams.get("status");
+    return s === "manutencao-inspecao" ? MAINT_FILTER_VALUE : (s ?? "");
+  });
+  const [riskFilter, setRiskFilter] = useState("");
+  const [squadronFilter, setSquadronFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("tail_number");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   function toggleSort(key: SortKey) {
@@ -58,11 +75,15 @@ export default function AircraftListPage() {
   }
 
   const categories = useMemo(() => Array.from(new Set(fleet.map((a) => a.category))), [fleet]);
+  const squadrons = useMemo(() => Array.from(new Set(fleet.map((a) => a.squadron).filter((s): s is string => !!s))).sort(), [fleet]);
 
   const filtered = fleet.filter((a) => {
     const matchQuery = `${a.tail_number} ${a.nickname ?? ""} ${a.model} ${a.manufacturer}`.toLowerCase().includes(query.toLowerCase());
     const matchCategory = !categoryFilter || a.category === categoryFilter;
-    return matchQuery && matchCategory;
+    const matchStatus = !statusFilter || (statusFilter === MAINT_FILTER_VALUE ? MAINT_STATUSES.includes(a.status) : a.status === statusFilter);
+    const matchRisk = !riskFilter || a.risk_level === riskFilter;
+    const matchSquadron = !squadronFilter || a.squadron === squadronFilter;
+    return matchQuery && matchCategory && matchStatus && matchRisk && matchSquadron;
   });
   const sorted = [...filtered].sort((x, y) => {
     const vx = sortValue(x, sortKey);
@@ -81,13 +102,34 @@ export default function AircraftListPage() {
         <Link to="/aeronaves/novo" className="btn btn-primary">+ Nova Aeronave</Link>
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
         <input type="text" placeholder="Buscar por matrícula, apelido ou modelo…" value={query}
                onChange={(e) => setQuery(e.target.value)} style={{ maxWidth: 320 }} />
         <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ maxWidth: 220 }}>
           <option value="">Todas as categorias</option>
           {categories.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+        <select value={squadronFilter} onChange={(e) => setSquadronFilter(e.target.value)} style={{ maxWidth: 220 }}>
+          <option value="">Todos os esquadrões/bases</option>
+          {squadrons.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ maxWidth: 220 }}>
+          <option value="">Todos os status</option>
+          <option value={MAINT_FILTER_VALUE}>Em Manutenção/Inspeção (ambos)</option>
+          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)} style={{ maxWidth: 180 }}>
+          <option value="">Todos os riscos</option>
+          {RISK_LEVELS.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+        {(categoryFilter || statusFilter || riskFilter || squadronFilter || query) && (
+          <button
+            type="button" className="btn btn-outline btn-sm"
+            onClick={() => { setQuery(""); setCategoryFilter(""); setStatusFilter(""); setRiskFilter(""); setSquadronFilter(""); }}
+          >
+            Limpar filtros
+          </button>
+        )}
         <div style={{ flex: 1 }} />
         <div className="card" style={{ display: "flex", padding: 3, gap: 2 }}>
           <button type="button" className={`btn btn-sm ${viewMode === "lista" ? "btn-primary" : "btn-outline"}`}
@@ -96,6 +138,9 @@ export default function AircraftListPage() {
                   style={{ borderColor: "transparent" }} onClick={() => changeView("grade")}>▦ Grade</button>
         </div>
       </div>
+      <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14 }}>
+        {filtered.length} de {fleet.length} aeronave(s).
+      </p>
 
       {loading ? <SplashScreen fullscreen={false} message="Carregando frota" /> : filtered.length === 0 ? (
         <p style={{ color: "var(--text-secondary)" }}>Nenhuma aeronave encontrada.</p>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Aircraft, MaintenanceOrder, OrderStatus, Criticality } from "../api/types";
 import { CriticalityBadge, OrderStatusBadge } from "../components/Badges";
@@ -8,14 +8,20 @@ import SortableTh from "../components/SortableTh";
 const STATUSES: OrderStatus[] = ["Aberta", "Em Andamento", "Aguardando Peça", "Concluída", "Cancelada"];
 const PRIORITIES: Criticality[] = ["Baixa", "Média", "Alta", "Crítica"];
 const PRIORITY_ORDER: Record<string, number> = { "Baixa": 0, "Média": 1, "Alta": 2, "Crítica": 3 };
+// Opção combinada no seletor de Status - soma os 3 status considerados "em
+// aberto" (ver backend/app/routers/dashboard.py::open_orders); o Painel
+// manda para cá com ?status=open ao clicar no cartão "OS em aberto".
+const OPEN_STATUSES: OrderStatus[] = ["Aberta", "Em Andamento", "Aguardando Peça"];
+const OPEN_FILTER_VALUE = "__OPEN__";
 
 type SortKey = "order_number" | "aircraft" | "type" | "title" | "priority" | "status" | "opened_at";
 
 export default function MaintenancePage() {
+  const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<MaintenanceOrder[]>([]);
   const [fleet, setFleet] = useState<Aircraft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState(() => (searchParams.get("status") === "open" ? OPEN_FILTER_VALUE : ""));
   const [priorityFilter, setPriorityFilter] = useState("");
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("opened_at");
@@ -49,7 +55,9 @@ export default function MaintenancePage() {
   }
 
   const filtered = orders.filter((o) => {
-    if (statusFilter && o.status !== statusFilter) return false;
+    if (statusFilter === OPEN_FILTER_VALUE) {
+      if (!OPEN_STATUSES.includes(o.status)) return false;
+    } else if (statusFilter && o.status !== statusFilter) return false;
     if (priorityFilter && o.priority !== priorityFilter) return false;
     if (query) {
       const q = query.trim().toLowerCase();
@@ -78,6 +86,7 @@ export default function MaintenancePage() {
         <input type="text" placeholder="Buscar por OS, título ou aeronave…" value={query} onChange={(e) => setQuery(e.target.value)} style={{ maxWidth: 280 }} />
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ maxWidth: 220 }}>
           <option value="">Todos os status</option>
+          <option value={OPEN_FILTER_VALUE}>Em aberto (Aberta + Em Andamento + Aguardando Peça)</option>
           {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} style={{ maxWidth: 220 }}>
