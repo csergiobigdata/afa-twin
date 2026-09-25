@@ -196,11 +196,10 @@ afa-twin/
       components/                  # layout, badges, ilustrações, pôsteres de aeronaves, gerenciador de catálogos
       pages/                        # telas da aplicação
     vite.config.ts                 # inclui configuração do PWA
-    netlify.toml                    # configuração de deploy do frontend estático (docs/06)
     public/icons/                   # ícones do aplicativo instalável
     public/aircraft-art/             # ilustrações "pôster" (estática + animada) de exemplo por modelo
   tools/
-    deploy_cloud.py                # publica GitHub + Neon + Vercel + Netlify automaticamente (docs/06)
+    deploy_cloud.py                # publica GitHub + Neon + Vercel (backend + frontend) automaticamente (docs/06)
     capture-screens.mjs, make-pdf.mjs  # geração do manual do usuário em PDF (Playwright)
 ```
 

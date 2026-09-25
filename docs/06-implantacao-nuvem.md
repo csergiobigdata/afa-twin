@@ -26,10 +26,15 @@ login**. As seções abaixo tratam de:
 ```
 ┌─────────────────────────┐        ┌──────────────────────────┐        ┌───────────────────────┐
 │   Frontend (estático)     │──/api→│    Backend (API)           │──────▶│   Postgres gerenciado    │
-│   Netlify                   │  proxy │    Vercel (função Python)  │       │   Neon                    │
+│   Vercel (arquivos)       │  proxy │    Vercel (função Python)  │       │   Neon                    │
 │   camada gratuita             │       │   camada gratuita             │       │   camada gratuita          │
 └─────────────────────────┘        └──────────────────────────┘        └───────────────────────┘
 ```
+
+> Até 2026-09-25 o frontend era publicado no Netlify; a conta em uso excedeu a cota de créditos do
+> plano gratuito e passou a recusar novos deploys (HTTP 403 "Account credit usage exceeded"). Migrado
+> para um segundo projeto Vercel (`afa-twin-web`), reaproveitando o mesmo token já usado no backend -
+> ver `write_vercel_rewrites` em `tools/deploy_cloud.py` para o equivalente ao antigo `_redirects`.
 
 **Por que Vercel para o backend, e não Render/Railway/Fly (containers Docker "sempre ligados")?**
 Na prática, ao publicar este piloto, o **Render passou a exigir cartão de crédito cadastrado mesmo no
@@ -41,45 +46,45 @@ chamadas, então **fotos enviadas pelo usuário (aeronave, perfil, inspeção fo
 como dado binário dentro do próprio Postgres** (`models.MediaAsset`), em vez de arquivo em disco - ver
 [docs/03](03-modelo-de-dados.md), seção 3. Essa mudança vale tanto em nuvem quanto no piloto local.
 
-> **Atenção:** condições de camada gratuita (limites de horas, "sleep" por inatividade, exigência de
-> cartão) mudam com frequência entre provedores, às vezes sem aviso — como aconteceu com o Render
-> durante a implantação deste próprio piloto. Confirme os termos atuais de Vercel, Neon e Netlify
-> diretamente no site de cada um antes de decidir.
+> **Atenção:** condições de camada gratuita (limites de horas, "sleep" por inatividade, cota de créditos,
+> exigência de cartão) mudam com frequência entre provedores, às vezes sem aviso — como aconteceu com o
+> Render (exigência de cartão) e com o Netlify (bloqueio por cota excedida) durante a implantação deste
+> próprio piloto. Confirme os termos atuais de Vercel e Neon diretamente no site de cada um antes de
+> decidir.
 
 ## 3. Publicação automatizada (recomendado)
 
 O repositório inclui [`tools/deploy_cloud.py`](../tools/deploy_cloud.py), um script que publica tudo de
-ponta a ponta por API (sem precisar clicar em nenhum dashboard além de gerar 4 tokens):
+ponta a ponta por API (sem precisar clicar em nenhum dashboard além de gerar 3 tokens):
 
 1. Cria/atualiza um repositório público no GitHub com o código;
 2. Cria/reaproveita um banco Postgres gratuito no Neon;
 3. Cria/atualiza o projeto do backend no Vercel (função Python/FastAPI) com as variáveis de ambiente
    necessárias, e publica;
-4. Compila o frontend (`npm run build`) e publica o resultado no Netlify, já apontando para a URL do
-   backend recém-publicado.
+4. Compila o frontend (`npm run build`) e publica o resultado num segundo projeto Vercel (arquivos
+   estáticos), já apontando para a URL do backend recém-publicado.
 
-### Gerando os 4 tokens necessários
+### Gerando os 3 tokens necessários
 
 | Serviço | Onde gerar | Escopo/observação |
 |---|---|---|
 | **GitHub** | [github.com/settings/tokens/new](https://github.com/settings/tokens/new) → *Generate new token (classic)* | Marque o escopo `repo` |
-| **Vercel** | Conta → *Settings* → *Tokens* → *Create Token* | Sem escopo especial necessário |
+| **Vercel** | Conta → *Settings* → *Tokens* → *Create Token* | Sem escopo especial necessário - usado tanto para o backend quanto para o frontend |
 | **Neon** | Console → *Account settings* → *API keys* → *Generate new API key* | — |
-| **Netlify** | *User settings* → *Applications* → *Personal access tokens* → *New access token* | — |
 
-Nenhuma dessas quatro contas pede cartão de crédito nas camadas gratuitas usadas aqui.
+Nenhuma dessas três contas pede cartão de crédito nas camadas gratuitas usadas aqui.
 
 ### Rodando o script
 
 ```bash
 cd afa-twin/tools
-# defina as 4 variáveis de ambiente com os tokens gerados acima, depois:
+# defina as 3 variáveis de ambiente com os tokens gerados acima, depois:
 python deploy_cloud.py
 ```
 
-O script é seguro para rodar mais de uma vez: ele reaproveita o repositório, o banco, o projeto Vercel e
-o site Netlify já criados (por nome), em vez de duplicá-los — útil para publicar uma nova versão depois
-de alterações no código.
+O script é seguro para rodar mais de uma vez: ele reaproveita o repositório, o banco e os dois projetos
+Vercel (backend e frontend) já criados (por nome), em vez de duplicá-los — útil para publicar uma nova
+versão depois de alterações no código.
 
 > **Importante ao adicionar/alterar uma tabela, um tipo enum (`SAEnum`), um índice ou uma coluna em
 > `models.py`:** em Postgres (nuvem), as rotinas `sync_postgres_enum_types()`/`sync_missing_indexes()`/
@@ -119,29 +124,33 @@ de alterações no código.
    |---|---|
    | `AFA_TWIN_DATABASE_URL` | connection string do Neon (passo 4.1) |
    | `AFA_TWIN_SECRET_KEY` | valor aleatório longo e secreto (`python -c "import secrets;print(secrets.token_hex(32))"`) |
-   | `AFA_TWIN_ALLOWED_ORIGINS` | URL exata do frontend publicado, ex.: `https://afa-twin.netlify.app` |
+   | `AFA_TWIN_ALLOWED_ORIGINS` | URL exata do frontend publicado, ex.: `https://afa-twin-web.vercel.app` |
    | `AFA_TWIN_ACCESS_KEY` | *(opcional, seção 6)* uma chave extra de acesso |
    | `AFA_TWIN_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `_FROM` | *(opcional)* para e-mails reais de alerta |
    | `AFA_TWIN_TWILIO_ACCOUNT_SID`, `_AUTH_TOKEN`, `_FROM_NUMBER` | *(opcional)* para SMS reais de alerta via Twilio - conta trial grátis com crédito inicial (depois, pago por mensagem); numa conta trial, o destino precisa estar verificado em console.twilio.com → Phone Numbers → Verified Caller IDs |
 
 4. Deploy. Anote a URL pública gerada (ex.: `https://afa-twin-api.vercel.app`).
 
-### 4.3 Frontend (Netlify)
+### 4.3 Frontend (Vercel, arquivos estáticos)
 
-1. Edite [`frontend/netlify.toml`](../frontend/netlify.toml) e troque
-   `https://SUBSTITUA-PELA-URL-DO-BACKEND.vercel.app` pela URL real obtida no passo 4.2.
-2. Crie uma conta em [netlify.com](https://netlify.com) (sem cartão) e conecte o repositório, apontando a
-   pasta base para `frontend/` (build command `npm run build`, publish directory `dist`, já definidos em
-   `netlify.toml`).
-3. Deploy. Anote a URL pública (ex.: `https://afa-twin.netlify.app`).
-4. Volte ao Vercel (passo 4.2) e confirme que `AFA_TWIN_ALLOWED_ORIGINS` está com essa URL exata.
-5. **Removendo o selo "Powered by Netlify"**: é um elemento injetado pela própria hospedagem (plano
-   gratuito), não algo que existe no código deste repositório (`frontend/netlify.toml` não tem nenhuma
-   configuração relacionada) - por isso não pode ser removido editando o app. Para desativar: no painel
-   do site em [app.netlify.com](https://app.netlify.com), **Site configuration → General → Site details**
-   e desmarque a opção do selo (nome exato pode variar conforme a versão da interface do Netlify, ex.
-   "Netlify badge"/"Site badge"). Alternativamente, publicar num domínio próprio configurado no site
-   também costuma ocultá-lo.
+1. Rode `npm run build` dentro de `frontend/` (gera a pasta `frontend/dist/`).
+2. Dentro de `frontend/dist/`, crie um arquivo `vercel.json` com:
+   ```json
+   {
+     "rewrites": [
+       { "source": "/api/:path*", "destination": "https://SUA-URL-DO-BACKEND.vercel.app/api/:path*" },
+       { "source": "/(.*)", "destination": "/index.html" }
+     ]
+   }
+   ```
+   (troque pela URL real do passo 4.2; a primeira regra tem que vir antes da segunda - o Vercel aplica
+   a primeira que casar, e a segunda é o fallback de SPA para as rotas do React Router).
+3. Crie um **segundo** projeto no mesmo Vercel (*Add New → Project*), desta vez apontando para a pasta
+   `frontend/dist/` já compilada (ou use `vercel deploy` pela CLI a partir dessa pasta) - sem framework
+   detectado, o Vercel serve os arquivos como estão.
+4. Deploy. Anote a URL pública gerada (ex.: `https://afa-twin-web.vercel.app`).
+5. Volte ao projeto do backend (passo 4.2) e confirme que `AFA_TWIN_ALLOWED_ORIGINS` está com essa URL
+   exata do frontend.
 
 ## 5. Alternativa para o backend: Render/Railway/Fly com Docker (exige cartão)
 
@@ -163,7 +172,7 @@ durante o piloto:
 
 1. No backend (Vercel), defina `AFA_TWIN_ACCESS_KEY` com um valor secreto.
 2. No frontend, defina a variável de build `VITE_ACCESS_KEY` com o **mesmo valor**, antes de rodar
-   `npm run build` (ou como variável de ambiente de build no Netlify).
+   `npm run build` (ou como variável de ambiente de build no projeto Vercel do frontend).
 3. A partir daí, toda chamada à API (exceto `/api/health` e `/api/media/*`, que precisam ficar acessíveis
    para as tags `<img>` do navegador exibirem fotos) exige o cabeçalho `X-AFA-TWIN-Key` com esse valor —
    o cliente HTTP do frontend (`frontend/src/api/client.ts`) já envia esse cabeçalho automaticamente
@@ -200,9 +209,9 @@ por **pessoa** continua sendo o login (seção 1); esta camada é só um reforç
 
 | Arquivo | Finalidade |
 |---|---|
-| [`tools/deploy_cloud.py`](../tools/deploy_cloud.py) | Publica tudo (GitHub, Neon, Vercel, Netlify) automaticamente via API |
+| [`tools/deploy_cloud.py`](../tools/deploy_cloud.py) | Publica tudo (GitHub, Neon, Vercel backend, Vercel frontend) automaticamente via API |
 | [`backend/requirements.txt`](../backend/requirements.txt) | Já inclui o driver Postgres (`psycopg`) usado tanto localmente (se configurado) quanto em nuvem |
-| [`frontend/netlify.toml`](../frontend/netlify.toml) | Configuração de build + proxy de `/api` para o Netlify (deploy manual via Git) |
+| `frontend/dist/vercel.json` | Gerado automaticamente pelo script (`write_vercel_rewrites`) - proxy de `/api` para o backend + fallback de SPA |
 | [`backend/Dockerfile`](../backend/Dockerfile) | Alternativa em container p/ Render/Railway/Fly (seção 5, exige cartão) |
 | [`backend/.dockerignore`](../backend/.dockerignore) | Evita empacotar banco local/segredos na imagem Docker |
 

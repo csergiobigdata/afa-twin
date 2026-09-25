@@ -6,7 +6,7 @@ Cria/atualiza, de ponta a ponta, via API (sem navegador):
   1. Repositório GitHub (código-fonte, público)          -> github.com/<voce>/afa-twin
   2. Banco Postgres gratuito no Neon                       -> projeto "afa-twin"
   3. Backend (API) no Vercel, funções Python (FastAPI)       -> afa-twin-api.vercel.app
-  4. Frontend (estático, já compilado) no Netlify              -> afa-twin.netlify.app
+  4. Frontend (estático, já compilado) no Vercel               -> afa-twin-web.vercel.app
 
 Vercel (não Render) hospeda o backend: o Render passou a exigir cartão
 cadastrado mesmo no plano gratuito nesta conta, e o Vercel Hobby não exige -
@@ -14,8 +14,16 @@ ver docs/06-implantacao-nuvem.md, seção 4. Por rodar como função sem
 servidor, o backend guarda uploads de foto no próprio banco (MediaAsset,
 ver backend/app/models.py) em vez de disco local.
 
+O frontend também é publicado no Vercel (não mais no Netlify) desde
+2026-09-25: a conta Netlify em uso excedeu a cota de créditos do plano
+gratuito e passou a recusar novos deploys (HTTP 403 "Account credit usage
+exceeded"). Reaproveita o mesmo VERCEL_TOKEN já usado para o backend, num
+projeto Vercel separado ("afa-twin-web") - ver `write_vercel_rewrites`
+(equivalente ao antigo `_redirects` do Netlify: proxy de `/api/*` para o
+backend + fallback de SPA para `index.html`).
+
 Uso:
-  Defina as 4 variáveis de ambiente abaixo (tokens gerados nos respectivos
+  Defina as 3 variáveis de ambiente abaixo (tokens gerados nos respectivos
   painéis - ver docs/06-implantacao-nuvem.md) e rode:
 
     python tools/deploy_cloud.py
@@ -24,7 +32,6 @@ Variáveis de ambiente esperadas:
   GITHUB_TOKEN     - Personal Access Token do GitHub (escopo "repo")
   VERCEL_TOKEN     - Personal Access Token do Vercel (Account Settings -> Tokens)
   NEON_API_KEY     - API Key do Neon (Account -> API Keys)
-  NETLIFY_TOKEN    - Personal Access Token do Netlify (User settings -> Applications)
 
 Nenhum token é impresso no console nem gravado em nenhum arquivo do repositório.
 O script é seguro para rodar mais de uma vez (reaproveita recursos já criados
@@ -38,7 +45,6 @@ import subprocess
 import sys
 import tempfile
 import time
-import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent  # .../afa-twin
@@ -49,7 +55,7 @@ DIST_DIR = FRONTEND_DIR / "dist"
 GITHUB_REPO_NAME = "afa-twin"
 NEON_PROJECT_NAME = "afa-twin"
 VERCEL_PROJECT_NAME = "afa-twin-api"
-NETLIFY_SITE_NAME = "afa-twin"
+VERCEL_FRONTEND_PROJECT_NAME = "afa-twin-web"
 
 # Diretórios/arquivos do backend que não fazem parte do código-fonte a
 # publicar (banco local, ambiente virtual, cache de bytecode).
@@ -361,7 +367,7 @@ def deploy_to_vercel(token: str, project_id: str, files: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 4. Netlify — frontend estático
+# 4. Vercel — frontend estático
 # ---------------------------------------------------------------------------
 
 def build_frontend() -> None:
@@ -374,52 +380,93 @@ def build_frontend() -> None:
         die("Pasta frontend/dist não foi gerada.")
 
 
-def write_redirects(backend_url: str) -> None:
-    content = (
-        f"/api/*    {backend_url}/api/:splat    200\n"
-        f"/*        /index.html                 200\n"
-    )
-    (DIST_DIR / "_redirects").write_text(content)
-    print(f"  Arquivo _redirects gerado apontando para {backend_url}")
+def write_vercel_rewrites(backend_url: str) -> None:
+    """Equivalente ao antigo `_redirects` do Netlify: proxy de `/api/*` para
+    o backend (tem que vir ANTES do fallback de SPA na lista - o Vercel
+    aplica rewrites na ordem, e o primeiro casamento vence) + fallback de
+    SPA (qualquer rota que não bate um arquivo estático de verdade cai em
+    `index.html`, para as rotas do React Router funcionarem em acesso
+    direto/F5, não só navegação interna)."""
+    config = {
+        "rewrites": [
+            {"source": "/api/:path*", "destination": f"{backend_url}/api/:path*"},
+            {"source": "/(.*)", "destination": "/index.html"},
+        ]
+    }
+    (DIST_DIR / "vercel.json").write_text(json.dumps(config, indent=2))
+    print(f"  Arquivo vercel.json gerado apontando para {backend_url}")
 
 
-def zip_dist() -> Path:
-    zip_path = ROOT / "tools" / "afa-twin-frontend.zip"
-    if zip_path.exists():
-        zip_path.unlink()
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for file in DIST_DIR.rglob("*"):
-            if file.is_file():
-                zf.write(file, file.relative_to(DIST_DIR))
-    return zip_path
+def _collect_frontend_files() -> list[dict]:
+    files = []
+    for path in DIST_DIR.rglob("*"):
+        if not path.is_file():
+            continue
+        rel_path = "/".join(path.relative_to(DIST_DIR).parts)
+        content = path.read_bytes()
+        files.append({
+            "file": rel_path,
+            "data": base64.b64encode(content).decode("ascii"),
+            "encoding": "base64",
+        })
+    return files
 
 
-def ensure_netlify_site(token: str) -> tuple[str, str]:
-    step("Netlify: verificando/criando o site")
-    status, sites = http("GET", "https://api.netlify.com/api/v1/sites?filter=all", token=token)
-    if status != 200:
-        die(f"Falha ao listar sites do Netlify (status {status}): {sites}")
-    existing = next((s for s in sites if s["name"] == NETLIFY_SITE_NAME), None)
-    if existing:
-        print(f"  Site já existe: {existing['url']}")
-        return existing["id"], existing["url"]
+def ensure_vercel_frontend_project(token: str) -> str:
+    step("Vercel: verificando/criando o projeto do frontend")
+    status, proj = http("GET", f"https://api.vercel.com/v10/projects/{VERCEL_FRONTEND_PROJECT_NAME}", token=token)
+    if status == 200:
+        print(f"  Projeto já existe: {proj['id']}")
+        return proj["id"]
 
-    status, created = http("POST", "https://api.netlify.com/api/v1/sites", token=token,
-                            body={"name": NETLIFY_SITE_NAME})
+    status, created = http("POST", "https://api.vercel.com/v11/projects", token=token,
+                            body={"name": VERCEL_FRONTEND_PROJECT_NAME, "framework": None})
     if status not in (200, 201):
-        die(f"Falha ao criar site no Netlify (status {status}): {created}")
-    print(f"  Site criado: {created['url']}")
-    return created["id"], created["url"]
+        die(f"Falha ao criar o projeto de frontend no Vercel (status {status}): {created}")
+    print(f"  Projeto criado: {created['id']}")
+    return created["id"]
 
 
-def deploy_to_netlify(token: str, site_id: str, zip_path: Path) -> None:
-    step("Netlify: enviando o build (deploy de produção)")
-    data = zip_path.read_bytes()
-    status, result = http("POST", f"https://api.netlify.com/api/v1/sites/{site_id}/deploys",
-                           token=token, body=data, headers={"Content-Type": "application/zip"})
+def deploy_frontend_to_vercel(token: str, project_id: str, files: list[dict]) -> str:
+    step("Vercel: publicando o frontend (arquivos estáticos)")
+    body = {
+        "name": VERCEL_FRONTEND_PROJECT_NAME,
+        "project": project_id,
+        "target": "production",
+        "projectSettings": {"framework": None},
+        "files": files,
+    }
+    status, deployment = http("POST", "https://api.vercel.com/v13/deployments", token=token, body=body)
     if status not in (200, 201):
-        die(f"Falha ao enviar o deploy para o Netlify (status {status}): {result}")
-    print("  Deploy enviado. O Netlify está processando (leva menos de um minuto).")
+        die(f"Falha ao criar o deploy do frontend no Vercel (status {status}): {deployment}")
+    deployment_id = deployment["id"]
+    print("  Build iniciado. Acompanhando (pode levar 1-2 minutos)...")
+    final_url = deployment.get("url")
+    for _ in range(40):  # ~6-7 minutos
+        time.sleep(10)
+        status, d = http("GET", f"https://api.vercel.com/v13/deployments/{deployment_id}", token=token)
+        state = d.get("readyState", "UNKNOWN")
+        print(f"    status: {state}")
+        if state == "READY":
+            aliases = d.get("alias") or []
+            # Mesma preferência pelo domínio estável do projeto usada no
+            # backend (ver deploy_to_vercel) - evita pegar um alias de
+            # time/preview protegido por SSO por engano.
+            preferred = f"{VERCEL_FRONTEND_PROJECT_NAME}.vercel.app"
+            if preferred in aliases:
+                final_url = preferred
+            elif aliases:
+                final_url = aliases[0]
+            else:
+                final_url = d.get("url")
+            print("  Deploy concluído com sucesso.")
+            return f"https://{final_url}"
+        if state in ("ERROR", "CANCELED"):
+            die(f"Deploy do frontend falhou no Vercel (status: {state}). "
+                f"Verifique o painel do Vercel (Deployments) para o log completo.")
+    print("  [aviso] Deploy ainda em andamento após o tempo de espera do script - "
+          "confira o painel do Vercel para o status final.")
+    return f"https://{final_url}" if final_url else ""
 
 
 # ---------------------------------------------------------------------------
@@ -428,7 +475,6 @@ def main() -> None:
     github_token = need_env("GITHUB_TOKEN")
     vercel_token = need_env("VERCEL_TOKEN")
     neon_key = need_env("NEON_API_KEY")
-    netlify_token = need_env("NETLIFY_TOKEN")
 
     owner, repo_html_url = ensure_github_repo(github_token)
     push_code(owner, github_token)
@@ -447,10 +493,11 @@ def main() -> None:
     backend_url = deploy_to_vercel(vercel_token, project_id, backend_files)
 
     build_frontend()
-    write_redirects(backend_url)
-    zip_path = zip_dist()
-    site_id, frontend_url = ensure_netlify_site(netlify_token)
-    deploy_to_netlify(netlify_token, site_id, zip_path)
+    write_vercel_rewrites(backend_url)
+    frontend_project_id = ensure_vercel_frontend_project(vercel_token)
+    frontend_files = _collect_frontend_files()
+    print(f"  {len(frontend_files)} arquivo(s) do frontend preparados para publicação.")
+    frontend_url = deploy_frontend_to_vercel(vercel_token, frontend_project_id, frontend_files)
 
     set_vercel_env(vercel_token, project_id, {"AFA_TWIN_ALLOWED_ORIGINS": frontend_url})
     print("\n  Origem liberada no backend atualizada para o frontend publicado; refazendo o deploy...")
