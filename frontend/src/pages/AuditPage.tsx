@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api/client";
-import type { AuditLogEntry } from "../api/types";
+import type { AuditLogEntry, AuditLogFilterOptions, AuditLogPage } from "../api/types";
 import SortableTh from "../components/SortableTh";
 
 // Cores mais vivas que as classes badge-* padrão (mesma família de cor -
@@ -14,82 +14,86 @@ const ACTION_BADGE_COLOR: Record<string, string> = {
 
 type SortKey = "created_at" | "action" | "entity_type" | "entity_label" | "summary" | "actor";
 
+const PAGE_SIZE = 50;
+
 function actorName(e: AuditLogEntry): string {
   return e.actor_person_name ?? e.actor_username ?? "—";
 }
 
-function sortValue(e: AuditLogEntry, key: SortKey): string | number {
-  switch (key) {
-    case "created_at": return new Date(e.created_at).getTime();
-    case "action": return e.action;
-    case "entity_type": return e.entity_type;
-    case "entity_label": return e.entity_label ?? `#${e.entity_id}`;
-    case "summary": return e.summary;
-    case "actor": return actorName(e);
-  }
-}
-
 export default function AuditPage() {
-  const [entries, setEntries] = useState<AuditLogEntry[]>([]);
+  const [page, setPage] = useState<AuditLogPage | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filterOptions, setFilterOptions] = useState<AuditLogFilterOptions>({ entity_types: [], actions: [], actors: [] });
 
   const [entityFilter, setEntityFilter] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [actorFilter, setActorFilter] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [pageNumber, setPageNumber] = useState(1);
 
   function toggleSort(key: SortKey) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir(key === "created_at" ? "desc" : "asc");
-    }
+    if (key === sortKey) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir(key === "created_at" ? "desc" : "asc"); }
+    setPageNumber(1);
   }
 
+  // Opções dos 3 seletores de filtro, carregadas uma vez (não dependem da
+  // página/filtro atual - são os valores distintos de todo o histórico).
   useEffect(() => {
-    api.get<AuditLogEntry[]>("/audit-log").then(setEntries).finally(() => setLoading(false));
+    api.get<AuditLogFilterOptions>("/audit-log/filter-options").then(setFilterOptions).catch(() => {});
   }, []);
 
-  const entityTypes = useMemo(() => Array.from(new Set(entries.map((e) => e.entity_type))).sort(), [entries]);
-  const actions = useMemo(() => Array.from(new Set(entries.map((e) => e.action))).sort(), [entries]);
-  const actors = useMemo(() => Array.from(new Set(entries.map(actorName))).sort(), [entries]);
+  // Busca por texto livre com debounce (evita 1 chamada de API por tecla
+  // digitada) - também reinicia a paginação para a página 1.
+  useEffect(() => {
+    const t = setTimeout(() => { setSearch(searchInput); setPageNumber(1); }, 350);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
-  const filtered = useMemo(() => {
-    const searchLower = search.trim().toLowerCase();
-    const fromMs = dateFrom ? new Date(`${dateFrom}T00:00:00`).getTime() : null;
-    const toMs = dateTo ? new Date(`${dateTo}T23:59:59`).getTime() : null;
-    let rows = entries.filter((e) => {
-      if (entityFilter && e.entity_type !== entityFilter) return false;
-      if (actionFilter && e.action !== actionFilter) return false;
-      if (actorFilter && actorName(e) !== actorFilter) return false;
-      const ts = new Date(e.created_at).getTime();
-      if (fromMs != null && ts < fromMs) return false;
-      if (toMs != null && ts > toMs) return false;
-      if (searchLower) {
-        const haystack = `${e.summary} ${e.entity_label ?? ""} ${e.entity_type}`.toLowerCase();
-        if (!haystack.includes(searchLower)) return false;
-      }
-      return true;
-    });
-    rows = [...rows].sort((a, b) => {
-      const va = sortValue(a, sortKey);
-      const vb = sortValue(b, sortKey);
-      const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb), "pt-BR");
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-    return rows;
-  }, [entries, entityFilter, actionFilter, actorFilter, search, dateFrom, dateTo, sortKey, sortDir]);
+  // Filtro, ordenação e paginação acontecem no backend (ver routers/
+  // audit.py) - a cada mudança de filtro/ordenação/página, uma nova página
+  // de resultados é buscada, em vez de baixar o histórico inteiro de uma
+  // vez (o que ficaria cada vez mais lento conforme o histórico cresce).
+  useEffect(() => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (entityFilter) params.set("entity_type", entityFilter);
+    if (actionFilter) params.set("action", actionFilter);
+    if (actorFilter) params.set("actor", actorFilter);
+    if (search) params.set("search", search);
+    if (dateFrom) params.set("date_from", dateFrom);
+    if (dateTo) params.set("date_to", dateTo);
+    params.set("sort_key", sortKey);
+    params.set("sort_dir", sortDir);
+    params.set("page", String(pageNumber));
+    params.set("page_size", String(PAGE_SIZE));
+    api.get<AuditLogPage>(`/audit-log?${params.toString()}`).then(setPage).finally(() => setLoading(false));
+  }, [entityFilter, actionFilter, actorFilter, search, dateFrom, dateTo, sortKey, sortDir, pageNumber]);
+
+  function updateFilter(setter: (v: string) => void) {
+    return (value: string) => { setter(value); setPageNumber(1); };
+  }
+  const setEntityFilterAndReset = updateFilter(setEntityFilter);
+  const setActionFilterAndReset = updateFilter(setActionFilter);
+  const setActorFilterAndReset = updateFilter(setActorFilter);
+  const setDateFromAndReset = updateFilter(setDateFrom);
+  const setDateToAndReset = updateFilter(setDateTo);
 
   function clearFilters() {
-    setEntityFilter(""); setActionFilter(""); setActorFilter(""); setSearch(""); setDateFrom(""); setDateTo("");
+    setEntityFilter(""); setActionFilter(""); setActorFilter("");
+    setSearchInput(""); setSearch(""); setDateFrom(""); setDateTo("");
+    setPageNumber(1);
   }
   const hasActiveFilters = !!(entityFilter || actionFilter || actorFilter || search || dateFrom || dateTo);
+
+  const total = page?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div>
@@ -102,36 +106,36 @@ export default function AuditPage() {
       <div className="card" style={{ padding: 14, marginBottom: 16, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
         <div className="field" style={{ minWidth: 180 }}>
           <label>Cadastro</label>
-          <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)}>
+          <select value={entityFilter} onChange={(e) => setEntityFilterAndReset(e.target.value)}>
             <option value="">Todos</option>
-            {entityTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+            {filterOptions.entity_types.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
         <div className="field" style={{ minWidth: 160 }}>
           <label>Ação</label>
-          <select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
+          <select value={actionFilter} onChange={(e) => setActionFilterAndReset(e.target.value)}>
             <option value="">Todas</option>
-            {actions.map((a) => <option key={a} value={a}>{a}</option>)}
+            {filterOptions.actions.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
         <div className="field" style={{ minWidth: 200 }}>
           <label>Responsável</label>
-          <select value={actorFilter} onChange={(e) => setActorFilter(e.target.value)}>
+          <select value={actorFilter} onChange={(e) => setActorFilterAndReset(e.target.value)}>
             <option value="">Todos</option>
-            {actors.map((a) => <option key={a} value={a}>{a}</option>)}
+            {filterOptions.actors.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
         <div className="field" style={{ minWidth: 140 }}>
           <label>De</label>
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          <input type="date" value={dateFrom} onChange={(e) => setDateFromAndReset(e.target.value)} />
         </div>
         <div className="field" style={{ minWidth: 140 }}>
           <label>Até</label>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <input type="date" value={dateTo} onChange={(e) => setDateToAndReset(e.target.value)} />
         </div>
         <div className="field" style={{ flex: "1 1 220px", minWidth: 200 }}>
           <label>Buscar (item/descrição)</label>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ex.: FAB 5962, motor…" />
+          <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="ex.: FAB 5962, motor…" />
         </div>
         {hasActiveFilters && (
           <button type="button" className="btn btn-outline btn-sm" onClick={clearFilters}>Limpar filtros</button>
@@ -139,39 +143,57 @@ export default function AuditPage() {
       </div>
 
       <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8 }}>
-        {filtered.length} de {entries.length} registro(s).
+        {total === 0 ? "0 registro(s)." : `Página ${pageNumber} de ${totalPages} — ${total} registro(s) no total.`}
       </p>
 
-      {loading ? <p>Carregando…</p> : (
-        <div className="card scroll-x">
-          <table>
-            <thead>
-              <tr>
-                <SortableTh label="Data/Hora" sortKey="created_at" active={sortKey === "created_at"} dir={sortDir} onClick={toggleSort} />
-                <SortableTh label="Ação" sortKey="action" active={sortKey === "action"} dir={sortDir} onClick={toggleSort} />
-                <SortableTh label="Cadastro" sortKey="entity_type" active={sortKey === "entity_type"} dir={sortDir} onClick={toggleSort} />
-                <SortableTh label="Item" sortKey="entity_label" active={sortKey === "entity_label"} dir={sortDir} onClick={toggleSort} />
-                <SortableTh label="Descrição" sortKey="summary" active={sortKey === "summary"} dir={sortDir} onClick={toggleSort} />
-                <SortableTh label="Responsável" sortKey="actor" active={sortKey === "actor"} dir={sortDir} onClick={toggleSort} />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((e) => (
-                <tr key={e.id}>
-                  <td style={{ fontSize: 11.5, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
-                    {new Date(e.created_at).toLocaleString("pt-BR")}
-                  </td>
-                  <td><span className="badge" style={{ background: "#fff", color: ACTION_BADGE_COLOR[e.action] ?? "#3d4a63" }}>{e.action}</span></td>
-                  <td style={{ fontSize: 12.5 }}>{e.entity_type}</td>
-                  <td style={{ fontSize: 12.5 }}>{e.entity_label ?? `#${e.entity_id}`}</td>
-                  <td style={{ fontSize: 12.5 }}>{e.summary}</td>
-                  <td style={{ fontSize: 12.5 }}>{actorName(e)}</td>
+      {loading && !page ? <p>Carregando…</p> : (
+        <>
+          <div className="card scroll-x">
+            <table>
+              <thead>
+                <tr>
+                  <SortableTh label="Data/Hora" sortKey="created_at" active={sortKey === "created_at"} dir={sortDir} onClick={toggleSort} />
+                  <SortableTh label="Ação" sortKey="action" active={sortKey === "action"} dir={sortDir} onClick={toggleSort} />
+                  <SortableTh label="Cadastro" sortKey="entity_type" active={sortKey === "entity_type"} dir={sortDir} onClick={toggleSort} />
+                  <SortableTh label="Item" sortKey="entity_label" active={sortKey === "entity_label"} dir={sortDir} onClick={toggleSort} />
+                  <SortableTh label="Descrição" sortKey="summary" active={sortKey === "summary"} dir={sortDir} onClick={toggleSort} />
+                  <SortableTh label="Responsável" sortKey="actor" active={sortKey === "actor"} dir={sortDir} onClick={toggleSort} />
                 </tr>
-              ))}
-              {filtered.length === 0 && <tr><td colSpan={6} style={{ color: "var(--text-secondary)" }}>Nenhum registro de auditoria encontrado.</td></tr>}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody style={{ opacity: loading ? 0.6 : 1 }}>
+                {(page?.items ?? []).map((e) => (
+                  <tr key={e.id}>
+                    <td style={{ fontSize: 11.5, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
+                      {new Date(e.created_at).toLocaleString("pt-BR")}
+                    </td>
+                    <td><span className="badge" style={{ background: "#fff", color: ACTION_BADGE_COLOR[e.action] ?? "#3d4a63" }}>{e.action}</span></td>
+                    <td style={{ fontSize: 12.5 }}>{e.entity_type}</td>
+                    <td style={{ fontSize: 12.5 }}>{e.entity_label ?? `#${e.entity_id}`}</td>
+                    <td style={{ fontSize: 12.5 }}>{e.summary}</td>
+                    <td style={{ fontSize: 12.5 }}>{actorName(e)}</td>
+                  </tr>
+                ))}
+                {(page?.items.length ?? 0) === 0 && (
+                  <tr><td colSpan={6} style={{ color: "var(--text-secondary)" }}>Nenhum registro de auditoria encontrado.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
+              <button type="button" className="btn btn-outline btn-sm" disabled={pageNumber <= 1}
+                      onClick={() => setPageNumber((p) => Math.max(1, p - 1))}>
+                ← Anterior
+              </button>
+              <span style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>Página {pageNumber} de {totalPages}</span>
+              <button type="button" className="btn btn-outline btn-sm" disabled={pageNumber >= totalPages}
+                      onClick={() => setPageNumber((p) => Math.min(totalPages, p + 1))}>
+                Próxima →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -787,12 +787,17 @@ class AuditAction(str, enum.Enum):
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
+    # Índices nas colunas usadas para filtrar/ordenar em GET /audit-log
+    # (ver routers/audit.py) - sem eles, a consulta faria table scan a cada
+    # filtro/página conforme o histórico cresce, justamente o problema de
+    # performance que a paginação pretende evitar. `sync_missing_indexes()`
+    # (database.py) acrescenta esses índices num banco já existente.
     id: Mapped[int] = mapped_column(primary_key=True)
     actor_username: Mapped[str | None] = mapped_column(String(60), nullable=True)
-    actor_person_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
-    entity_type: Mapped[str] = mapped_column(String(60))  # ex.: "Aeronave", "Usuário", "Ordem de Serviço"
+    actor_person_name: Mapped[str | None] = mapped_column(String(150), nullable=True, index=True)
+    entity_type: Mapped[str] = mapped_column(String(60), index=True)  # ex.: "Aeronave", "Usuário", "Ordem de Serviço"
     entity_id: Mapped[int] = mapped_column(Integer)
     entity_label: Mapped[str | None] = mapped_column(String(200), nullable=True)  # ex.: matrícula/nome, para exibição
-    action: Mapped[AuditAction] = mapped_column(SAEnum(AuditAction))
+    action: Mapped[AuditAction] = mapped_column(SAEnum(AuditAction), index=True)
     summary: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc, index=True)

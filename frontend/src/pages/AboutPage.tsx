@@ -37,7 +37,22 @@ export default function AboutPage() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: 22 }}>
+      {/* Fundo branco fixo (independente do tema atual), a pedido do usuário,
+          para destacar melhor os botões Modo Noturno/Modo Diurno - mesmo
+          padrão de sobrescrita local das variáveis --text-* usado no painel
+          "Engenharia de Confiabilidade" (AircraftDetailPage.tsx), para todo
+          texto/borda dos descendentes herdar tons escuros legíveis sobre
+          fundo claro sem precisar sobrescrever cada elemento. */}
+      <div
+        className="card"
+        style={{
+          padding: 22, background: "#ffffff", color: "#101828",
+          ["--text-primary" as string]: "#101828",
+          ["--text-secondary" as string]: "#4b5566",
+          ["--text-label" as string]: "#101828",
+          ["--border-subtle" as string]: "#dde2ea",
+        }}
+      >
         <h2 style={{ fontSize: 15.5, margin: "0 0 4px" }}>Aparência</h2>
         <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14, maxWidth: 560 }}>
           Escolha entre o modo noturno (cores atuais do app) e o modo diurno (telas de cadastro e

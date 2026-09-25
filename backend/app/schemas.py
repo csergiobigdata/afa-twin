@@ -781,6 +781,23 @@ class AuditLogOut(ORMModel):
     created_at: dt.datetime
 
 
+class AuditLogPage(BaseModel):
+    """Página de resultados de GET /audit-log - filtro, ordenação e recorte
+    (paginação) acontecem no banco, não no navegador, para a tela continuar
+    rápida conforme o histórico de auditoria cresce com o tempo."""
+    items: list[AuditLogOut]
+    total: int
+
+
+class AuditLogFilterOptions(BaseModel):
+    """Valores distintos hoje presentes no histórico, para popular os
+    seletores de filtro (Cadastro/Ação/Responsável) sem precisar baixar
+    todos os registros só para descobrir as opções."""
+    entity_types: list[str]
+    actions: list[str]
+    actors: list[str]
+
+
 # ---------------- Dashboard ----------------
 
 class AlertOut(BaseModel):

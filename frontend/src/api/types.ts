@@ -565,6 +565,19 @@ export interface AuditLogEntry {
   created_at: string;
 }
 
+// Resposta paginada de GET /audit-log - filtro/ordenação/recorte acontecem
+// no backend (ver routers/audit.py), não no navegador.
+export interface AuditLogPage {
+  items: AuditLogEntry[];
+  total: number;
+}
+
+export interface AuditLogFilterOptions {
+  entity_types: string[];
+  actions: string[];
+  actors: string[];
+}
+
 export interface AuthResponse {
   access_token: string;
   token_type: string;
