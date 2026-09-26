@@ -13,3 +13,13 @@ export function formatHoursHHMM(totalHours: number | null | undefined): string {
   const hoursStr = hours.toLocaleString("pt-BR", { minimumIntegerDigits: 2 });
   return `${hoursStr}:${String(minutes).padStart(2, "0")}`;
 }
+
+/** Formata um timestamp ISO como "dd/mm/yyyy hh:mm:ss" (24h) - usado nas
+ * colunas de data/hora de listas (ex.: "Aberta em" de Ordens de Serviço),
+ * onde só a data costumava aparecer. */
+export function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString("pt-BR");
+  const time = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  return `${date} ${time}`;
+}

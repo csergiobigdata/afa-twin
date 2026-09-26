@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import type { Aircraft, MaintenanceOrder, OrderStatus, Criticality } from "../api/types";
 import { CriticalityBadge, OrderStatusBadge } from "../components/Badges";
 import SortableTh from "../components/SortableTh";
+import { formatDateTime } from "../utils/format";
 
 const STATUSES: OrderStatus[] = ["Aberta", "Em Andamento", "Aguardando Peça", "Concluída", "Cancelada"];
 const PRIORITIES: Criticality[] = ["Baixa", "Média", "Alta", "Crítica"];
@@ -118,7 +119,7 @@ export default function MaintenancePage() {
                   <td>{o.title}</td>
                   <td><CriticalityBadge value={o.priority} /></td>
                   <td><OrderStatusBadge status={o.status} /></td>
-                  <td style={{ fontSize: 12.5 }}>{new Date(o.opened_at).toLocaleDateString("pt-BR")}</td>
+                  <td style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>{formatDateTime(o.opened_at)}</td>
                 </tr>
               ))}
               {filtered.length === 0 && <tr><td colSpan={7} style={{ color: "var(--text-secondary)" }}>Nenhuma ordem de serviço encontrada.</td></tr>}
