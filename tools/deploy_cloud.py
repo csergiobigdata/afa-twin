@@ -29,9 +29,14 @@ Uso:
     python tools/deploy_cloud.py
 
 Variáveis de ambiente esperadas:
-  GITHUB_TOKEN     - Personal Access Token do GitHub (escopo "repo")
-  VERCEL_TOKEN     - Personal Access Token do Vercel (Account Settings -> Tokens)
-  NEON_API_KEY     - API Key do Neon (Account -> API Keys)
+  GITHUB_TOKEN          - Personal Access Token do GitHub (escopo "repo")
+  VERCEL_TOKEN          - Personal Access Token do Vercel, com acesso ao projeto do backend
+                          (afa-twin-api)
+  VERCEL_FRONTEND_TOKEN - opcional; só necessário se o token acima não enxergar também o
+                          projeto do frontend (afa-twin-web) - ver nota acima sobre tokens
+                          restritos a um único projeto nesta conta. Sem essa variável, usa
+                          o mesmo valor de VERCEL_TOKEN.
+  NEON_API_KEY          - API Key do Neon (Account -> API Keys)
 
 Nenhum token é impresso no console nem gravado em nenhum arquivo do repositório.
 O script é seguro para rodar mais de uma vez (reaproveita recursos já criados
@@ -474,6 +479,14 @@ def deploy_frontend_to_vercel(token: str, project_id: str, files: list[dict]) ->
 def main() -> None:
     github_token = need_env("GITHUB_TOKEN")
     vercel_token = need_env("VERCEL_TOKEN")
+    # Token separado e opcional para o projeto do frontend: na prática, os
+    # tokens gerados nesta conta Vercel (time "cs-ai-team") saíram
+    # restritos a um único projeto cada, em vez de todo o time/conta -
+    # então VERCEL_TOKEN (escopo afa-twin-api) e VERCEL_FRONTEND_TOKEN
+    # (escopo afa-twin-web) precisam ser dois tokens diferentes por
+    # enquanto. Se algum dia um único token cobrir os dois projetos, basta
+    # não definir VERCEL_FRONTEND_TOKEN - cai no mesmo VERCEL_TOKEN.
+    vercel_frontend_token = os.environ.get("VERCEL_FRONTEND_TOKEN", vercel_token)
     neon_key = need_env("NEON_API_KEY")
 
     owner, repo_html_url = ensure_github_repo(github_token)
@@ -494,10 +507,10 @@ def main() -> None:
 
     build_frontend()
     write_vercel_rewrites(backend_url)
-    frontend_project_id = ensure_vercel_frontend_project(vercel_token)
+    frontend_project_id = ensure_vercel_frontend_project(vercel_frontend_token)
     frontend_files = _collect_frontend_files()
     print(f"  {len(frontend_files)} arquivo(s) do frontend preparados para publicação.")
-    frontend_url = deploy_frontend_to_vercel(vercel_token, frontend_project_id, frontend_files)
+    frontend_url = deploy_frontend_to_vercel(vercel_frontend_token, frontend_project_id, frontend_files)
 
     set_vercel_env(vercel_token, project_id, {"AFA_TWIN_ALLOWED_ORIGINS": frontend_url})
     print("\n  Origem liberada no backend atualizada para o frontend publicado; refazendo o deploy...")
