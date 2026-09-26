@@ -438,7 +438,13 @@ def deploy_frontend_to_vercel(token: str, project_id: str, files: list[dict]) ->
         "name": VERCEL_FRONTEND_PROJECT_NAME,
         "project": project_id,
         "target": "production",
-        "projectSettings": {"framework": None},
+        # `rootDirectory: None` sobrescreve a configuração salva no projeto
+        # (ex.: "frontend", herdada da importação manual via GitHub feita
+        # pelo dashboard) - aqui os `files` já SÃO o conteúdo pronto de
+        # `frontend/dist/`, sem nenhuma subpasta, então uma Root Directory
+        # configurada faz a Vercel procurar uma subpasta que não existe
+        # neste upload (erro NOW_SANDBOX_WORKER_ROOTDIR_NOT_EXIST).
+        "projectSettings": {"framework": None, "rootDirectory": None},
         "files": files,
     }
     status, deployment = http("POST", "https://api.vercel.com/v13/deployments", token=token, body=body)
