@@ -304,7 +304,7 @@ export default function DashboardPage() {
           onClick={() => navigate("/aeronaves/cadastro?status=Operacional")}
         />
         <StatCard
-          label="Em manutenção/inspeção" value={summary.in_maintenance_aircraft} tone="warn" valueColor="#fff"
+          label="Em manutenção/inspeção" value={summary.in_maintenance_aircraft} tone="warn" valueColor="var(--stat-value-onwarn)"
           onClick={() => navigate("/aeronaves/cadastro?status=manutencao-inspecao")}
         />
         <StatCard

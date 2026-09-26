@@ -593,7 +593,6 @@ export default function AvailabilityPage() {
                     <button
                       type="button" className="btn btn-outline btn-sm" disabled={!selectedCode || launchingCode}
                       onClick={cadastrarConfiguracaoAutomatica} title="Substitui a configuração atual da aeronave pela deste código"
-                      style={{ color: "#fff" }}
                     >
                       {launchingCode ? "Cadastrando…" : "+ Cadastrar Configuração"}
                     </button>

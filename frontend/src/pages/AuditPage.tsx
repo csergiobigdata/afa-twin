@@ -14,7 +14,7 @@ const ACTION_BADGE_COLOR: Record<string, string> = {
 
 type SortKey = "created_at" | "action" | "entity_type" | "entity_label" | "summary" | "actor";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 
 function actorName(e: AuditLogEntry): string {
   return e.actor_person_name ?? e.actor_username ?? "—";
