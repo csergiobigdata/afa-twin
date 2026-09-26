@@ -297,7 +297,12 @@ export default function DashboardPage() {
           filtrada por Status) - só o "Índice médio de saúde" fica sem
           atalho, por não corresponder a uma tela própria. */}
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 22 }}>
-        <StatCard label="Aeronaves na frota" value={summary.total_aircraft} onClick={() => navigate("/aeronaves/cadastro")} />
+        {/* Cor própria (rosa), fora do jogo de 4 tons ok/warn/critical/info -
+            é uma contagem simples, não uma severidade, e evita repetir a
+            mesma cor de "OS em aberto" (que também pode cair em "info"/azul
+            quando não há OS crítica). Mesma cor usada para "Subalares" em
+            Disponibilidade, por ser o mesmo papel (contagem neutra). */}
+        <StatCard label="Aeronaves na frota" value={summary.total_aircraft} valueColor="var(--fab-pink-500)" onClick={() => navigate("/aeronaves/cadastro")} />
         <StatCard
           label="Operacionais" value={summary.operational_aircraft} tone="ok"
           sub={`${summary.average_fleet_availability_pct}% de disponibilidade`}

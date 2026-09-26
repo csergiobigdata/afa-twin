@@ -344,7 +344,10 @@ export default function AvailabilityPage() {
             tone={CODE_STAT_TONE[c.code]} sub={c.description}
           />
         ))}
-        <StatCard label="Subalares" value={board.subalares_count} tone="info" sub="Cargas subalares (fora ADA)" />
+        {/* Cor própria (rosa), fora do jogo de 4 tons ok/warn/critical/info -
+            código IS já usa "info" (azul); sem isso, Subalares ficaria com
+            a mesma cor de IS, os dois indistinguíveis à primeira vista. */}
+        <StatCard label="Subalares" value={board.subalares_count} valueColor="var(--fab-pink-500)" sub="Cargas subalares (fora ADA)" />
         {board.report_date && <StatCard label="Boletim mais recente" value={formatDate(board.report_date)} />}
       </div>
 
