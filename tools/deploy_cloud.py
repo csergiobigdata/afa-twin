@@ -422,14 +422,30 @@ def ensure_vercel_frontend_project(token: str) -> str:
     status, proj = http("GET", f"https://api.vercel.com/v10/projects/{VERCEL_FRONTEND_PROJECT_NAME}", token=token)
     if status == 200:
         print(f"  Projeto já existe: {proj['id']}")
-        return proj["id"]
+        project_id = proj["id"]
+        root_directory = proj.get("rootDirectory")
+    else:
+        status, created = http("POST", "https://api.vercel.com/v11/projects", token=token,
+                                body={"name": VERCEL_FRONTEND_PROJECT_NAME, "framework": None})
+        if status not in (200, 201):
+            die(f"Falha ao criar o projeto de frontend no Vercel (status {status}): {created}")
+        print(f"  Projeto criado: {created['id']}")
+        project_id = created["id"]
+        root_directory = created.get("rootDirectory")
 
-    status, created = http("POST", "https://api.vercel.com/v11/projects", token=token,
-                            body={"name": VERCEL_FRONTEND_PROJECT_NAME, "framework": None})
-    if status not in (200, 201):
-        die(f"Falha ao criar o projeto de frontend no Vercel (status {status}): {created}")
-    print(f"  Projeto criado: {created['id']}")
-    return created["id"]
+    if root_directory:
+        # Um projeto importado manualmente pelo dashboard (ex.: conectado a
+        # um repositório com frontend/ e backend/ juntos) guarda uma "Root
+        # Directory" (ex.: "frontend") pensada para build via Git - conflita
+        # com este script, que publica o conteúdo de `frontend/dist/` já
+        # pronto (sem essa subpasta) via API, e causava o erro
+        # NOW_SANDBOX_WORKER_ROOTDIR_NOT_EXIST. Limpa uma vez, de forma
+        # idempotente (só chama a API se houver algo para limpar).
+        status, _ = http("PATCH", f"https://api.vercel.com/v9/projects/{project_id}",
+                          token=token, body={"rootDirectory": None})
+        if status == 200:
+            print("  Configuração de Root Directory do projeto limpa (conflitava com a publicação via API).")
+    return project_id
 
 
 def deploy_frontend_to_vercel(token: str, project_id: str, files: list[dict]) -> str:
@@ -438,13 +454,7 @@ def deploy_frontend_to_vercel(token: str, project_id: str, files: list[dict]) ->
         "name": VERCEL_FRONTEND_PROJECT_NAME,
         "project": project_id,
         "target": "production",
-        # `rootDirectory: None` sobrescreve a configuração salva no projeto
-        # (ex.: "frontend", herdada da importação manual via GitHub feita
-        # pelo dashboard) - aqui os `files` já SÃO o conteúdo pronto de
-        # `frontend/dist/`, sem nenhuma subpasta, então uma Root Directory
-        # configurada faz a Vercel procurar uma subpasta que não existe
-        # neste upload (erro NOW_SANDBOX_WORKER_ROOTDIR_NOT_EXIST).
-        "projectSettings": {"framework": None, "rootDirectory": None},
+        "projectSettings": {"framework": None},
         "files": files,
     }
     status, deployment = http("POST", "https://api.vercel.com/v13/deployments", token=token, body=body)
