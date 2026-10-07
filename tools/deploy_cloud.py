@@ -17,13 +17,12 @@ ver backend/app/models.py) em vez de disco local.
 O frontend também é publicado no Vercel (não mais no Netlify) desde
 2026-09-25: a conta Netlify em uso excedeu a cota de créditos do plano
 gratuito e passou a recusar novos deploys (HTTP 403 "Account credit usage
-exceeded"). Reaproveita o mesmo VERCEL_TOKEN já usado para o backend, num
-projeto Vercel separado ("afa-twin-web") - ver `write_vercel_rewrites`
-(equivalente ao antigo `_redirects` do Netlify: proxy de `/api/*` para o
-backend + fallback de SPA para `index.html`).
+exceeded"). Publica num projeto Vercel separado ("afa-twin-web") - ver
+`write_vercel_rewrites` (equivalente ao antigo `_redirects` do Netlify:
+proxy de `/api/*` para o backend + fallback de SPA para `index.html`).
 
 Uso:
-  Defina as 3 variáveis de ambiente abaixo (tokens gerados nos respectivos
+  Defina as variáveis de ambiente abaixo (tokens gerados nos respectivos
   painéis - ver docs/06-implantacao-nuvem.md) e rode:
 
     python tools/deploy_cloud.py

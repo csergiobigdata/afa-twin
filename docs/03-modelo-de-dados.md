@@ -314,6 +314,20 @@ classificar como a vida de um componente é controlada.
    fornecida diretamente pelo usuário deste projeto sem confirmação de licença/origem - antes de manter
    esse arquivo num ambiente acessível publicamente por mais tempo, confirme os direitos de uso ou
    substitua por uma fonte com licença verificada, como as demais.
+
+   > **Divergência entre o seed e a produção (a partir de 2026-09):** a tabela acima descreve a frota
+   > fictícia de demonstração (`backend/app/seed.py`), ainda usada para popular um banco local novo ou
+   > um Postgres vazio recém-provisionado - continua válida para quem roda o piloto do zero. O banco de
+   > **produção** (afa-twin-api.vercel.app), porém, já divergiu bastante dela: o usuário do projeto
+   > substituiu/complementou os dados de demonstração por uma frota real de 15 aeronaves A-29 (FAB 5906
+   > a FAB 5962, todas `silhouette_key="a29"`), cadastradas e com fotos reais enviadas diretamente pela
+   > interface (`POST /api/aircraft/{id}/photo`) - não pela tabela de créditos acima, já que não vieram
+   > do seed. Sem verificação formal de licença/origem dessas fotos (mesma ressalva da FAB 5962 acima);
+   > trate como fotos de uso interno do esquadrão até confirmação em contrário. O modelo "a29" também é
+   > o único cujo pôster de exemplo (ilustração vetorial) foi substituído por uma foto real de referência
+   > (`frontend/public/reference/a29-tucano.png`, fornecida pelo usuário) como *fallback* padrão - ver
+   > `frontend/src/components/aircraftArt.ts` e a nota de identidade visual em
+   > [docs/02](02-arquitetura-da-solucao.md), seção 8.
 8. **Imutabilidade de Ordem de Serviço em status terminal**: uma vez `Concluída` ou `Cancelada`, a API
    rejeita qualquer alteração adicional (inclusive tentativa de exclusão, que retorna erro 405). A transição
    para `Cancelada` exige `cancelled_by_id` e `cancellation_reason` preenchidos, grava `cancelled_at`
@@ -324,7 +338,13 @@ classificar como a vida de um componente é controlada.
    entrada `AuditLog` de `Inativação` (e `Reativação` no caminho inverso).
 10. **Toda criação/alteração relevante gera uma entrada em `AuditLog`** (aeronaves, componentes,
     pessoas, ordens de serviço) — ver [`backend/app/audit.py`](../backend/app/audit.py) e o roteador
-    `GET /api/audit-log`, consultável na tela "Auditoria" da interface.
+    `GET /api/audit-log`, consultável na tela "Auditoria" da interface. Filtro, ordenação e **paginação
+    (10 registros por página) acontecem no banco**, não no navegador (`schemas.AuditLogPage`,
+    `GET /api/audit-log/filter-options` para os valores distintos dos seletores) — a tabela ganhou
+    índices em `created_at`, `entity_type`, `action` e `actor_person_name` especificamente para isso,
+    para a tela continuar rápida conforme o histórico de auditoria cresce com o tempo (ver
+    `sync_missing_indexes()` em [docs/06](06-implantacao-nuvem.md), seção 3, para aplicar esses índices
+    num banco de produção já existente).
 11. **Retenção de notificações**: apenas as **20 notificações mais recentes** são mantidas na tabela
     `notifications` — a cada novo registro, entradas mais antigas além desse limite são removidas
     (`notifications._prune_old_notifications`), mantendo o histórico exibido no Painel enxuto e relevante.

@@ -112,6 +112,21 @@ Corrigido para Disponibilidade: as 5 chamadas viraram uma única (`GET /availabi
 ver `schemas.AvailabilityUpdatesBootstrap`), no mesmo padrão de `GET /aircraft/{id}/detail` usado no
 detalhe de aeronave — reduz o módulo a uma única invocação/conexão de banco no carregamento.
 
+### 3.3. Filtro/ordenação/paginação no servidor (telas de lista que crescem com o tempo)
+
+A tela "Auditoria" baixava a tabela `audit_logs` **inteira** a cada visita e filtrava/ordenava no
+navegador — funcional com dezenas de linhas, mas um padrão que degrada proporcionalmente ao histórico
+acumulado (exatamente o tipo de lista que só cresce, nunca encolhe). Corrigido: filtro, ordenação e
+paginação (10 linhas por página) passaram para o backend (`GET /api/audit-log`, que agora retorna
+`{items, total}` em vez de uma lista simples), com um endpoint leve à parte
+(`GET /api/audit-log/filter-options`) só para os valores distintos dos seletores de filtro - evita
+baixar o histórico inteiro apenas para descobrir quais cadastros/ações/responsáveis existem. A tabela
+`audit_logs` ganhou índices em `created_at`/`entity_type`/`action`/`actor_person_name` para essas
+consultas continuarem rápidas conforme o volume cresce (ver [docs/03](03-modelo-de-dados.md), seção 3,
+item 10). Mesmo princípio recomendado para qualquer tela de lista futura com potencial de crescimento
+ilimitado (ex.: Ordens de Serviço, Notificações) - evitar o padrão "baixar tudo e filtrar no cliente"
+assim que a lista deixar de ser pequena por natureza.
+
 ## 4. Por que não usar [outras opções]
 
 - **Node.js/Express no backend**: descartado como escolha primária porque a evolução planejada do
@@ -198,6 +213,8 @@ afa-twin/
     vite.config.ts                 # inclui configuração do PWA
     public/icons/                   # ícones do aplicativo instalável
     public/aircraft-art/             # ilustrações "pôster" (estática + animada) de exemplo por modelo
+    public/reference/                # fotos/desenhos técnicos reais de referência (A-29, diagrama de
+                                       # configuração) - ver seção 8 abaixo e components/FlyingJet.tsx
   tools/
     deploy_cloud.py                # publica GitHub + Neon + Vercel (backend + frontend) automaticamente (docs/06)
     capture-screens.mjs, make-pdf.mjs  # geração do manual do usuário em PDF (Playwright)
@@ -219,3 +236,24 @@ JPG/PNG/WEBP) e uma **imagem animada opcional** (GIF/WEBP) para inspeção de de
 presentes, essas fotos reais têm prioridade sobre a ilustração de exemplo em toda a interface. Isso evita
 qualquer questão de direito de imagem enquanto não há fotos reais cadastradas, sem impedir o uso de
 fotografias oficiais da própria frota assim que disponíveis.
+
+**Exceção ao pôster vetorial, só para o modelo "a29":** como toda a frota real cadastrada no piloto é
+A-29 (ver [docs/03](03-modelo-de-dados.md), seção 3, item 7), o *fallback* desse modelo específico deixou
+de ser o desenho vetorial e passou a ser uma foto real de referência fornecida pelo usuário
+(`frontend/public/reference/a29-tucano.png` - fundo removido, virada para a direita), reaproveitada em
+três lugares: na miniatura/pôster padrão (`aircraftArt.ts::exampleArtUrl`), no componente `FlyingJet`
+(animação de "voo" usada na tela de carregamento inicial e em processos pontuais de busca/envio, ex.
+Diagnóstico Inteligente e carga de PDF em Configurações Autorizadas) e no diagrama de configuração de
+estações (`components/ConfigurationDiagram.tsx`, recortado de um desenho técnico à parte,
+`public/reference/config-diagram-template.png`, clicável para abrir uma versão ampliada em modal).
+Demais modelos continuam no pôster vetorial original até ter uma foto real equivalente.
+
+**Modo Diurno/Noturno e cores de destaque.** Além da alternância de fundo clara/escura (Sobre →
+Aparência), o tema (`frontend/src/theme.css`) usa variáveis CSS próprias para rótulos
+(`--text-label`: amarelo vibrante no Noturno, azul-marinho em negrito no Diurno) e para listras/realce de
+tabelas (`--table-row-alt-bg`/`--table-hover-bg`, tons diferentes por modo) - garante que tabelas densas
+(Auditoria, Manutenção, Usuários) continuem legíveis nos dois modos sem duplicar o CSS de cada tela. Os
+cartões de estatística (`StatCard`) também podem receber uma cor de valor própria
+(`valueColor`, ex. `var(--fab-pink-500)` para contagens neutras como "Aeronaves na Frota"/"Subalares"),
+evitando que duas métricas adjacentes caiam na mesma cor quando os 4 tons semânticos padrão
+(ok/warn/critical/info) não bastam para distinguir todos os valores de um painel.

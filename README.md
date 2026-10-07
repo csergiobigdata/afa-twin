@@ -88,9 +88,10 @@ Detalhes completos, incluindo como instalar como aplicativo em um tablet: [`docs
   por componente, com alerta automático no Painel quando o vencimento se aproxima ou já passou.
 - ✅ **Histórico de manutenção por peça**: ordens de serviço, equipe envolvida, responsável e
   notificações emitidas, consultável por componente (aba Componentes → Histórico).
-- ✅ **Notificações** (e-mail real via SMTP quando configurado; SMS/WhatsApp simulados nesta fase, sem
-  custo) disparadas automaticamente na mudança de status de uma aeronave e sob demanda — pelo Painel
-  ou diretamente no cadastro da aeronave — para peças próximas do vencimento, com histórico completo.
+- ✅ **Notificações** (e-mail real via SMTP e SMS real via Twilio quando configurados; WhatsApp simulado
+  nesta fase, sem custo) disparadas automaticamente na mudança de status de uma aeronave e sob demanda
+  — pelo Painel ou diretamente no cadastro da aeronave — para peças próximas do vencimento, com
+  histórico completo.
 - ✅ **Meu Perfil**: cada usuário visualiza/edita sua própria foto, e-mail e telefone (DDD + número)
   usados para receber alertas.
 - ✅ **Grupos/Equipes responsáveis**: cadastro de equipes nomeadas (piloto titular, piloto reserva,
@@ -107,7 +108,8 @@ Detalhes completos, incluindo como instalar como aplicativo em um tablet: [`docs
   Manutenção** (catálogos de Componente Associado e Tipo de Intervalo, mais a referência de Tipo de
   Manutenção).
 - ✅ **Trilha de auditoria**: toda criação, alteração, inativação e cancelamento relevante fica registrada
-  (quem, quando, o quê), consultável na tela "Auditoria".
+  (quem, quando, o quê), consultável na tela "Auditoria", com filtro, ordenação e paginação no servidor
+  (10 registros por página) para continuar rápida conforme o histórico cresce.
 - ✅ **Retenção de notificações**: histórico mantém sempre as 20 notificações mais recentes; botão para
   notificar todos os responsáveis pendentes de uma só vez, no Painel e por aeronave.
 - ✅ **Gráfico de categorias de manutenção** no Painel (pizza/barras/linhas, alternável), a partir dos

@@ -55,7 +55,7 @@ como dado binário dentro do próprio Postgres** (`models.MediaAsset`), em vez d
 ## 3. Publicação automatizada (recomendado)
 
 O repositório inclui [`tools/deploy_cloud.py`](../tools/deploy_cloud.py), um script que publica tudo de
-ponta a ponta por API (sem precisar clicar em nenhum dashboard além de gerar 3 tokens):
+ponta a ponta por API (sem precisar clicar em nenhum dashboard além de gerar os tokens):
 
 1. Cria/atualiza um repositório público no GitHub com o código;
 2. Cria/reaproveita um banco Postgres gratuito no Neon;
@@ -64,23 +64,31 @@ ponta a ponta por API (sem precisar clicar em nenhum dashboard além de gerar 3 
 4. Compila o frontend (`npm run build`) e publica o resultado num segundo projeto Vercel (arquivos
    estáticos), já apontando para a URL do backend recém-publicado.
 
-### Gerando os 3 tokens necessários
+### Gerando os tokens necessários
 
 | Serviço | Onde gerar | Escopo/observação |
 |---|---|---|
-| **GitHub** | [github.com/settings/tokens/new](https://github.com/settings/tokens/new) → *Generate new token (classic)* | Marque o escopo `repo` |
-| **Vercel** | Conta → *Settings* → *Tokens* → *Create Token* | Sem escopo especial necessário - usado tanto para o backend quanto para o frontend |
+| **GitHub** | [github.com/settings/tokens/new](https://github.com/settings/tokens/new) → *Generate new token (classic)* | Marque o escopo `repo`, e inclua a permissão `workflow` se algum dia for usar GitHub Actions neste repositório |
+| **Vercel** (backend) | Conta → *Settings* → *Tokens* → *Create Token* | Token com acesso ao projeto `afa-twin-api` |
+| **Vercel** (frontend) | Mesmo painel, outro token | **Nesta conta** (time Hobby), cada token gerado saiu restrito a um único projeto em vez de cobrir o time inteiro - testado na prática: um token com acesso a `afa-twin-api` retornava "Project not found" para `afa-twin-web`, e vice-versa. Se o seu token já enxergar os dois projetos, não precisa gerar um segundo - ver variável `VERCEL_FRONTEND_TOKEN` abaixo |
 | **Neon** | Console → *Account settings* → *API keys* → *Generate new API key* | — |
 
-Nenhuma dessas três contas pede cartão de crédito nas camadas gratuitas usadas aqui.
+Nenhuma dessas contas pede cartão de crédito nas camadas gratuitas usadas aqui.
 
 ### Rodando o script
 
 ```bash
 cd afa-twin/tools
-# defina as 3 variáveis de ambiente com os tokens gerados acima, depois:
+# defina as variáveis de ambiente com os tokens gerados acima:
+export GITHUB_TOKEN=...
+export VERCEL_TOKEN=...          # acesso ao projeto afa-twin-api (backend)
+export VERCEL_FRONTEND_TOKEN=... # opcional - só se VERCEL_TOKEN não enxergar também o afa-twin-web
+export NEON_API_KEY=...
 python deploy_cloud.py
 ```
+
+Se `VERCEL_FRONTEND_TOKEN` não for definida, o script usa o mesmo valor de `VERCEL_TOKEN` para o
+projeto do frontend - funciona normalmente se esse token já tiver acesso aos dois projetos.
 
 O script é seguro para rodar mais de uma vez: ele reaproveita o repositório, o banco e os dois projetos
 Vercel (backend e frontend) já criados (por nome), em vez de duplicá-los — útil para publicar uma nova

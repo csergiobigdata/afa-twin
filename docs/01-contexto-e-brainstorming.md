@@ -175,6 +175,32 @@ TREM DE POUSO)") com reconhecimento heurístico revisável linha a linha antes d
 lançamento manual aeronave a aeronave. Ver [docs/03-modelo-de-dados.md](03-modelo-de-dados.md)
 (`AvailabilityUpdate`, `AvailabilityCodeCatalog`) e `backend/app/availability.py`.
 
+### 6.2 Ciclo de refinamento pós-piloto (testes com a frota real)
+
+Com o piloto já publicado e em uso com dados reais (frota real de A-29, ver [docs/03](03-modelo-de-dados.md),
+seção 3, item 7), uma rodada extensa de ajustes de usabilidade e performance foi incorporada a partir do
+feedback de uso real:
+
+- **Notificações por SMS passaram a ser reais** (via Twilio, quando configurado) além do e-mail real já
+  existente - ver [docs/05](05-guia-instalacao-execucao.md), seção 6. WhatsApp continua simulado.
+- **Desempenho de telas que crescem com o uso**: Auditoria ganhou filtro/ordenação/paginação no
+  servidor (10 linhas por página) em vez de baixar o histórico inteiro a cada visita; Disponibilidade
+  passou de 5 chamadas de API separadas no carregamento para uma única (`/availability-updates/bootstrap`)
+  — ver [docs/02](02-arquitetura-da-solucao.md), seções 3.2 e 3.3.
+- **Hospedagem do frontend migrou do Netlify para um segundo projeto Vercel** (`afa-twin-web`), depois
+  de a conta Netlify em uso esgotar a cota de créditos do plano gratuito — ver
+  [docs/06](06-implantacao-nuvem.md), seção 2.
+- **Ajustes visuais** guiados por capturas de tela da aplicação em uso real: contraste de texto/badges
+  nos dois temas (Diurno/Noturno), cores distintas por métrica nos painéis de estatística, alinhamento e
+  rótulos de campos de filtro, diagrama de configuração de estações atualizado para o desenho técnico
+  de referência da unidade (com zoom em modal), e a animação de carregamento trocada de um desenho
+  vetorial genérico para uma foto real de referência do A-29.
+
+Esse ciclo ilustra o valor de testar o piloto com usuários e dados reais antes de qualquer decisão de
+produção: a maioria dos ajustes veio de problemas só visíveis em uso real (contraste num tema que não
+tinha sido testado, latência perceptível só com a frota completa cadastrada), não de revisão de código
+isolada.
+
 ## 7. Evolução ainda planejada (fora do escopo deste piloto)
 
 1. **Modelos de Machine Learning** de fato treinados para predição de falhas (substituindo a
