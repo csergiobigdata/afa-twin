@@ -46,10 +46,10 @@ export default function LoginPage() {
     setForgotBusy(true);
     setForgotMsg(null);
     try {
-      const res = await api.post<{ detail: string }>("/auth/forgot-password", { username: forgotUsername });
-      setForgotMsg(res.detail);
+      await api.post<{ detail: string }>("/auth/forgot-password", { username: forgotUsername });
+      setForgotMsg("Acesse seu e-mail para redefinir sua senha.");
     } catch {
-      setForgotMsg("Se o usuário existir, os administradores do sistema foram notificados para redefinir a senha.");
+      setForgotMsg("Acesse seu e-mail para redefinir sua senha.");
     } finally {
       setForgotBusy(false);
     }
@@ -126,16 +126,16 @@ export default function LoginPage() {
           ) : (
             <form onSubmit={handleForgotSubmit}>
               <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14 }}>
-                Informe seu usuário. Os administradores do sistema serão avisados por e-mail para
-                redefinir sua senha.
+                Informe seu usuário ou e-mail cadastrado. Os administradores do sistema serão
+                avisados para redefinir sua senha.
               </p>
               <div className="field" style={{ marginBottom: 18 }}>
-                <label htmlFor="forgot-username">Usuário</label>
+                <label htmlFor="forgot-username">Usuário ou e-mail</label>
                 <input id="forgot-username" type="text" value={forgotUsername} onChange={(e) => setForgotUsername(e.target.value)}
                        placeholder="ex.: mecanico" autoComplete="username" required />
               </div>
               {forgotMsg && (
-                <div className="badge badge-ok" style={{ display: "block", marginBottom: 14, padding: "8px 12px" }}>
+                <div className="badge badge-ok" style={{ display: "block", whiteSpace: "normal", marginBottom: 14, padding: "8px 12px" }}>
                   {forgotMsg}
                 </div>
               )}

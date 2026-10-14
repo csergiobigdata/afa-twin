@@ -32,14 +32,20 @@ def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depend
     seed.ensure_admin_users) para que um deles redefina a senha manualmente.
     Responde com a mesma mensagem genérica mesmo se o usuário não existir,
     para não confirmar/negar quais usuários estão cadastrados; só dispara o
-    e-mail quando o usuário de fato existe."""
+    e-mail quando o usuário de fato existe. Aceita tanto o username de login
+    quanto o e-mail cadastrado na Pessoa vinculada - a tela de login só pede
+    "Usuário", mas é natural o usuário digitar o e-mail por engano."""
     user = db.query(models.User).filter(models.User.username == payload.username).first()
+    if user is None:
+        person = db.query(models.Person).filter(models.Person.email == payload.username).first()
+        if person is not None:
+            user = db.query(models.User).filter(models.User.person_id == person.id).first()
     if user is not None:
         admin_emails = {email for _, email, _ in ADMIN_USERS}
         admins = db.query(models.Person).filter(models.Person.email.in_(admin_emails)).all()
-        subject = f"[AFA-TWIN] Solicitação de redefinição de senha: usuário \"{payload.username}\""
+        subject = f"[AFA-TWIN] Solicitação de redefinição de senha: usuário \"{user.username}\""
         message = (
-            f"O usuário \"{payload.username}\" solicitou a redefinição de senha pela tela de login do "
+            f"O usuário \"{user.username}\" solicitou a redefinição de senha pela tela de login do "
             f"AFA-TWIN e não conseguiu acessar o sistema.\n\n"
             f"Como administrador, acesse o banco/ambiente de produção e redefina a senha manualmente "
             f"para esse usuário."
@@ -49,9 +55,7 @@ def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depend
                 db, models.NotificationChannel.EMAIL, admin, subject, message,
                 reason=models.NotificationReason.SENHA_ESQUECIDA,
             )
-    return schemas.ForgotPasswordResponse(
-        detail="Se o usuário existir, os administradores do sistema foram notificados para redefinir a senha."
-    )
+    return schemas.ForgotPasswordResponse(detail="Acesse seu e-mail para redefinir sua senha.")
 
 
 @router.get("/me", response_model=schemas.TokenResponse)
