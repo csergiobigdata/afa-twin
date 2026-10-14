@@ -88,7 +88,8 @@ Detalhes completos, incluindo como instalar como aplicativo em um tablet: [`docs
   por componente, com alerta automático no Painel quando o vencimento se aproxima ou já passou.
 - ✅ **Histórico de manutenção por peça**: ordens de serviço, equipe envolvida, responsável e
   notificações emitidas, consultável por componente (aba Componentes → Histórico).
-- ✅ **Notificações** (e-mail real via SMTP e SMS real via Twilio quando configurados; WhatsApp simulado
+- ✅ **Notificações** (e-mail real via Resend — ou SMTP como alternativa — e SMS real via Twilio quando
+  configurados; WhatsApp simulado
   nesta fase, sem custo) disparadas automaticamente na mudança de status de uma aeronave e sob demanda
   — pelo Painel ou diretamente no cadastro da aeronave — para peças próximas do vencimento, com
   histórico completo.

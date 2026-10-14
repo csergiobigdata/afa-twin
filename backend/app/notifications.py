@@ -11,12 +11,20 @@ pelo usuário:
 
 Transparência sobre o que é real e o que é simulado nesta fase piloto:
 
-- **E-mail**: se as variáveis de ambiente `AFA_TWIN_SMTP_HOST`,
-  `AFA_TWIN_SMTP_USER` e `AFA_TWIN_SMTP_PASSWORD` estiverem configuradas
-  (ex.: usando uma conta de e-mail já existente, sem custo adicional), o
-  envio é **real** via SMTP (`smtplib`, biblioteca padrão do Python - sem
-  dependência paga). Sem essa configuração, a notificação fica registrada
-  no histórico como "Simulada".
+- **E-mail**: se `AFA_TWIN_RESEND_API_KEY` estiver configurada (conta
+  Resend - gratuita até 100 e-mails/dia, sem precisar de senha de app numa
+  conta de e-mail pessoal), o envio é **real** via a REST API do Resend
+  (chamada HTTP direta com `urllib.request`, biblioteca padrão - sem SDK
+  adicional). É o método preferido. Se não estiver configurada mas
+  `AFA_TWIN_SMTP_HOST`/`AFA_TWIN_SMTP_USER`/`AFA_TWIN_SMTP_PASSWORD`
+  estiverem (ex.: uma conta de e-mail já existente, com senha de app), o
+  envio real cai para SMTP (`smtplib`, biblioteca padrão) como alternativa.
+  Sem nenhuma das duas configuradas, a notificação fica registrada no
+  histórico como "Simulada". Nota sobre o Resend: sem verificar um domínio
+  próprio no painel Resend, o remetente fica restrito a
+  `onboarding@resend.dev` e o envio só é aceito para o e-mail da própria
+  conta Resend (modo sandbox/teste) - verificar um domínio (gratuito,
+  requer só acesso ao DNS dele) libera o envio para qualquer destinatário.
 - **SMS**: se `AFA_TWIN_TWILIO_ACCOUNT_SID`, `AFA_TWIN_TWILIO_AUTH_TOKEN` e
   `AFA_TWIN_TWILIO_FROM_NUMBER` estiverem configuradas (conta Twilio - trial
   gratuito com crédito inicial, depois pago por mensagem, ver docs/06 seção
@@ -59,11 +67,39 @@ SMTP_FROM = os.environ.get("AFA_TWIN_SMTP_FROM", SMTP_USER or "")
 
 SMTP_CONFIGURED = bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
 
+RESEND_API_KEY = os.environ.get("AFA_TWIN_RESEND_API_KEY")
+RESEND_FROM = os.environ.get("AFA_TWIN_RESEND_FROM", "AFA-TWIN <onboarding@resend.dev>")
+
+RESEND_CONFIGURED = bool(RESEND_API_KEY)
+
 TWILIO_ACCOUNT_SID = os.environ.get("AFA_TWIN_TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.environ.get("AFA_TWIN_TWILIO_AUTH_TOKEN")
 TWILIO_FROM_NUMBER = os.environ.get("AFA_TWIN_TWILIO_FROM_NUMBER")
 
 TWILIO_CONFIGURED = bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_FROM_NUMBER)
+
+
+def _send_email_via_resend(to_email: str, subject: str, message: str) -> tuple[bool, str]:
+    body = json.dumps({"from": RESEND_FROM, "to": [to_email], "subject": subject, "text": message}).encode()
+    req = urllib.request.Request(
+        "https://api.resend.com/emails", data=body, method="POST",
+        headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            payload = json.loads(resp.read().decode())
+        return True, f"E-mail enviado com sucesso para {to_email} via Resend (id {payload.get('id', '—')})."
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = json.loads(exc.read().decode()).get("message", str(exc))
+        except Exception:  # noqa: BLE001
+            detail = str(exc)
+        # Erro comum sem domínio verificado no Resend: só é possível enviar
+        # para o e-mail da própria conta Resend (modo sandbox) - deixado
+        # explícito aqui para não parecer uma falha genérica.
+        return False, f"Falha no envio via Resend para {to_email}: {detail}"
+    except Exception as exc:  # noqa: BLE001
+        return False, f"Falha no envio via Resend para {to_email}: {exc}"
 
 
 def _send_email_real(to_email: str, subject: str, message: str) -> tuple[bool, str]:
@@ -143,6 +179,10 @@ def send_notification(
     if channel == models.NotificationChannel.EMAIL:
         if not recipient.email:
             status, detail = models.NotificationStatus.FALHA, f"{recipient.full_name} não possui e-mail cadastrado."
+        elif RESEND_CONFIGURED:
+            ok, info = _send_email_via_resend(recipient.email, subject, message)
+            status = models.NotificationStatus.ENVIADA if ok else models.NotificationStatus.FALHA
+            detail = info
         elif SMTP_CONFIGURED:
             ok, info = _send_email_real(recipient.email, subject, message)
             status = models.NotificationStatus.ENVIADA if ok else models.NotificationStatus.FALHA
@@ -150,8 +190,9 @@ def send_notification(
         else:
             status = models.NotificationStatus.SIMULADA
             detail = (
-                "Envio real de e-mail não configurado nesta instância (defina AFA_TWIN_SMTP_HOST/"
-                "AFA_TWIN_SMTP_USER/AFA_TWIN_SMTP_PASSWORD). Notificação registrada no histórico."
+                "Envio real de e-mail não configurado nesta instância (defina AFA_TWIN_RESEND_API_KEY, "
+                "ou AFA_TWIN_SMTP_HOST/AFA_TWIN_SMTP_USER/AFA_TWIN_SMTP_PASSWORD). Notificação registrada "
+                "no histórico."
             )
     elif channel == models.NotificationChannel.SMS:
         e164 = _to_e164_br(recipient.phone_full)

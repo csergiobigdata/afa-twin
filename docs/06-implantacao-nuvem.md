@@ -134,7 +134,8 @@ versão depois de alterações no código.
    | `AFA_TWIN_SECRET_KEY` | valor aleatório longo e secreto (`python -c "import secrets;print(secrets.token_hex(32))"`) |
    | `AFA_TWIN_ALLOWED_ORIGINS` | URL exata do frontend publicado, ex.: `https://afa-twin-web.vercel.app` |
    | `AFA_TWIN_ACCESS_KEY` | *(opcional, seção 6)* uma chave extra de acesso |
-   | `AFA_TWIN_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `_FROM` | *(opcional)* para e-mails reais de alerta |
+   | `AFA_TWIN_RESEND_API_KEY`, `_FROM` | *(opcional, preferencial)* para e-mails reais via Resend (grátis até 100/dia, sem precisar de senha de app numa conta de e-mail pessoal - resend.com) |
+   | `AFA_TWIN_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `_FROM` | *(opcional, alternativa)* para e-mails reais de alerta via SMTP, se Resend não for usado |
    | `AFA_TWIN_TWILIO_ACCOUNT_SID`, `_AUTH_TOKEN`, `_FROM_NUMBER` | *(opcional)* para SMS reais de alerta via Twilio - conta trial grátis com crédito inicial (depois, pago por mensagem); numa conta trial, o destino precisa estar verificado em console.twilio.com → Phone Numbers → Verified Caller IDs |
 
 4. Deploy. Anote a URL pública gerada (ex.: `https://afa-twin-api.vercel.app`).
