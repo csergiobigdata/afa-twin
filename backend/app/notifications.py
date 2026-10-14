@@ -78,12 +78,22 @@ TWILIO_FROM_NUMBER = os.environ.get("AFA_TWIN_TWILIO_FROM_NUMBER")
 
 TWILIO_CONFIGURED = bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_FROM_NUMBER)
 
+# Cloudflare (na frente da API do Resend, e possivelmente de outras) rejeita
+# com HTTP 403 (erro Cloudflare 1010 - "banido por assinatura do
+# navegador") requisições com o User-Agent padrão do urllib
+# ("Python-urllib/3.x", reconhecido como assinatura de bot) - um
+# User-Agent comum resolve, sem precisar de nenhuma biblioteca HTTP externa.
+_HTTP_USER_AGENT = "afa-twin-backend/1.0"
+
 
 def _send_email_via_resend(to_email: str, subject: str, message: str) -> tuple[bool, str]:
     body = json.dumps({"from": RESEND_FROM, "to": [to_email], "subject": subject, "text": message}).encode()
     req = urllib.request.Request(
         "https://api.resend.com/emails", data=body, method="POST",
-        headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+        headers={
+            "Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json",
+            "User-Agent": _HTTP_USER_AGENT,
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
@@ -137,7 +147,10 @@ def _send_sms_real(to_e164: str, message: str) -> tuple[bool, str]:
     req = urllib.request.Request(
         f"https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
         data=body, method="POST",
-        headers={"Authorization": f"Basic {auth}", "Content-Type": "application/x-www-form-urlencoded"},
+        headers={
+            "Authorization": f"Basic {auth}", "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": _HTTP_USER_AGENT,
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
