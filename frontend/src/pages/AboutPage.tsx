@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { AfaTwinMark } from "../components/Layout";
 import { useTheme } from "../theme/ThemeContext";
+import { useAuth } from "../auth/AuthContext";
+import { api, ApiError } from "../api/client";
 
 const APP_VERSION = "1.2";
 const DEVELOPER_NAME = "Walter Vinicius da Costa Malwald";
@@ -13,6 +16,25 @@ const DEVELOPER_NAME = "Walter Vinicius da Costa Malwald";
  * (ex.: hangar). */
 export default function AboutPage() {
   const { theme, setTheme } = useTheme();
+  const { role } = useAuth();
+  const [resetUsername, setResetUsername] = useState("");
+  const [resetMsg, setResetMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [resetBusy, setResetBusy] = useState(false);
+
+  async function handleResetPassword() {
+    if (!resetUsername.trim()) return;
+    setResetBusy(true);
+    setResetMsg(null);
+    try {
+      const res = await api.post<{ detail: string }>(`/admin/reset-password/${encodeURIComponent(resetUsername.trim())}`);
+      setResetMsg({ ok: true, text: res.detail });
+      setResetUsername("");
+    } catch (err) {
+      setResetMsg({ ok: false, text: err instanceof ApiError ? err.message : "Falha ao redefinir a senha." });
+    } finally {
+      setResetBusy(false);
+    }
+  }
 
   return (
     <div>
@@ -76,6 +98,32 @@ export default function AboutPage() {
           </button>
         </div>
       </div>
+
+      {role === "Gestor / Responsável Técnico" && (
+        <div className="card" style={{ padding: 22, marginTop: 18 }}>
+          <h2 style={{ fontSize: 15.5, margin: "0 0 4px" }}>Administração — Redefinir senha</h2>
+          <p style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14, maxWidth: 560 }}>
+            Use quando receber o e-mail de "Esqueci minha Senha" da tela de login. Devolve a senha do
+            usuário informado ao padrão (usuários de teste voltam para <code>AfaTwin@2026</code>;
+            os 2 administradores voltam para <code>Afatwin@2026#</code>).
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              type="text" value={resetUsername} onChange={(e) => setResetUsername(e.target.value)}
+              placeholder="ex.: mecanico" style={{ maxWidth: 220 }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleResetPassword(); }}
+            />
+            <button type="button" className="btn btn-primary" disabled={resetBusy || !resetUsername.trim()} onClick={handleResetPassword}>
+              {resetBusy ? "Redefinindo…" : "Redefinir senha"}
+            </button>
+          </div>
+          {resetMsg && (
+            <div className={`badge ${resetMsg.ok ? "badge-ok" : "badge-critical"}`} style={{ display: "block", marginTop: 12, padding: "8px 12px" }}>
+              {resetMsg.text}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

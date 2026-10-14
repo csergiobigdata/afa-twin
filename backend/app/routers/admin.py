@@ -1,12 +1,16 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
 from .. import models, security
 from ..database import (
-    Base, engine, sync_missing_columns, sync_missing_indexes, sync_postgres_enum_types,
+    Base, engine, get_db, sync_missing_columns, sync_missing_indexes, sync_postgres_enum_types,
     reformat_order_numbers, migrate_availability_code_column, cap_max_speed_values,
 )
+from ..seed import ADMIN_PASSWORD_DEFAULT, ADMIN_USERS
 
 router = APIRouter(prefix="/api/admin", tags=["administração"])
+
+TEST_USER_PASSWORD_DEFAULT = "AfaTwin@2026"
 
 
 @router.post(
@@ -37,3 +41,25 @@ def sync_schema():
     migrate_availability_code_column()
     cap_max_speed_values()
     return {"status": "ok", "detail": "Tabelas, tipos enum, índices e colunas sincronizados."}
+
+
+@router.post(
+    "/reset-password/{username}",
+    dependencies=[Depends(security.require_roles(models.PersonRole.GESTOR.value))],
+)
+def reset_password(username: str, db: Session = Depends(get_db)):
+    """Ação do administrador em resposta ao aviso de "Esqueci minha Senha"
+    (ver routers/auth.py::forgot_password) - este piloto não tem redefinição
+    self-service pelo próprio usuário, então um Gestor chama esta rotina para
+    devolver a conta ao valor padrão: senha de usuário de teste
+    (AfaTwin@2026) para qualquer username normal, ou a senha padrão de
+    administrador (Afatwin@2026#) se o próprio username for um dos 2
+    administradores (seed.ADMIN_USERS)."""
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if user is None:
+        raise HTTPException(404, "Usuário não encontrado")
+    is_admin = any(username == admin_username for admin_username, _, _ in ADMIN_USERS)
+    new_password = ADMIN_PASSWORD_DEFAULT if is_admin else TEST_USER_PASSWORD_DEFAULT
+    user.password_hash, user.password_salt = security.hash_password(new_password)
+    db.commit()
+    return {"status": "ok", "detail": f"Senha de \"{username}\" redefinida para o padrão."}

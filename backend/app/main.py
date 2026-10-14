@@ -118,6 +118,7 @@ def on_startup():
     db = SessionLocal()
     try:
         seed.seed_if_empty(db)
+        seed.ensure_admin_users(db)
         seed.seed_authorized_configurations_if_empty(db)
         seed.seed_configuration_codes_if_empty(db)
         seed.seed_availability_codes_if_empty(db)

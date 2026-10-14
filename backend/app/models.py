@@ -710,6 +710,7 @@ class NotificationReason(str, enum.Enum):
     MANUTENCAO_REGISTRADA = "Manutenção Registrada"
     CANCELAMENTO_OS = "Cancelamento de Ordem de Serviço"
     MANUAL = "Manual"
+    SENHA_ESQUECIDA = "Senha Esquecida"
 
 
 class NotificationStatus(str, enum.Enum):

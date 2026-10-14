@@ -32,6 +32,41 @@ def _seed_photo_asset(db: Session, svg_body: str) -> int:
     return asset.id
 
 
+ADMIN_PASSWORD_DEFAULT = "Afatwin@2026#"
+
+ADMIN_USERS = [
+    ("carlossergio631", "carlossergio631@yahoo.com.br", "Carlos Sérgio"),
+    ("walter.vinicosta", "walter.vinicosta@gmail.com", "Walter Vinicius da Costa Malwald"),
+]
+
+
+def ensure_admin_users(db: Session) -> None:
+    """Garante que os 2 usuários administradores do piloto sempre existam,
+    com acesso Gestor/Responsável Técnico - independente do estado do banco
+    (diferente de seed_if_empty, que é no-op num banco de produção já em
+    uso). Serve como alternativa de login sempre funcional caso uma conta de
+    usuário de teste pare de autenticar. Idempotente: não recria nem altera
+    a senha de uma conta administradora já existente (evita sobrescrever uma
+    senha que o próprio administrador já tenha trocado)."""
+    for username, email, full_name in ADMIN_USERS:
+        if db.query(models.User).filter(models.User.username == username).first():
+            continue
+        person = db.query(models.Person).filter(models.Person.email == email).first()
+        if person is None:
+            person = models.Person(
+                full_name=full_name, organization="Força Aérea Brasileira",
+                role=models.PersonRole.GESTOR, email=email,
+            )
+            db.add(person)
+            db.flush()
+        pw_hash, salt = security.hash_password(ADMIN_PASSWORD_DEFAULT)
+        db.add(models.User(
+            username=username, password_hash=pw_hash, password_salt=salt,
+            role=models.PersonRole.GESTOR, person_id=person.id,
+        ))
+    db.commit()
+
+
 def seed_if_empty(db: Session) -> None:
     if db.query(models.Aircraft).count() > 0:
         return

@@ -484,6 +484,14 @@ class TokenResponse(BaseModel):
     person: Optional[PersonOut] = None
 
 
+class ForgotPasswordRequest(BaseModel):
+    username: str
+
+
+class ForgotPasswordResponse(BaseModel):
+    detail: str
+
+
 # ---------------- Inspeção Fotográfica ----------------
 
 class InspectionFindingBase(BaseModel):

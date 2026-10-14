@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { AfaTwinMark } from "../components/Layout";
 import AircraftSilhouette from "../components/AircraftSilhouette";
+import { api } from "../api/client";
 
 const DEMO_USERS = [
   { user: "piloto", label: "Piloto" },
@@ -19,6 +20,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotUsername, setForgotUsername] = useState("");
+  const [forgotMsg, setForgotMsg] = useState<string | null>(null);
+  const [forgotBusy, setForgotBusy] = useState(false);
 
   if (!loading && isAuthenticated) return <Navigate to="/" replace />;
 
@@ -33,6 +38,20 @@ export default function LoginPage() {
       setError("Usuário ou senha inválidos. Verifique suas credenciais.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleForgotSubmit(e: FormEvent) {
+    e.preventDefault();
+    setForgotBusy(true);
+    setForgotMsg(null);
+    try {
+      const res = await api.post<{ detail: string }>("/auth/forgot-password", { username: forgotUsername });
+      setForgotMsg(res.detail);
+    } catch {
+      setForgotMsg("Se o usuário existir, os administradores do sistema foram notificados para redefinir a senha.");
+    } finally {
+      setForgotBusy(false);
     }
   }
 
@@ -73,30 +92,64 @@ export default function LoginPage() {
           <p style={{ fontSize: 13.5, color: "var(--text-secondary)", marginBottom: 22 }}>
             Entre com sua matrícula/usuário e senha institucional.
           </p>
-          <form onSubmit={handleSubmit}>
-            <div className="field" style={{ marginBottom: 14 }}>
-              <label htmlFor="username">Usuário</label>
-              <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-                     placeholder="ex.: mecanico" autoComplete="username" required />
-            </div>
-            <div className="field" style={{ marginBottom: 18 }}>
-              <label htmlFor="password">Senha</label>
-              <input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
-                     placeholder="••••••••" autoComplete="current-password" required />
-              <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 12, fontWeight: 400, color: "var(--text-secondary)", cursor: "pointer" }}>
-                <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} style={{ width: "auto" }} />
-                Mostrar senha
-              </label>
-            </div>
-            {error && (
-              <div className="badge badge-critical" style={{ display: "block", marginBottom: 14, padding: "8px 12px" }}>
-                {error}
+          {!showForgot ? (
+            <form onSubmit={handleSubmit}>
+              <div className="field" style={{ marginBottom: 14 }}>
+                <label htmlFor="username">Usuário</label>
+                <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+                       placeholder="ex.: mecanico" autoComplete="username" required />
               </div>
-            )}
-            <button type="submit" className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} disabled={busy}>
-              {busy ? "Entrando…" : "Entrar"}
-            </button>
-          </form>
+              <div className="field" style={{ marginBottom: 10 }}>
+                <label htmlFor="password">Senha</label>
+                <input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
+                       placeholder="••••••••" autoComplete="current-password" required />
+                <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 12, fontWeight: 400, color: "var(--text-secondary)", cursor: "pointer" }}>
+                  <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} style={{ width: "auto" }} />
+                  Mostrar senha
+                </label>
+              </div>
+              <div style={{ textAlign: "right", marginBottom: 18 }}>
+                <button type="button" onClick={() => { setShowForgot(true); setForgotMsg(null); setForgotUsername(username); }}
+                        style={{ background: "none", border: "none", padding: 0, fontSize: 12.5, color: "var(--fab-blue-500)", cursor: "pointer", textDecoration: "underline" }}>
+                  Esqueci minha senha
+                </button>
+              </div>
+              {error && (
+                <div className="badge badge-critical" style={{ display: "block", marginBottom: 14, padding: "8px 12px" }}>
+                  {error}
+                </div>
+              )}
+              <button type="submit" className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }} disabled={busy}>
+                {busy ? "Entrando…" : "Entrar"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleForgotSubmit}>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", marginTop: 0, marginBottom: 14 }}>
+                Informe seu usuário. Os administradores do sistema serão avisados por e-mail para
+                redefinir sua senha.
+              </p>
+              <div className="field" style={{ marginBottom: 18 }}>
+                <label htmlFor="forgot-username">Usuário</label>
+                <input id="forgot-username" type="text" value={forgotUsername} onChange={(e) => setForgotUsername(e.target.value)}
+                       placeholder="ex.: mecanico" autoComplete="username" required />
+              </div>
+              {forgotMsg && (
+                <div className="badge badge-ok" style={{ display: "block", marginBottom: 14, padding: "8px 12px" }}>
+                  {forgotMsg}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1, justifyContent: "center" }}
+                        onClick={() => { setShowForgot(false); setForgotMsg(null); }}>
+                  Voltar
+                </button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1, justifyContent: "center" }} disabled={forgotBusy || !forgotUsername.trim()}>
+                  {forgotBusy ? "Enviando…" : "Enviar"}
+                </button>
+              </div>
+            </form>
+          )}
 
           <div style={{ marginTop: 24, paddingTop: 18, borderTop: "1px solid var(--border-subtle)" }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 8 }}>
