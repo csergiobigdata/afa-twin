@@ -87,6 +87,23 @@ def create_order(
     aircraft = db.get(models.Aircraft, payload.aircraft_id)
     if not aircraft:
         raise HTTPException(400, "Aeronave informada não existe")
+
+    # Nunca mais de uma OS ativa/em andamento por aeronave ao mesmo tempo -
+    # a pedido do usuário, após um caso real em produção de 2 OS abertas
+    # simultâneas para a mesma aeronave (mesmo componente). Se já houver
+    # outro problema em aberto, ele deve ser tratado (ou a OS existente
+    # atualizada) antes de abrir uma nova, não uma segunda OS paralela.
+    existing_open = db.query(models.MaintenanceOrder).filter(
+        models.MaintenanceOrder.aircraft_id == aircraft.id,
+        models.MaintenanceOrder.status.notin_(list(_TERMINAL_STATUSES)),
+    ).first()
+    if existing_open:
+        raise HTTPException(
+            400,
+            f"A aeronave {aircraft.tail_number} já possui uma OS em aberto ({existing_open.order_number} - "
+            f"\"{existing_open.title}\"). Conclua ou cancele essa OS antes de abrir uma nova para a mesma aeronave.",
+        )
+
     data = payload.model_dump()
 
     # Se a OS referencia um protocolo/checklist (inspeção de aeronave
