@@ -19,6 +19,7 @@ implementadas, nesta ordem:
 4. [`docs/04-protocolos-e-conformidade.md`](docs/04-protocolos-e-conformidade.md) — conceitos de manutenção aeronáutica adotados e o que fica para uma fase posterior.
 5. [`docs/05-guia-instalacao-execucao.md`](docs/05-guia-instalacao-execucao.md) — **como rodar o projeto** localmente.
 6. [`docs/06-implantacao-nuvem.md`](docs/06-implantacao-nuvem.md) — **como publicar em nuvem gratuita** com acesso restrito aos usuários definidos.
+7. [`docs/07-fluxo-ordem-de-servico.md`](docs/07-fluxo-ordem-de-servico.md) — como funciona a Ordem de Serviço, da criação à mudança automática de status da aeronave e ao boletim por e-mail aos administradores.
 
 Também há um **manual do usuário ilustrado**, com telas de exemplo de cada módulo, em
 [`docs/AFA-TWIN-Manual-do-Usuario.pdf`](docs/AFA-TWIN-Manual-do-Usuario.pdf).
@@ -88,11 +89,13 @@ Detalhes completos, incluindo como instalar como aplicativo em um tablet: [`docs
   por componente, com alerta automático no Painel quando o vencimento se aproxima ou já passou.
 - ✅ **Histórico de manutenção por peça**: ordens de serviço, equipe envolvida, responsável e
   notificações emitidas, consultável por componente (aba Componentes → Histórico).
-- ✅ **Notificações** (e-mail real via Resend — ou SMTP como alternativa — e SMS real via Twilio quando
-  configurados; WhatsApp simulado
-  nesta fase, sem custo) disparadas automaticamente na mudança de status de uma aeronave e sob demanda
-  — pelo Painel ou diretamente no cadastro da aeronave — para peças próximas do vencimento, com
-  histórico completo.
+- ✅ **Notificações** (e-mail real via Resend — layout HTML profissional, com tabelas e badges — ou
+  SMTP como alternativa; SMS real via Twilio; WhatsApp simulado nesta fase, sem custo) disparadas
+  automaticamente na mudança de status de uma aeronave e sob demanda — pelo Painel ou diretamente no
+  cadastro da aeronave — para peças próximas do vencimento, com histórico completo. Alertas de
+  desgaste/vencimento de peça são **reenviados automaticamente todo dia** (Vercel Cron) para toda
+  aeronave que ainda não estiver em manutenção, e **sempre chegam aos 2 administradores do sistema**,
+  mesmo quando não há responsável vinculado à aeronave.
 - ✅ **Meu Perfil**: cada usuário visualiza/edita sua própria foto, e-mail e telefone (DDD + número)
   usados para receber alertas.
 - ✅ **Grupos/Equipes responsáveis**: cadastro de equipes nomeadas (piloto titular, piloto reserva,
@@ -103,11 +106,21 @@ Detalhes completos, incluindo como instalar como aplicativo em um tablet: [`docs
   número, com máscara e validação) — usuários nunca são excluídos, apenas inativados/reativados.
 - ✅ **Cadastros Auxiliares**: catálogos editáveis (sem precisar de nova versão do sistema) para
   Organização, Posto/Graduação/Cargo, Especialidade e Esquadrão/Unidade.
+- ✅ **2 administradores sempre ativos** (recriados automaticamente se alguma vez forem removidos do
+  banco) como alternativa de login sempre funcional, além dos usuários de teste. Tela de login com
+  **"Esqueci minha Senha"** (aceita usuário ou e-mail), que avisa os administradores por e-mail; um
+  Gestor redefine a senha de qualquer conta de volta ao padrão em Sobre → Administração.
 - ✅ **Ordens de Serviço imutáveis em status terminal**: uma OS concluída ou cancelada não pode mais
   ser alterada nem excluída; cancelar exige registrar quem cancelou e por quê, com notificação
   automática à equipe responsável. Módulo Manutenção dividido em **Ordem de Serviço** e **Cadastro de
   Manutenção** (catálogos de Componente Associado e Tipo de Intervalo, mais a referência de Tipo de
-  Manutenção).
+  Manutenção). Uma OS referencia um **Componente associado** (peça específica) ou um
+  **Protocolo/Checklist aplicado** (inspeção programada da aeronave inteira, com os itens do checklist
+  à vista) — mutuamente exclusivos. Abrir uma OS **induz automaticamente o status da aeronave**
+  ("Operacional" → Em Manutenção/Em Inspeção/Em Modernização, conforme o tipo da OS), que só volta a
+  "Operacional" quando a última OS aberta é encerrada — reproduzindo a prática real da Aeronáutica (ver
+  [docs/07](docs/07-fluxo-ordem-de-servico.md)). Cada indução dispara um boletim completo por e-mail aos
+  administradores, com o retrato da aeronave no momento (status, saúde, risco, horas, categoria).
 - ✅ **Trilha de auditoria**: toda criação, alteração, inativação e cancelamento relevante fica registrada
   (quem, quando, o quê), consultável na tela "Auditoria", com filtro, ordenação e paginação no servidor
   (10 registros por página) para continuar rápida conforme o histórico cresce.

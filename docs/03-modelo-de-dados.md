@@ -240,7 +240,7 @@ erDiagram
 | `RiskLevel` | Baixo · Médio · Alto (entrada manual de missão prevista/meteorologia no modelo de risco ponderado) |
 | `DefectType` | Corrosão · Trinca · Vazamento · Desgaste · Outro (Inspeção Fotográfica) |
 | `NotificationChannel` | E-mail · SMS · WhatsApp |
-| `NotificationReason` | Mudança de Status da Aeronave · Vencimento de Peça · Manutenção Registrada · Cancelamento de Ordem de Serviço · Manual |
+| `NotificationReason` | Mudança de Status da Aeronave · Vencimento de Peça · Manutenção Registrada · Cancelamento de Ordem de Serviço · Manual · Senha Esquecida |
 | `NotificationStatus` | Enviada · Simulada · Falha no Envio |
 | `LookupCategory` | Organização · Posto/Graduação/Cargo · Especialidade · Esquadrão/Unidade · Componente Associado (padrão) · Tipo de Intervalo de Manutenção · Categoria de Alerta de Manutenção Preventiva · Configuração de Disponibilidade (asas/hardpoints) — cada uma vira uma aba editável em Usuários → Cadastros Auxiliares (ou em Manutenção → Cadastro de Manutenção, para as três últimas) |
 | `AuditAction` | Criação · Alteração · Inativação · Reativação · Cancelamento |
@@ -384,6 +384,21 @@ classificar como a vida de um componente é controlada.
     (não faz OCR nem analisa pixels/cores): cada `equipment` do cadastro atual é procurado nesse texto
     (normalizando variações de hífen/travessão e espaçamento) - encontrado vira "A", ausente vira "I".
     Ver `backend/app/config_pdf.py` e `routers/authorized_configs.py::load_from_pdf`.
+
+15. **`MaintenanceOrder.checklist_template_id`** (opcional, FK para `ChecklistTemplate`) referencia o
+    protocolo/checklist aplicado quando a OS é uma inspeção que cobre a aeronave inteira, sem um
+    componente único — mutuamente exclusivo com `component_id` na interface (ver
+    [docs/07](07-fluxo-ordem-de-servico.md)). Se a OS não informar `reference_doc` explícita, herda a do
+    próprio protocolo (`ChecklistTemplate.reference_doc`) ao ser criada.
+16. **Abrir uma OS induz automaticamente `Aircraft.status`** (de "Operacional" para "Em Manutenção"/"Em
+    Inspeção"/"Em Modernização", conforme o `MaintenanceType` da OS — ver
+    `routers/maintenance.py::_INDUCED_STATUS_BY_TYPE`); o status só volta a "Operacional" quando a
+    **última** OS aberta daquela aeronave é concluída ou cancelada. Detalhado em
+    [docs/04](04-protocolos-e-conformidade.md), itens 8-9, e [docs/07](07-fluxo-ordem-de-servico.md).
+17. **2 usuários administradores (`seed.ADMIN_USERS`) sempre existem**, recriados de forma idempotente a
+    cada início da API (`seed.ensure_admin_users`, chamado em `main.py::on_startup`) caso alguma vez
+    sejam removidos do banco — servem como alternativa de login sempre funcional, além dos usuários de
+    teste. Reaproveita uma `Person` já cadastrada com o mesmo e-mail, se existir, em vez de duplicar.
 
 ## 4. Caminho de migração para nuvem
 

@@ -127,6 +127,37 @@ item 10). Mesmo princípio recomendado para qualquer tela de lista futura com po
 ilimitado (ex.: Ordens de Serviço, Notificações) - evitar o padrão "baixar tudo e filtrar no cliente"
 assim que a lista deixar de ser pequena por natureza.
 
+### 3.4. Notificações: e-mail real (Resend/SMTP), HTML profissional, job diário
+
+`backend/app/notifications.py` concentra todo envio de e-mail/SMS/WhatsApp. **E-mail**: tenta o Resend
+primeiro (`AFA_TWIN_RESEND_API_KEY` - API HTTP via `urllib.request`, sem SDK adicional, gratuito até
+100/dia, sem exigir senha de app numa conta pessoal), cai para SMTP (`smtplib`, stdlib) se Resend não
+estiver configurado, e registra "Simulada" no histórico se nenhum dos dois estiver - nunca falha
+silenciosamente nem trava o fluxo que disparou a notificação (toda chamada fica dentro de um
+`try/except` no chamador). **SMS** segue o mesmo padrão com Twilio. Ambos os provedores HTTP
+(Resend/Twilio) exigem um `User-Agent` explícito nas chamadas via `urllib.request` - o Cloudflare (na
+frente de ambas as APIs) rejeita com HTTP 403 (erro 1010, "assinatura de bot") o `User-Agent` padrão da
+biblioteca (`Python-urllib/3.x`), descoberto em produção.
+
+As mensagens (texto simples) sempre seguiram um padrão consistente - seções em MAIÚSCULAS, linhas
+"Rótulo: valor", marcadores "•", parágrafos soltos. Em vez de reescrever cada função gerando HTML na
+mão, `_render_email_html` interpreta esse mesmo texto e gera uma versão HTML com identidade visual do
+AFA-TWIN (cabeçalho navy, tabelas para os pares rótulo/valor, badges coloridos para Prioridade/Risco
+Operacional, listas para marcadores) - enviada como alternativa ao texto puro (campo `html` no Resend;
+`EmailMessage.add_alternative(..., subtype="html")` no SMTP, gerando `multipart/alternative`).
+
+Todo timestamp é gravado em UTC (`models.now_utc()`); exibido sempre em **horário de Brasília**
+(`models.to_brasilia()`, UTC-3 fixo - o Brasil não tem horário de verão desde 2019), tanto nos e-mails
+(backend) quanto nas telas (frontend força `timeZone: "America/Sao_Paulo"` explicitamente em
+`utils/format.ts`, deliberadamente **não** o fuso do dispositivo de quem está vendo a tela).
+
+Um **Vercel Cron Job** (`backend/vercel.json`, autenticado pelo header que a própria Vercel injeta via
+`CRON_SECRET`) chama `GET /api/admin/notify-daily-alerts` uma vez por dia - reenvia os alertas de
+desgaste/vencimento de peça para toda aeronave que ainda não estiver em manutenção/inspeção/modernização,
+sempre incluindo os 2 administradores do sistema como destinatários (além dos responsáveis vinculados,
+quando existirem) - ver [docs/06](06-implantacao-nuvem.md), seção 3.1, e
+[docs/07](07-fluxo-ordem-de-servico.md) para o fluxo completo de notificações de uma Ordem de Serviço.
+
 ## 4. Por que não usar [outras opções]
 
 - **Node.js/Express no backend**: descartado como escolha primária porque a evolução planejada do

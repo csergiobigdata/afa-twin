@@ -40,6 +40,13 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 **Troque essas senhas (ou desative essas contas) antes de qualquer teste com dados reais.**
 
+Além dessas, **2 contas administradoras sempre existem** (recriadas automaticamente se alguma vez forem
+removidas do banco), como alternativa de login sempre funcional — senha padrão `Afatwin@2026#` (note a
+capitalização diferente da senha dos usuários de teste). Ver `seed.ADMIN_USERS` em
+[docs/03](03-modelo-de-dados.md), item 17. A tela de login tem um link **"Esqueci minha Senha"** (aceita
+usuário ou e-mail) que avisa essas 2 contas por e-mail; um Gestor redefine a senha de qualquer conta de
+volta ao padrão em **Sobre → Administração**.
+
 ## 3. Frontend (aplicativo web / PWA)
 
 Em um novo terminal:

@@ -35,6 +35,16 @@ login**. As seções abaixo tratam de:
 > plano gratuito e passou a recusar novos deploys (HTTP 403 "Account credit usage exceeded"). Migrado
 > para um segundo projeto Vercel (`afa-twin-web`), reaproveitando o mesmo token já usado no backend -
 > ver `write_vercel_rewrites` em `tools/deploy_cloud.py` para o equivalente ao antigo `_redirects`.
+>
+> **Importante (2026-10-14):** o projeto `afa-twin-web` foi criado originalmente pelo dashboard da
+> Vercel (import do GitHub), o que deixa uma **integração Git** ligada por padrão - toda vez que o
+> script publica o backend e faz `git push`, a Vercel disparava sozinha um segundo deploy a partir do
+> repositório, SEM o `rootDirectory`/`vercel.json` gerados pelo script, derrubando o site em produção
+> (confirmado na prática: minutos depois de cada push, a aplicação parava de responder). Corrigido
+> desconectando permanentemente a integração Git do projeto (`DELETE /v9/projects/{id}/link` na API da
+> Vercel) - a partir daí, o único caminho de publicação é o próprio `deploy_cloud.py`, nunca mais um
+> deploy automático da Vercel a partir de um `git push`. Ao criar um projeto do zero pelo script
+> (`ensure_vercel_frontend_project`), ele já nasce sem essa integração.
 
 **Por que Vercel para o backend, e não Render/Railway/Fly (containers Docker "sempre ligados")?**
 Na prática, ao publicar este piloto, o **Render passou a exigir cartão de crédito cadastrado mesmo no
@@ -111,6 +121,20 @@ versão depois de alterações no código.
 > A rotina é aditiva e idempotente (nunca remove nada) - segura de chamar quantas vezes forem
 > necessárias, inclusive sem nenhuma alteração pendente.
 
+### 3.1 Job diário de alertas (Vercel Cron)
+
+[`backend/vercel.json`](../backend/vercel.json) declara um **Vercel Cron Job** que chama
+`GET /api/admin/notify-daily-alerts` todo dia às 12:00 UTC (09:00 em Brasília) - reenvia o alerta de
+peça próxima do vencimento para toda aeronave que ainda não estiver "Em Manutenção"/"Em Inspeção"
+(mesma regra de destinatários do botão manual no Painel: responsáveis vinculados + os 2 administradores
+sempre), a pedido do usuário: o aviso deve continuar chegando todo dia até a aeronave ser efetivamente
+induzida à manutenção. A Vercel ativa o cron automaticamente ao detectar esse arquivo num deploy de
+produção - não precisa de nenhum passo manual no dashboard. O endpoint é protegido pelo header que a
+própria Vercel injeta (`Authorization: Bearer <CRON_SECRET>`) quando essa variável está configurada no
+projeto (ver tabela acima); sem ela, o endpoint responde 401 para qualquer chamador, inclusive a própria
+Vercel. No plano gratuito (Hobby), cron jobs só podem rodar no máximo uma vez por dia - compatível com
+o uso daqui.
+
 ## 4. Publicação manual (alternativa, se preferir não gerar tokens de API)
 
 ### 4.1 Banco de dados (Neon)
@@ -137,6 +161,7 @@ versão depois de alterações no código.
    | `AFA_TWIN_RESEND_API_KEY`, `_FROM` | *(opcional, preferencial)* para e-mails reais via Resend (grátis até 100/dia, sem precisar de senha de app numa conta de e-mail pessoal - resend.com) |
    | `AFA_TWIN_SMTP_HOST`, `_PORT`, `_USER`, `_PASSWORD`, `_FROM` | *(opcional, alternativa)* para e-mails reais de alerta via SMTP, se Resend não for usado |
    | `AFA_TWIN_TWILIO_ACCOUNT_SID`, `_AUTH_TOKEN`, `_FROM_NUMBER` | *(opcional)* para SMS reais de alerta via Twilio - conta trial grátis com crédito inicial (depois, pago por mensagem); numa conta trial, o destino precisa estar verificado em console.twilio.com → Phone Numbers → Verified Caller IDs |
+   | `CRON_SECRET` | valor aleatório longo (ex.: `python -c "import secrets;print(secrets.token_hex(32))"`) - autentica o job diário de alertas de desgaste (seção 3.1); o script automatizado já gera e configura este valor sozinho |
 
 4. Deploy. Anote a URL pública gerada (ex.: `https://afa-twin-api.vercel.app`).
 
@@ -203,6 +228,9 @@ por **pessoa** continua sendo o login (seção 1); esta camada é só um reforç
       script automatizado já faz isso no segundo deploy.
 - [ ] Criar as contas reais de usuário (módulo Usuários, perfil Gestor) e desativar/trocar a senha das
       contas de demonstração (`gestor`, `piloto`, `mecanico`, `engenheiro`, `cientista`).
+- [ ] Trocar a senha padrão dos 2 administradores sempre existentes (`seed.ADMIN_USERS` - ver
+      [docs/03](03-modelo-de-dados.md)) antes de considerar o ambiente exposto a usuários reais; eles
+      continuam sendo recriados automaticamente (idempotente) se alguma vez forem removidos do banco.
 - [ ] Configurar `AFA_TWIN_SMTP_*` se o envio real de e-mail de alerta for necessário nesta fase.
 - [ ] Configurar `AFA_TWIN_TWILIO_*` se o envio real de SMS de alerta for necessário nesta fase.
 - [ ] Decidir se a camada extra opcional de chave de acesso (seção 6) será usada.
@@ -220,6 +248,7 @@ por **pessoa** continua sendo o login (seção 1); esta camada é só um reforç
 |---|---|
 | [`tools/deploy_cloud.py`](../tools/deploy_cloud.py) | Publica tudo (GitHub, Neon, Vercel backend, Vercel frontend) automaticamente via API |
 | [`backend/requirements.txt`](../backend/requirements.txt) | Já inclui o driver Postgres (`psycopg`) usado tanto localmente (se configurado) quanto em nuvem |
+| [`backend/vercel.json`](../backend/vercel.json) | Declara o Vercel Cron Job do job diário de alertas (seção 3.1) |
 | `frontend/dist/vercel.json` | Gerado automaticamente pelo script (`write_vercel_rewrites`) - proxy de `/api` para o backend + fallback de SPA |
 | [`backend/Dockerfile`](../backend/Dockerfile) | Alternativa em container p/ Render/Railway/Fly (seção 5, exige cartão) |
 | [`backend/.dockerignore`](../backend/.dockerignore) | Evita empacotar banco local/segredos na imagem Docker |
