@@ -49,6 +49,7 @@ Toda tentativa de notificação é sempre registrada em `Notification`
 from __future__ import annotations
 
 import base64
+import html as html_lib
 import json
 import os
 import re
@@ -90,9 +91,142 @@ TWILIO_CONFIGURED = bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_FRO
 # User-Agent comum resolve, sem precisar de nenhuma biblioteca HTTP externa.
 _HTTP_USER_AGENT = "afa-twin-backend/1.0"
 
+# --------------------------------------------------------------------------
+# Template de e-mail HTML - todo e-mail saía em texto puro, sem nenhuma
+# formatação (ver print anexado pelo usuário). As mensagens já seguiam um
+# padrão consistente, montado à mão em cada função deste módulo:
+# "SEÇÃO EM MAIÚSCULAS" (ex.: "ORDEM DE SERVIÇO", "AERONAVE"), seguida de
+# linhas "Rótulo: valor"; marcadores "• item"; ou parágrafos soltos. Em vez
+# de reescrever cada chamador para montar HTML na mão, _render_message_html
+# interpreta esse MESMO texto (reaproveitado tal qual para o campo "text",
+# que continua existindo como alternativa e para o histórico de
+# Notification.message) e gera uma versão em tabelas/HTML - qualidade
+# profissional sem duplicar a lógica de conteúdo de cada notificação.
+# --------------------------------------------------------------------------
+
+_PRIORITY_BADGE_COLORS = {"Baixa": "#1a9d5b", "Média": "#d99a00", "Alta": "#e06b1f", "Crítica": "#c62828"}
+_RISK_BADGE_COLORS = {"Baixo": "#1a9d5b", "Médio": "#d99a00", "Alto": "#e06b1f", "Crítico": "#c62828"}
+
+
+def _is_section_header(line: str) -> bool:
+    if not line or len(line) > 40 or ":" in line:
+        return False
+    return line == line.upper() and any(ch.isalpha() for ch in line)
+
+
+def _email_value_html(label: str, value: str) -> str:
+    """Rótulos conhecidos (Prioridade, Risco Operacional) ganham um badge
+    colorido, igual ao padrão visual já usado nas telas do app - os demais
+    valores saem como texto simples escapado."""
+    color = None
+    key = label.strip().lower()
+    if key == "prioridade":
+        color = _PRIORITY_BADGE_COLORS.get(value.strip())
+    elif key == "risco operacional":
+        color = _RISK_BADGE_COLORS.get(value.strip())
+    escaped = html_lib.escape(value)
+    if color:
+        return (
+            f'<span style="display:inline-block;padding:2px 10px;border-radius:999px;'
+            f'background:{color}22;color:{color};font-weight:700;font-size:12.5px;">{escaped}</span>'
+        )
+    return escaped
+
+
+def _render_message_html(message: str) -> str:
+    parts: list[str] = []
+    rows: list[tuple[str, str]] = []
+    bullets: list[str] = []
+
+    def flush_rows() -> None:
+        nonlocal rows
+        if rows:
+            body = "".join(
+                f'<tr><td style="padding:5px 14px 5px 0;color:#5b6577;font-size:13px;'
+                f'font-weight:600;white-space:nowrap;vertical-align:top;">{html_lib.escape(k)}</td>'
+                f'<td style="padding:5px 0;color:#101828;font-size:14px;vertical-align:top;">{_email_value_html(k, v)}</td></tr>'
+                for k, v in rows
+            )
+            parts.append(f'<table role="presentation" style="width:100%;border-collapse:collapse;margin:2px 0 14px;">{body}</table>')
+            rows = []
+
+    def flush_bullets() -> None:
+        nonlocal bullets
+        if bullets:
+            items = "".join(f'<li style="margin-bottom:4px;">{html_lib.escape(b)}</li>' for b in bullets)
+            parts.append(f'<ul style="margin:0 0 14px;padding-left:20px;color:#101828;font-size:14px;line-height:1.5;">{items}</ul>')
+            bullets = []
+
+    for raw_line in message.split("\n"):
+        line = raw_line.strip()
+        if not line:
+            flush_rows()
+            flush_bullets()
+            continue
+        if _is_section_header(line):
+            flush_rows()
+            flush_bullets()
+            parts.append(
+                '<div style="margin:18px 0 6px;font-size:12px;font-weight:800;letter-spacing:.04em;'
+                'color:#1c4f9c;text-transform:uppercase;border-bottom:2px solid #e3e8f0;padding-bottom:4px;">'
+                f"{html_lib.escape(line)}</div>"
+            )
+            continue
+        if line.startswith("• "):
+            flush_rows()
+            bullets.append(line[2:])
+            continue
+        kv = re.match(r"^([^:]{2,40}):\s(.+)$", line)
+        if kv:
+            flush_bullets()
+            rows.append((kv.group(1), kv.group(2)))
+            continue
+        flush_rows()
+        flush_bullets()
+        parts.append(f'<p style="margin:0 0 12px;color:#101828;font-size:14px;line-height:1.6;">{html_lib.escape(line)}</p>')
+
+    flush_rows()
+    flush_bullets()
+    return "".join(parts)
+
+
+def _render_email_html(subject: str, message: str) -> str:
+    body_html = _render_message_html(message)
+    return f"""<!doctype html>
+<html lang="pt-BR">
+  <body style="margin:0;padding:0;background:#f3f5f9;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" style="background:#f3f5f9;padding:28px 0;">
+      <tr><td align="center">
+        <table role="presentation" width="100%" style="max-width:560px;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(10,31,68,0.1);">
+          <tr>
+            <td style="background:#0a1f44;padding:20px 26px;">
+              <div style="color:#ffffff;font-size:18px;font-weight:800;letter-spacing:.03em;">AFA-TWIN</div>
+              <div style="color:#9fb3d9;font-size:11px;margin-top:3px;">Gêmeo Digital para Apoio à Decisão em Manutenção Aeronáutica</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 26px 4px;">
+              <div style="font-size:16px;font-weight:700;color:#0a1f44;margin-bottom:14px;line-height:1.4;">{html_lib.escape(subject)}</div>
+              {body_html}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 26px 22px;border-top:1px solid #eef1f6;">
+              <div style="font-size:11px;color:#8a93a6;">Notificação automática gerada pelo AFA-TWIN.</div>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>"""
+
 
 def _send_email_via_resend(to_email: str, subject: str, message: str) -> tuple[bool, str]:
-    body = json.dumps({"from": RESEND_FROM, "to": [to_email], "subject": subject, "text": message}).encode()
+    body = json.dumps({
+        "from": RESEND_FROM, "to": [to_email], "subject": subject,
+        "text": message, "html": _render_email_html(subject, message),
+    }).encode()
     req = urllib.request.Request(
         "https://api.resend.com/emails", data=body, method="POST",
         headers={
@@ -124,6 +258,7 @@ def _send_email_real(to_email: str, subject: str, message: str) -> tuple[bool, s
         msg["From"] = SMTP_FROM
         msg["To"] = to_email
         msg.set_content(message)
+        msg.add_alternative(_render_email_html(subject, message), subtype="html")
         context = ssl.create_default_context()
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
             server.starttls(context=context)
@@ -305,8 +440,7 @@ def notify_status_change(
     subject = f"[AFA-TWIN] {aircraft.tail_number} mudou de status: {old_status.value} → {new_status.value}"
     message = (
         f"A aeronave {aircraft.tail_number} ({aircraft.manufacturer} {aircraft.model}) mudou de status "
-        f"de \"{old_status.value}\" para \"{new_status.value}\".\n\n"
-        f"Notificação automática gerada pelo AFA-TWIN."
+        f"de \"{old_status.value}\" para \"{new_status.value}\"."
     )
     return [
         send_notification(db, models.NotificationChannel.EMAIL, r, subject, message,
