@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type {
   Aircraft, AuthorizedConfiguration, AvailabilityBoard, AvailabilityBoardEntry, AvailabilityCode,
@@ -470,7 +471,17 @@ export default function AvailabilityPage() {
                               />
                             </td>
                           )}
-                          <td style={{ fontWeight: 700 }}>{e.aircraft_tail_number}</td>
+                          <td style={{ fontWeight: 700 }}>
+                            <Link
+                              to={`/aeronaves/${e.aircraft_id}`}
+                              onClick={(ev) => ev.stopPropagation()}
+                              style={{ color: "inherit", textDecoration: "none" }}
+                              onMouseEnter={(ev) => { ev.currentTarget.style.textDecoration = "underline"; }}
+                              onMouseLeave={(ev) => { ev.currentTarget.style.textDecoration = "none"; }}
+                            >
+                              {e.aircraft_tail_number}
+                            </Link>
+                          </td>
                           <td style={{ fontSize: 12.5 }}>{e.aircraft_model}</td>
                           <td>
                             {(() => {
