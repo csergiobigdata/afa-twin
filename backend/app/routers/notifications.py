@@ -67,6 +67,7 @@ def send(payload: schemas.NotificationSendRequest, db: Session = Depends(get_db)
     if payload.group_id and not group:
         raise HTTPException(404, "Grupo não encontrado")
 
+    message = payload.message
     if payload.recipient_person_ids:
         recipients = [db.get(models.Person, pid) for pid in payload.recipient_person_ids]
         recipients = [r for r in recipients if r is not None]
@@ -74,6 +75,25 @@ def send(payload: schemas.NotificationSendRequest, db: Session = Depends(get_db)
         recipients = notifications_service.recipients_for_group(db, group)
     elif aircraft:
         recipients = notifications_service.suggested_recipients_for_aircraft(db, aircraft)
+        # Alertas de desgaste/vencimento de peça (Painel → "Alertas de Desgaste
+        # e Manutenção" e a barra equivalente no cadastro da aeronave) sempre
+        # chegam também aos 2 administradores do sistema - nunca só aos
+        # responsáveis da aeronave - porque uma peça vencida é crítica o
+        # bastante para não depender só de alguém estar vinculado à aeronave
+        # no momento. Se não houver NENHUM responsável vinculado, a mensagem
+        # aos administradores deixa isso explícito (o motivo da notificação
+        # extra), em vez de simplesmente falhar com "nenhum destinatário".
+        if payload.reason == models.NotificationReason.VENCIMENTO_PECA:
+            if not recipients:
+                message = (
+                    f"Nenhum responsável está vinculado à aeronave {aircraft.tail_number} no momento "
+                    f"(cadastre em Aeronaves → aba Pessoal) - notificando diretamente os administradores "
+                    f"do sistema.\n\n" + message
+                )
+            admins_by_id = {p.id: p for p in notifications_service.admin_recipients(db)}
+            for r in recipients:
+                admins_by_id.pop(r.id, None)
+            recipients = recipients + list(admins_by_id.values())
     else:
         recipients = []
 
@@ -86,7 +106,7 @@ def send(payload: schemas.NotificationSendRequest, db: Session = Depends(get_db)
 
     return [
         _to_out(notifications_service.send_notification(
-            db, payload.channel, r, payload.subject, payload.message,
+            db, payload.channel, r, payload.subject, message,
             aircraft=aircraft, component=component, reason=payload.reason,
         ))
         for r in recipients

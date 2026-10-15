@@ -58,6 +58,7 @@ from email.message import EmailMessage
 from sqlalchemy.orm import Session, selectinload
 
 from . import compute, models, schemas
+from .seed import ADMIN_USERS
 
 SMTP_HOST = os.environ.get("AFA_TWIN_SMTP_HOST")
 SMTP_PORT = int(os.environ.get("AFA_TWIN_SMTP_PORT", "587"))
@@ -284,6 +285,13 @@ def suggested_recipients_for_aircraft(db: Session, aircraft: models.Aircraft) ->
 
 def recipients_for_group(db: Session, group: models.ResponsibleGroup) -> list[models.Person]:
     return [m.person for m in group.members]
+
+
+def admin_recipients(db: Session) -> list[models.Person]:
+    """As 2 Pessoas vinculadas aos usuários administradores (seed.ADMIN_USERS,
+    sempre existentes - ver seed.ensure_admin_users)."""
+    admin_emails = {email for _, email, _ in ADMIN_USERS}
+    return db.query(models.Person).filter(models.Person.email.in_(admin_emails)).all()
 
 
 def notify_status_change(

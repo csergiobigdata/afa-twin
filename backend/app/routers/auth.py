@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 
 from .. import models, notifications, schemas, security
 from ..database import get_db
-from ..seed import ADMIN_USERS
 
 router = APIRouter(prefix="/api/auth", tags=["autenticação"])
 
@@ -48,8 +47,7 @@ def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depend
     e-mail quando o usuário de fato existe."""
     user = _find_user_by_username_or_email(db, payload.username)
     if user is not None:
-        admin_emails = {email for _, email, _ in ADMIN_USERS}
-        admins = db.query(models.Person).filter(models.Person.email.in_(admin_emails)).all()
+        admins = notifications.admin_recipients(db)
         subject = f"[AFA-TWIN] Solicitação de redefinição de senha: usuário \"{user.username}\""
         message = (
             f"O usuário \"{user.username}\" solicitou a redefinição de senha pela tela de login do "
