@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { LookupCategory, LookupItem } from "../api/types";
+import { PlusIcon } from "./Icons";
 
 /** Gerenciador genérico de um cadastro auxiliar (listbox editável): usado
  * tanto em "Usuários → Cadastros" quanto em "Manutenção → Cadastro de
@@ -49,7 +50,7 @@ export default function LookupManager({ category, placeholder }: { category: Loo
       <form onSubmit={add} style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         <input value={newValue} onChange={(e) => setNewValue(e.target.value)}
                placeholder={placeholder ?? `Novo item de "${category}"…`} style={{ maxWidth: 340 }} />
-        <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>+ Adicionar</button>
+        <button type="submit" className="btn btn-primary btn-sm" disabled={saving}><PlusIcon /> Adicionar</button>
       </form>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {items.map((item) => (

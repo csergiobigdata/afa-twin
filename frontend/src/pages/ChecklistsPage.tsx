@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { Aircraft, ChecklistTemplate, MaintenanceType } from "../api/types";
 import { useLookupValues } from "../api/useLookup";
+import { PlusIcon } from "../components/Icons";
 
 const TYPES: MaintenanceType[] = [
   "Inspeção de Rotina", "Preventiva Programada", "Corretiva", "Boletim Técnico (AD/SB)", "Overhaul / Grande Reparo", "Modificação / Modernização",
@@ -60,7 +61,7 @@ export default function ChecklistsPage() {
             Modelos reutilizáveis de inspeção — referência para padronizar procedimentos rigorosos conforme AMM/ICA e boletins técnicos.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : "+ Novo Protocolo"}</button>
+        <button className="btn btn-primary" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : <><PlusIcon /> Novo Protocolo</>}</button>
       </div>
 
       {showForm && (

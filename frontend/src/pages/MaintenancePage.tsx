@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Aircraft, MaintenanceOrder, OrderStatus, Criticality } from "../api/types";
 import { CriticalityBadge, OrderStatusBadge } from "../components/Badges";
+import { PlusIcon } from "../components/Icons";
 import SortableTh from "../components/SortableTh";
 import { formatDateTime } from "../utils/format";
 
@@ -80,7 +81,7 @@ export default function MaintenancePage() {
           <h1 style={{ fontSize: 22, marginBottom: 2 }}>Ordens de Serviço e Manutenção</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>Controle rigoroso de inspeções, correções, overhauls e boletins técnicos (AD/SB).</p>
         </div>
-        <Link to="/manutencao/nova" className="btn btn-primary">+ Nova Ordem de Serviço</Link>
+        <Link to="/manutencao/nova" className="btn btn-primary"><PlusIcon /> Nova Ordem de Serviço</Link>
       </div>
 
       <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>

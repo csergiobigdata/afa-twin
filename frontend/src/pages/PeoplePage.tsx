@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Person, PersonRole } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { PlusIcon } from "../components/Icons";
 import PersonAvatar from "../components/PersonAvatar";
 import PersonForm, { type PersonFormValues } from "../components/PersonForm";
 import SortableTh from "../components/SortableTh";
@@ -114,7 +115,7 @@ export default function PeoplePage() {
           <h1 style={{ fontSize: 22, marginBottom: 2 }}>Cadastro de Usuários</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>Pilotos, mecânicos, engenheiros, cientistas e responsáveis técnicos.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : "+ Novo Usuário"}</button>
+        <button className="btn btn-primary" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : <><PlusIcon /> Novo Usuário</>}</button>
       </div>
 
       {showForm && (

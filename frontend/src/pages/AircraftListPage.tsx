@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Aircraft, AircraftStatus } from "../api/types";
 import AircraftThumbnail from "../components/AircraftThumbnail";
+import { PlusIcon } from "../components/Icons";
 import AircraftPhotoViewer from "../components/AircraftPhotoViewer";
 import { HealthBar, RiskBadge, StatusBadge } from "../components/Badges";
 import SortableTh from "../components/SortableTh";
@@ -99,7 +100,7 @@ export default function AircraftListPage() {
           <h1 style={{ fontSize: 22, marginBottom: 2 }}>Cadastro de Aeronaves</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>Frota cadastrada, configuração mecânica e status de manutenção.</p>
         </div>
-        <Link to="/aeronaves/novo" className="btn btn-primary">+ Nova Aeronave</Link>
+        <Link to="/aeronaves/novo" className="btn btn-primary"><PlusIcon /> Nova Aeronave</Link>
       </div>
 
       <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>

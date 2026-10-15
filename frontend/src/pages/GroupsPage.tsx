@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { Aircraft, AssignmentRole, Person, ResponsibleGroup } from "../api/types";
 import PersonAvatar from "../components/PersonAvatar";
+import { PlusIcon } from "../components/Icons";
 
 const GROUP_ROLES: AssignmentRole[] = [
   "Piloto Titular", "Piloto Reserva / Sub-Piloto", "Piloto Instrutor", "Mecânico Responsável",
@@ -58,7 +59,7 @@ export default function GroupsPage() {
             atribua uma ou mais equipes a cada aeronave.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : "+ Novo Grupo"}</button>
+        <button className="btn btn-primary" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : <><PlusIcon /> Novo Grupo</>}</button>
       </div>
 
       {showForm && (

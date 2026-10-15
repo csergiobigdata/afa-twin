@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { AvailabilityCodeCatalog } from "../api/types";
+import { PlusIcon } from "../components/Icons";
 
 /** Cadastro de Códigos de Disponibilidade (DI/DO/IN/IS de fábrica,
  * extensível) - código de 2 caracteres + descrição de até 40, alimenta os
@@ -131,7 +132,7 @@ export default function AvailabilityCodesPage() {
             <label>Descrição (até 40 caracteres)</label>
             <input required maxLength={40} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="ex.: Inspeção" />
           </div>
-          <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>+ Adicionar</button>
+          <button type="submit" className="btn btn-primary btn-sm" disabled={saving}><PlusIcon /> Adicionar</button>
         </form>
         {error && <p style={{ color: "var(--status-critical)", fontSize: 12.5, marginTop: 10 }}>{error}</p>}
       </div>

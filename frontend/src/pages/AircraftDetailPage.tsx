@@ -10,6 +10,7 @@ import type {
 } from "../api/types";
 import AircraftThumbnail from "../components/AircraftThumbnail";
 import AircraftPhotoViewer from "../components/AircraftPhotoViewer";
+import { PlusIcon } from "../components/Icons";
 import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
 import { AvailabilityCodeBadge, CriticalityBadge, HealthBar, OrderStatusBadge, RiskBadge, StatusBadge } from "../components/Badges";
 import ConfigurationDiagram from "../components/ConfigurationDiagram";
@@ -210,7 +211,7 @@ function GeneralTab({ aircraft, flightLogs, people, onReload }: { aircraft: Airc
       <div className="card" style={{ padding: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h3 style={{ fontSize: 14.5, margin: 0 }}>Livro de Bordo (registro de voos)</h3>
-          <button className="btn btn-outline btn-sm" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : "+ Registrar voo"}</button>
+          <button className="btn btn-outline btn-sm" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : <><PlusIcon /> Registrar voo</>}</button>
         </div>
         {showForm && (
           <form onSubmit={submit} style={{ marginBottom: 14, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -512,7 +513,7 @@ function ComponentsTab({
       <AircraftPartAlertsBar aircraftId={aircraftId} />
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : "+ Novo Componente"}</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : <><PlusIcon /> Novo Componente</>}</button>
       </div>
 
       {showForm && (
@@ -664,7 +665,7 @@ function ComponentHistory({ componentId, orders, people, aircraftId }: { compone
         )}
       </div>
       <div style={{ gridColumn: "1 / -1" }}>
-        <Link to={`/manutencao/nova?aircraft_id=${aircraftId}`} className="btn btn-outline btn-sm">+ Nova OS para esta aeronave</Link>
+        <Link to={`/manutencao/nova?aircraft_id=${aircraftId}`} className="btn btn-outline btn-sm"><PlusIcon /> Nova OS para esta aeronave</Link>
       </div>
     </div>
   );
@@ -675,7 +676,7 @@ function OrdersTab({ aircraftId, orders, components }: { aircraftId: number; ord
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-        <Link to={`/manutencao/nova?aircraft_id=${aircraftId}`} className="btn btn-primary btn-sm">+ Nova Ordem de Serviço</Link>
+        <Link to={`/manutencao/nova?aircraft_id=${aircraftId}`} className="btn btn-primary btn-sm"><PlusIcon /> Nova Ordem de Serviço</Link>
       </div>
       <div className="card scroll-x">
         <table>
@@ -860,7 +861,7 @@ function PeopleTab({ aircraftId, assignments, people, onReload }: { aircraftId: 
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <h3 style={{ fontSize: 14.5, margin: 0 }}>Equipe Responsável</h3>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : "+ Vincular Responsável"}</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : <><PlusIcon /> Vincular Responsável</>}</button>
       </div>
       {showForm && (
         <form onSubmit={submit} className="card" style={{ padding: 18, marginBottom: 16, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end" }}>
@@ -1059,7 +1060,7 @@ function InspectionsTab({ aircraftId, components, people }: { aircraftId: number
         provável, criando um histórico visual comparável ao longo do tempo.
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : "+ Nova Inspeção Fotográfica"}</button>
+        <button className="btn btn-primary btn-sm" onClick={() => setShowForm((s) => !s)}>{showForm ? "Cancelar" : <><PlusIcon /> Nova Inspeção Fotográfica</>}</button>
       </div>
 
       {showForm && (

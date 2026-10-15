@@ -12,6 +12,7 @@ import AuthorizedConfigSelect from "../components/AuthorizedConfigSelect";
 import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
 import { AvailabilityCodeBadge, StatusBadge } from "../components/Badges";
 import ConfigurationDiagram from "../components/ConfigurationDiagram";
+import { PlusIcon } from "../components/Icons";
 import SortableTh from "../components/SortableTh";
 import SplashScreen from "../components/SplashScreen";
 import StatCard from "../components/StatCard";
@@ -586,7 +587,7 @@ export default function AvailabilityPage() {
                       <input value={manualReason} onChange={(e) => setManualReason(e.target.value)} placeholder="ex.: TREM DE POUSO" />
                     </label>
                     <button type="submit" className="btn btn-primary btn-sm" disabled={manualSaving || !manualAircraftId}>
-                      {manualSaving ? "Salvando…" : "+ Adicionar"}
+                      {manualSaving ? "Salvando…" : <><PlusIcon /> Adicionar</>}
                     </button>
                   </form>
                 ) : (
@@ -605,7 +606,7 @@ export default function AvailabilityPage() {
                       type="button" className="btn btn-outline btn-sm" disabled={!selectedCode || launchingCode}
                       onClick={cadastrarConfiguracaoAutomatica} title="Substitui a configuração atual da aeronave pela deste código"
                     >
-                      {launchingCode ? "Cadastrando…" : "+ Cadastrar Configuração"}
+                      {launchingCode ? "Cadastrando…" : <><PlusIcon /> Cadastrar Configuração</>}
                     </button>
                   </div>
                 )}
