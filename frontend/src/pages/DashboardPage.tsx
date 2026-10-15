@@ -61,7 +61,7 @@ function MaintenanceCategoryChart({ alerts }: { alerts: DashboardSummary["alerts
                   {data.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", borderRadius: 8, fontSize: 12.5 }} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Legend wrapperStyle={{ fontSize: 12 }} formatter={(value) => <span style={{ color: "#ffffff" }}>{value}</span>} />
               </PieChart>
             ) : mode === "barras" ? (
               <BarChart data={data}>
@@ -375,27 +375,52 @@ export default function DashboardPage() {
           {summary.alerts.length === 0 && (
             <p style={{ color: "var(--text-secondary)", fontSize: 13.5 }}>Nenhum alerta ativo. Frota dentro dos parâmetros esperados.</p>
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {summary.alerts.map((a, i) => (
-              <div key={i} style={{
-                borderLeft: `4px solid var(--status-${a.severity === "critico" ? "critical" : a.severity === "atencao" ? "warn" : "info"})`,
-                background: "var(--bg-surface-alt)", borderRadius: 8, padding: "10px 12px",
-              }}>
-                <div style={{ fontWeight: 700, fontSize: 13.5 }}>{a.title}</div>
-                <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 2 }}>{a.detail}</div>
-                {a.aircraft_id && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                    <Link to={`/aeronaves/${a.aircraft_id}`} style={{ fontSize: 12, fontWeight: 700 }}>Ver aeronave →</Link>
-                    <NotifyButton
-                      aircraftId={a.aircraft_id} componentId={a.component_id}
-                      reason={a.component_id ? "Vencimento de Peça" : "Manual"}
-                      subject={`[AFA-TWIN] ${a.title}`} message={a.detail}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          {summary.alerts.length > 0 && (
+            <div className="scroll-x">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Severidade</th>
+                    <th>Alerta</th>
+                    <th>Aeronave</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.alerts.map((a, i) => {
+                    const tone = a.severity === "critico" ? "critical" : a.severity === "atencao" ? "warn" : "info";
+                    return (
+                      <tr key={i}>
+                        <td>
+                          <span className={`badge badge-${tone}`} style={{ background: "#fff" }}>
+                            {a.severity === "critico" ? "Crítico" : a.severity === "atencao" ? "Atenção" : "Info"}
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 700, fontSize: 13.5 }}>{a.title}</div>
+                          <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>{a.detail}</div>
+                        </td>
+                        <td>
+                          {a.aircraft_id && (
+                            <Link to={`/aeronaves/${a.aircraft_id}`} style={{ fontSize: 12.5, fontWeight: 700 }}>Ver aeronave →</Link>
+                          )}
+                        </td>
+                        <td>
+                          {a.aircraft_id && (
+                            <NotifyButton
+                              aircraftId={a.aircraft_id} componentId={a.component_id}
+                              reason={a.component_id ? "Vencimento de Peça" : "Manual"}
+                              subject={`[AFA-TWIN] ${a.title}`} message={a.detail}
+                            />
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -442,7 +467,7 @@ export default function DashboardPage() {
                       <td style={{ fontSize: 12.5 }}>{n.recipient_name ?? "—"}</td>
                       <td style={{ fontSize: 12.5 }}>{n.aircraft_tail_number ?? "—"}</td>
                       <td>
-                        <span className={`badge ${n.status === "Enviada" ? "badge-ok" : n.status === "Falha no Envio" ? "badge-critical" : "badge-neutral"}`}>
+                        <span className={`badge ${n.status === "Enviada" ? "badge-ok" : n.status === "Falha no Envio" ? "badge-critical" : "badge-neutral"}`} style={{ background: "#fff" }}>
                           {n.status}
                         </span>
                       </td>
