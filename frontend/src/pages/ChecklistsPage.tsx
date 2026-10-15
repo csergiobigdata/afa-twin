@@ -17,6 +17,7 @@ export default function ChecklistsPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [selected, setSelected] = useState<ChecklistTemplate | null>(null);
 
   const intervalTypes = useLookupValues("Tipo de Intervalo de Manutenção");
   const aircraftModels = useMemo(() => Array.from(new Set(fleet.map((a) => a.model))).sort(), [fleet]);
@@ -49,6 +50,7 @@ export default function ChecklistsPage() {
   async function remove(cid: number) {
     if (!confirm("Remover este protocolo?")) return;
     await api.del(`/checklists/${cid}`);
+    setSelected((s) => (s?.id === cid ? null : s));
     reload();
   }
 
@@ -110,26 +112,91 @@ export default function ChecklistsPage() {
       )}
 
       {loading ? <p>Carregando…</p> : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
-          {items.map((c) => (
-            <div key={c.id} className="card" style={{ padding: 18 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15 }}>{c.name}</div>
-                  <div style={{ fontSize: 12.5, color: "var(--fab-pink-500)", fontWeight: 600 }}>
-                    {c.aircraft_model ?? "Todos os modelos"} · a cada {c.interval_value} {c.interval_type.toLowerCase()}
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "var(--fab-yellow-500)", marginTop: 2, fontWeight: 600 }}>{c.category}</div>
-                </div>
-                <button className="btn btn-outline btn-sm" onClick={() => remove(c.id)}>Remover</button>
-              </div>
-              {c.reference_doc && <div style={{ fontSize: 12, color: "var(--fab-yellow-500)", marginTop: 6, fontWeight: 600 }}>{c.reference_doc}</div>}
-              <ul style={{ marginTop: 10, paddingLeft: 18, fontSize: 13 }}>
-                {c.items.map((it, i) => <li key={i} style={{ marginBottom: 4 }}>{it}</li>)}
-              </ul>
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          {items.length === 0 ? (
+            <p style={{ color: "var(--text-secondary)", padding: 18 }}>Nenhum protocolo cadastrado.</p>
+          ) : (
+            <div className="scroll-x">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Protocolo</th>
+                    <th>Modelo aplicável</th>
+                    <th>Tipo de Manutenção</th>
+                    <th>Intervalo</th>
+                    <th>Etapas</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((c) => (
+                    <tr key={c.id} onClick={() => setSelected(c)} style={{ cursor: "pointer" }} title="Ver detalhes do protocolo">
+                      <td style={{ fontWeight: 700 }}>{c.name}</td>
+                      <td style={{ fontSize: 12.5 }}>{c.aircraft_model ?? "Todos os modelos"}</td>
+                      <td style={{ fontSize: 12.5, color: "var(--fab-yellow-500)", fontWeight: 600 }}>{c.category}</td>
+                      <td style={{ fontSize: 12.5 }}>
+                        {c.interval_value ? `a cada ${c.interval_value} ${c.interval_type.toLowerCase()}` : "—"}
+                      </td>
+                      <td style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>{c.items.length} etapa(s)</td>
+                      <td>
+                        <button
+                          className="btn btn-outline btn-sm"
+                          onClick={(ev) => { ev.stopPropagation(); remove(c.id); }}
+                        >
+                          Remover
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
-          {items.length === 0 && <p style={{ color: "var(--text-secondary)" }}>Nenhum protocolo cadastrado.</p>}
+          )}
+        </div>
+      )}
+
+      {selected && (
+        <div
+          role="dialog" aria-modal="true"
+          onClick={() => setSelected(null)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(6,15,36,0.78)", zIndex: 100,
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+          }}
+        >
+          <div className="card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560, width: "100%", maxHeight: "85vh", overflow: "auto" }}>
+            <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid var(--border-subtle)" }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16 }}>{selected.name}</div>
+                <div style={{ fontSize: 12.5, color: "var(--fab-pink-500)", fontWeight: 600, marginTop: 2 }}>
+                  {selected.aircraft_model ?? "Todos os modelos"}
+                  {selected.interval_value ? ` · a cada ${selected.interval_value} ${selected.interval_type.toLowerCase()}` : ""}
+                </div>
+                <div style={{ fontSize: 11.5, color: "var(--fab-yellow-500)", marginTop: 2, fontWeight: 600 }}>{selected.category}</div>
+              </div>
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => setSelected(null)}>Fechar ✕</button>
+            </div>
+            <div style={{ padding: 20 }}>
+              {selected.reference_doc && (
+                <div style={{ fontSize: 12.5, color: "var(--fab-yellow-500)", fontWeight: 600, marginBottom: 12 }}>
+                  📄 {selected.reference_doc}
+                </div>
+              )}
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--text-label)", marginBottom: 6 }}>
+                Etapas do checklist
+              </div>
+              {selected.items.length === 0 ? (
+                <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>Nenhuma etapa cadastrada.</p>
+              ) : (
+                <ol style={{ paddingLeft: 20, fontSize: 13.5 }}>
+                  {selected.items.map((it, i) => <li key={i} style={{ marginBottom: 6 }}>{it}</li>)}
+                </ol>
+              )}
+            </div>
+            <div style={{ padding: "0 20px 20px" }}>
+              <button className="btn btn-outline btn-sm" onClick={() => remove(selected.id)}>Remover protocolo</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
