@@ -13,6 +13,44 @@ const PRIORITIES: Criticality[] = ["Baixa", "Média", "Alta", "Crítica"];
 const STATUSES: OrderStatus[] = ["Aberta", "Em Andamento", "Aguardando Peça", "Concluída", "Cancelada"];
 const TERMINAL: OrderStatus[] = ["Concluída", "Cancelada"];
 
+const ACTION_BY_TYPE: Record<MaintenanceType, string> = {
+  "Inspeção de Rotina": "Inspeção de rotina",
+  "Preventiva Programada": "Manutenção preventiva programada",
+  "Corretiva": "Manutenção corretiva",
+  "Boletim Técnico (AD/SB)": "Atendimento a boletim técnico (AD/SB)",
+  "Overhaul / Grande Reparo": "Overhaul / grande reparo",
+  "Modificação / Modernização": "Modificação / modernização",
+};
+
+/** Monta uma sugestão de Título/Descrição a partir dos demais campos já
+ * preenchidos (Aeronave, Componente, Tipo, Prioridade, Horas de voo) - só
+ * preenche quando o usuário clica em "Sugerir" (nunca sobrescreve sozinho),
+ * e o texto gerado continua livremente editável depois. */
+function buildSuggestion(
+  order: Partial<MaintenanceOrder>, fleet: Aircraft[], components: Component[],
+): { title: string; description: string } {
+  const aircraft = fleet.find((a) => a.id === order.aircraft_id);
+  const component = components.find((c) => c.id === order.component_id);
+  const action = ACTION_BY_TYPE[order.type ?? "Corretiva"] ?? "Manutenção";
+  const subject = component?.name ?? aircraft?.tail_number ?? "aeronave";
+
+  const title = `${action} — ${subject}`;
+
+  const sentences: string[] = [];
+  sentences.push(
+    aircraft
+      ? `${action} na aeronave ${aircraft.tail_number} (${aircraft.manufacturer} ${aircraft.model})`
+        + `${component ? `, componente ${component.name}` : ""}.`
+      : `${action}${component ? ` no componente ${component.name}` : ""}.`
+  );
+  sentences.push(`Prioridade ${order.priority ?? "Média"}.`);
+  if (order.flight_hours_at_event) {
+    sentences.push(`Horas de voo acumuladas no evento: ${order.flight_hours_at_event}h.`);
+  }
+
+  return { title, description: sentences.join(" ") };
+}
+
 export default function MaintenanceFormPage() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -160,6 +198,19 @@ export default function MaintenanceFormPage() {
           <div className="field">
             <label>Horas de voo no evento</label>
             <input type="number" value={order.flight_hours_at_event ?? ""} onChange={(e) => set("flight_hours_at_event", e.target.value ? Number(e.target.value) : null)} />
+          </div>
+          <div className="field field-full" style={{ marginBottom: -4 }}>
+            <button
+              type="button" className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }}
+              disabled={!order.aircraft_id}
+              onClick={() => {
+                const { title, description } = buildSuggestion(order, fleet, components);
+                set("title", title);
+                set("description", description);
+              }}
+            >
+              💡 Sugerir título e descrição
+            </button>
           </div>
           <div className="field field-full">
             <label>Título *</label>
