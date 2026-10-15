@@ -163,7 +163,21 @@ export default function AircraftListPage() {
             <tbody>
               {sorted.map((a) => (
                 <tr key={a.id}>
-                  <td><AircraftThumbnail aircraft={a} width={64} height={40} rounded={6} /></td>
+                  <td>
+                    <AircraftPhotoViewer
+                      aircraft={a}
+                      trigger={(openViewer) => (
+                        <div
+                          role="button" tabIndex={0} title="Ver foto"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); openViewer(); }}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openViewer(); } }}
+                          style={{ cursor: "pointer", display: "inline-block" }}
+                        >
+                          <AircraftThumbnail aircraft={a} width={64} height={40} rounded={6} />
+                        </div>
+                      )}
+                    />
+                  </td>
                   <td>
                     <Link to={`/aeronaves/${a.id}`} style={{ fontWeight: 700, textDecoration: "none" }}>{a.tail_number}</Link>
                     <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{a.nickname ? `"${a.nickname}" · ` : ""}{a.manufacturer} {a.model}</div>
@@ -174,8 +188,7 @@ export default function AircraftListPage() {
                   <td style={{ minWidth: 150 }}><HealthBar value={a.health_index} /></td>
                   <td><RiskBadge level={a.risk_level} /></td>
                   <td style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>{formatHoursHHMM(a.total_flight_hours)} h</td>
-                  <td style={{ display: "flex", gap: 6 }}>
-                    <AircraftPhotoViewer aircraft={a} />
+                  <td>
                     <Link to={`/aeronaves/${a.id}`} className="btn btn-outline btn-sm">Abrir</Link>
                   </td>
                 </tr>
@@ -193,7 +206,19 @@ export default function AircraftListPage() {
                     <div style={{ fontSize: 17, fontWeight: 800 }}>{a.tail_number}</div>
                     <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>{a.nickname}</div>
                   </div>
-                  <AircraftThumbnail aircraft={a} width={100} height={62} />
+                  <AircraftPhotoViewer
+                    aircraft={a}
+                    trigger={(openViewer) => (
+                      <div
+                        role="button" tabIndex={0} title="Ver foto"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); openViewer(); }}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openViewer(); } }}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <AircraftThumbnail aircraft={a} width={100} height={62} />
+                      </div>
+                    )}
+                  />
                 </div>
                 <div style={{ fontSize: 13.5, marginTop: 8 }}>{a.manufacturer} · {a.model}</div>
                 <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 2 }}>{a.category} · {a.squadron}</div>
@@ -206,9 +231,6 @@ export default function AircraftListPage() {
                   {formatHoursHHMM(a.total_flight_hours)} h de voo acumuladas
                 </div>
               </Link>
-              <div style={{ marginTop: 12 }}>
-                <AircraftPhotoViewer aircraft={a} />
-              </div>
             </div>
           ))}
         </div>

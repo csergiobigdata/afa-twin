@@ -90,7 +90,19 @@ export default function AircraftDetailPage() {
       <Link to="/aeronaves" style={{ fontSize: 13, textDecoration: "none" }}>← Voltar à frota</Link>
 
       <div className="card" style={{ padding: 22, marginTop: 12, display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
-        <AircraftThumbnail aircraft={aircraft} width={130} height={84} />
+        <AircraftPhotoViewer
+          aircraft={aircraft}
+          trigger={(openViewer) => (
+            <div
+              role="button" tabIndex={0} title="Ver foto"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openViewer(); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); openViewer(); } }}
+              style={{ cursor: "pointer", display: "inline-block" }}
+            >
+              <AircraftThumbnail aircraft={aircraft} width={130} height={84} />
+            </div>
+          )}
+        />
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <h1 style={{ fontSize: 22, margin: 0 }}>{aircraft.tail_number}</h1>
@@ -101,7 +113,6 @@ export default function AircraftDetailPage() {
           <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
             <StatusBadge status={aircraft.status} />
             <RiskBadge level={aircraft.risk_level} />
-            <AircraftPhotoViewer aircraft={aircraft} />
           </div>
         </div>
         <div style={{ minWidth: 180 }}>

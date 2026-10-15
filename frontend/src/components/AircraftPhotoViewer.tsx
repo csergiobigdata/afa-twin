@@ -1,14 +1,18 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { Aircraft } from "../api/types";
 import { exampleArtUrl, uploadedPhotoUrl } from "./aircraftArt";
 
 /**
- * Botão + modal para visualizar a foto (estática) e a animação (GIF/vídeo
- * curto ou ilustração animada) de uma aeronave. Prioriza a foto real
- * enviada no cadastro; na ausência dela, mostra a ilustração de exemplo
- * associada ao modelo, deixando isso explícito na legenda.
+ * Gatilho (botão por padrão, ou um `trigger` customizado - ex.: a própria
+ * miniatura da aeronave, clicável) + modal para visualizar a foto
+ * (estática) e a animação (GIF/vídeo curto ou ilustração animada) de uma
+ * aeronave. Prioriza a foto real enviada no cadastro; na ausência dela,
+ * mostra a ilustração de exemplo associada ao modelo, deixando isso
+ * explícito na legenda.
  */
-export default function AircraftPhotoViewer({ aircraft, label = "📷 Imagem" }: { aircraft: Aircraft; label?: string }) {
+export default function AircraftPhotoViewer({
+  aircraft, label = "📷 Imagem", trigger,
+}: { aircraft: Aircraft; label?: string; trigger?: (openViewer: () => void) => ReactNode }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"static" | "animated">("static");
 
@@ -21,15 +25,21 @@ export default function AircraftPhotoViewer({ aircraft, label = "📷 Imagem" }:
   const currentUrl = mode === "static" ? staticUrl : animatedUrl;
   const currentIsReal = mode === "static" ? hasRealPhoto : hasRealAnimated;
 
+  function openViewer() {
+    setOpen(true);
+  }
+
   return (
     <>
-      <button
-        type="button"
-        className="btn btn-outline btn-sm"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true); }}
-      >
-        {label}
-      </button>
+      {trigger ? trigger(openViewer) : (
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); openViewer(); }}
+        >
+          {label}
+        </button>
+      )}
 
       {open && (
         <div
