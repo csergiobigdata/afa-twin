@@ -78,6 +78,21 @@ RESEND_FROM = os.environ.get("AFA_TWIN_RESEND_FROM", "AFA-TWIN <onboarding@resen
 
 RESEND_CONFIGURED = bool(RESEND_API_KEY)
 
+# Mapeamento opcional e-mail -> chave de API do Resend própria desse
+# destinatário. Em modo sandbox (sem domínio verificado), uma conta Resend
+# só aceita enviar para o e-mail de quem criou ESSA conta - então, para um
+# segundo destinatário que não é o dono da conta principal (ex.: o outro
+# administrador do sistema) receber de verdade sem contratar um domínio, a
+# saída é cada um ter sua própria conta Resend gratuita e o app escolher a
+# chave certa por destinatário. Formato da variável de ambiente (JSON):
+# {"walter.vinicosta@gmail.com": "re_..."}.
+try:
+    RESEND_API_KEY_BY_EMAIL: dict[str, str] = {
+        k.lower(): v for k, v in json.loads(os.environ.get("AFA_TWIN_RESEND_API_KEY_BY_EMAIL", "{}")).items()
+    }
+except (json.JSONDecodeError, TypeError, AttributeError):
+    RESEND_API_KEY_BY_EMAIL = {}
+
 TWILIO_ACCOUNT_SID = os.environ.get("AFA_TWIN_TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.environ.get("AFA_TWIN_TWILIO_AUTH_TOKEN")
 TWILIO_FROM_NUMBER = os.environ.get("AFA_TWIN_TWILIO_FROM_NUMBER")
@@ -223,6 +238,7 @@ def _render_email_html(subject: str, message: str) -> str:
 
 
 def _send_email_via_resend(to_email: str, subject: str, message: str) -> tuple[bool, str]:
+    api_key = RESEND_API_KEY_BY_EMAIL.get(to_email.lower(), RESEND_API_KEY)
     body = json.dumps({
         "from": RESEND_FROM, "to": [to_email], "subject": subject,
         "text": message, "html": _render_email_html(subject, message),
@@ -230,7 +246,7 @@ def _send_email_via_resend(to_email: str, subject: str, message: str) -> tuple[b
     req = urllib.request.Request(
         "https://api.resend.com/emails", data=body, method="POST",
         headers={
-            "Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}", "Content-Type": "application/json",
             "User-Agent": _HTTP_USER_AGENT,
         },
     )
