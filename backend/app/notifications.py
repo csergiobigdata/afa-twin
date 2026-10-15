@@ -486,7 +486,7 @@ def notify_os_induction(
     if order.reference_doc:
         lines.append(f"Referência técnica: {order.reference_doc}")
     lines.append(f"Aberta por: {opened_by.full_name if opened_by else 'não identificado'}")
-    lines.append(f"Aberta em: {order.opened_at.strftime('%d/%m/%Y %H:%M')}")
+    lines.append(f"Aberta em: {models.to_brasilia(order.opened_at).strftime('%d/%m/%Y %H:%M')}")
 
     lines += [
         "",

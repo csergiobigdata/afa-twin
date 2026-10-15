@@ -193,7 +193,7 @@ def update_order(
                 message = (
                     f'A ordem de serviço {o.order_number} - "{o.title}" na aeronave {aircraft.tail_number} '
                     f"foi CANCELADA por {canceller.full_name if canceller else 'usuário não identificado'} "
-                    f"em {o.cancelled_at.strftime('%d/%m/%Y %H:%M')}."
+                    f"em {models.to_brasilia(o.cancelled_at).strftime('%d/%m/%Y %H:%M')}."
                     + (f" Motivo: {o.cancellation_reason}." if o.cancellation_reason else "")
                 )
                 for r in recipients:

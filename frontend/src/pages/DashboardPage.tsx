@@ -11,6 +11,7 @@ import AircraftThumbnail from "../components/AircraftThumbnail";
 import { HealthBar, RiskBadge, StatusBadge } from "../components/Badges";
 import SortableTh from "../components/SortableTh";
 import SplashScreen from "../components/SplashScreen";
+import { formatDateTimeShort } from "../utils/format";
 import StatCard from "../components/StatCard";
 
 const CHART_COLORS = ["#c62828", "#d99a00", "#2f6bc4", "#0b6e4f", "#7a4a9c", "#4b5566", "#0e7c86"];
@@ -445,7 +446,7 @@ export default function DashboardPage() {
                           {n.status}
                         </span>
                       </td>
-                      <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{new Date(n.created_at).toLocaleString("pt-BR")}</td>
+                      <td style={{ fontSize: 11.5, color: "var(--text-secondary)" }}>{formatDateTimeShort(n.created_at)}</td>
                     </tr>
                   ))}
                   {filteredNotifications.length === 0 && (

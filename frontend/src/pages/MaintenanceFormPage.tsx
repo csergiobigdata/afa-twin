@@ -5,6 +5,7 @@ import type {
   Aircraft, ChecklistTemplate, Component, Criticality, MaintenanceOrder, MaintenanceType, OrderStatus, Person, ResponsibleGroup,
 } from "../api/types";
 import { CriticalityBadge, OrderStatusBadge } from "../components/Badges";
+import { formatDateTimeShort } from "../utils/format";
 
 const TYPES: MaintenanceType[] = [
   "Inspeção de Rotina", "Preventiva Programada", "Corretiva", "Boletim Técnico (AD/SB)", "Overhaul / Grande Reparo", "Modificação / Modernização",
@@ -165,7 +166,7 @@ export default function MaintenanceFormPage() {
           <strong>Esta OS está {order.status} e não pode mais ser alterada.</strong>
           {order.status === "Cancelada" && (
             <div style={{ fontSize: 12.5, color: "var(--text-secondary)", marginTop: 6 }}>
-              Cancelada em {order.cancelled_at ? new Date(order.cancelled_at).toLocaleString("pt-BR") : "—"}
+              Cancelada em {order.cancelled_at ? formatDateTimeShort(order.cancelled_at) : "—"}
               {order.cancellation_reason ? ` — motivo: ${order.cancellation_reason}` : ""}
             </div>
           )}

@@ -16,7 +16,7 @@ import ConfigurationDiagram from "../components/ConfigurationDiagram";
 import PersonPicker from "../components/PersonPicker";
 import SplashScreen from "../components/SplashScreen";
 import { ROLE_PERMISSIONS, useAuth } from "../auth/AuthContext";
-import { formatHoursHHMM } from "../utils/format";
+import { formatDate, formatDateTimeShort, formatHoursHHMM } from "../utils/format";
 
 // Função na aeronave sugerida automaticamente ao escolher uma Pessoa em
 // "Vínculos individuais", a partir do cargo dela (PersonRole) - só um
@@ -657,7 +657,7 @@ function ComponentHistory({ componentId, orders, people, aircraftId }: { compone
               <div key={n.id} className="card" style={{ padding: 10, fontSize: 11.5 }}>
                 <div style={{ fontWeight: 700 }}>{n.channel} · {n.reason}</div>
                 <div style={{ color: "var(--text-secondary)" }}>{n.recipient_name} — {n.status}</div>
-                <div style={{ color: "var(--text-secondary)" }}>{new Date(n.created_at).toLocaleString("pt-BR")}</div>
+                <div style={{ color: "var(--text-secondary)" }}>{formatDateTimeShort(n.created_at)}</div>
               </div>
             ))}
           </div>
@@ -1137,7 +1137,7 @@ function InspectionsTab({ aircraftId, components, people }: { aircraftId: number
                   <div style={{ fontSize: 12.5, marginTop: 8 }}>{f.location || comp?.name || "Localização não informada"}</div>
                   {f.probable_cause && <div style={{ fontSize: 11.5, color: "var(--text-secondary)", marginTop: 4 }}>{f.probable_cause}</div>}
                   <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 8 }}>
-                    {new Date(f.recorded_at).toLocaleDateString("pt-BR")} {f.amm_reference ? `· ${f.amm_reference}` : ""}
+                    {formatDate(f.recorded_at)} {f.amm_reference ? `· ${f.amm_reference}` : ""}
                   </div>
                   <button className="btn btn-outline btn-sm" style={{ marginTop: 10 }} onClick={() => remove(f.id)}>Remover</button>
                 </div>

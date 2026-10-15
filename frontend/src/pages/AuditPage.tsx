@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import type { AuditLogEntry, AuditLogFilterOptions, AuditLogPage } from "../api/types";
 import SortableTh from "../components/SortableTh";
+import { formatDateTimeShort } from "../utils/format";
 
 // Cores mais vivas que as classes badge-* padrão (mesma família de cor -
 // verde/azul/amarelo/vermelho - só mais saturadas) sobre fundo branco fixo
@@ -164,7 +165,7 @@ export default function AuditPage() {
                 {(page?.items ?? []).map((e) => (
                   <tr key={e.id}>
                     <td style={{ fontSize: 11.5, color: "var(--text-secondary)", whiteSpace: "nowrap" }}>
-                      {new Date(e.created_at).toLocaleString("pt-BR")}
+                      {formatDateTimeShort(e.created_at)}
                     </td>
                     <td><span className="badge" style={{ background: "#fff", color: ACTION_BADGE_COLOR[e.action] ?? "#3d4a63" }}>{e.action}</span></td>
                     <td style={{ fontSize: 12.5 }}>{e.entity_type}</td>

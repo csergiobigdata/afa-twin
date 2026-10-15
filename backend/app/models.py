@@ -23,6 +23,19 @@ def now_utc() -> dt.datetime:
     return dt.datetime.now(dt.timezone.utc)
 
 
+# Todo timestamp é armazenado em UTC (now_utc() acima) - exibir com
+# strftime() direto mostraria o horário UTC, não o de Brasília (ex.: uma OS
+# aberta às 00:13 em Brasília aparecia como "03:13" num e-mail, relatado
+# pelo usuário). Horário de Brasília é UTC-3 fixo (Brasil aboliu o horário
+# de verão em 2019) - deliberadamente um offset fixo, não um fuso IANA com
+# calendário de DST, já que não há DST a considerar.
+BRASILIA_TZ = dt.timezone(dt.timedelta(hours=-3))
+
+
+def to_brasilia(moment: dt.datetime) -> dt.datetime:
+    return moment.astimezone(BRASILIA_TZ)
+
+
 # --------------------------------------------------------------------------
 # Arquivos enviados (fotos de aeronave, de perfil, de inspeção fotográfica).
 #
