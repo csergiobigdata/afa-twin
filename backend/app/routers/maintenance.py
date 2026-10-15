@@ -102,6 +102,7 @@ def create_order(
         )
         try:
             notifications_service.notify_status_change(db, aircraft, old_status, aircraft.status)
+            notifications_service.notify_os_induction(db, order, aircraft, old_status, actor.person)
         except Exception:
             pass
 

@@ -315,6 +315,67 @@ def notify_status_change(
     ]
 
 
+def notify_os_induction(
+    db: Session, order: models.MaintenanceOrder, aircraft: models.Aircraft,
+    old_status: models.AircraftStatus, opened_by: models.Person | None,
+) -> list[models.Notification]:
+    """Aviso formal aos 2 administradores quando abrir uma OS induz a
+    aeronave à manutenção (ver routers/maintenance.py::create_order) -
+    segue o padrão real de "boletim de indução à manutenção" usado na
+    aeronáutica/companhias aéreas: um bloco com os dados da própria OS
+    (número, tipo, prioridade, referência técnica, responsável) seguido de
+    um retrato da aeronave NO MOMENTO da indução (status, índice de saúde,
+    risco operacional, horas de voo, categoria) - dá ao administrador o
+    impacto na frota sem precisar abrir o aplicativo. Complementa (não
+    substitui) o aviso de mudança de status enviado aos responsáveis
+    vinculados por `notify_status_change`."""
+    health, risk = compute.compute_aircraft_health(aircraft)
+    component = (
+        next((c for c in aircraft.components if c.id == order.component_id), None)
+        if order.component_id else None
+    )
+
+    subject = f"[AFA-TWIN] Aeronave induzida à manutenção — OS {order.order_number} ({aircraft.tail_number})"
+    lines = [
+        "ORDEM DE SERVIÇO",
+        f"Número: {order.order_number}",
+        f"Tipo: {order.type.value}",
+        f"Prioridade: {order.priority.value}",
+        f"Título: {order.title}",
+    ]
+    if order.description:
+        lines.append(f"Descrição: {order.description}")
+    if component:
+        lines.append(f"Componente associado: {component.name}")
+    if order.reference_doc:
+        lines.append(f"Referência técnica: {order.reference_doc}")
+    lines.append(f"Aberta por: {opened_by.full_name if opened_by else 'não identificado'}")
+    lines.append(f"Aberta em: {order.opened_at.strftime('%d/%m/%Y %H:%M')}")
+
+    lines += [
+        "",
+        "AERONAVE",
+        f"Matrícula: {aircraft.tail_number}",
+        f"Fabricante/Modelo: {aircraft.manufacturer} {aircraft.model}",
+        f"Categoria: {aircraft.category.value}",
+    ]
+    if aircraft.squadron:
+        lines.append(f"Esquadrão: {aircraft.squadron}")
+    lines += [
+        f"Status: {old_status.value} → {aircraft.status.value}",
+        f"Índice de Saúde: {health:.0f}%",
+        f"Risco Operacional: {risk}",
+        f"Horas de voo acumuladas: {aircraft.total_flight_hours:.1f}h",
+    ]
+    message = "\n".join(lines)
+
+    return [
+        send_notification(db, models.NotificationChannel.EMAIL, admin, subject, message,
+                           aircraft=aircraft, reason=models.NotificationReason.MUDANCA_STATUS)
+        for admin in admin_recipients(db)
+    ]
+
+
 def check_pending_part_alerts(db: Session) -> list[schemas.PendingPartAlert]:
     """Componentes com vida útil (horas) ou vigência (calendário) próxima do
     vencimento/vencida, em toda a frota, com os responsáveis sugeridos para
