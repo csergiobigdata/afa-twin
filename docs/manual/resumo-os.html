@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>AFA-TWIN — Resumo: Ordem de Serviço</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #16213e; background: #ffffff;
+    font-size: 12.5px; line-height: 1.42;
+  }
+  .page { padding: 18px 32px 14px; }
+
+  .header {
+    background: #0a1f44; color: #fff;
+    margin: -18px -32px 14px; padding: 15px 32px 12px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .header svg { width: 28px; height: 28px; }
+  .header .title { font-size: 17px; font-weight: 800; letter-spacing: .02em; }
+  .header .subtitle { font-size: 10.5px; color: #9fb3d9; margin-top: 1px; }
+
+  h1.doc-title { font-size: 17px; color: #0a1f44; margin: 2px 0 2px; }
+  p.doc-intro { color: #4b5566; font-size: 11.5px; margin: 0 0 12px; }
+
+  .flow {
+    background: #f3f5f9; border-radius: 10px; padding: 10px 16px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 5px; flex-wrap: wrap; font-size: 11px; font-weight: 700;
+  }
+  .flow .step { background: #ffffff; border: 1px solid #dde3ee; border-radius: 999px; padding: 5px 11px; color: #0a1f44; white-space: nowrap; }
+  .flow .arrow { color: #9aa7bd; font-weight: 400; }
+
+  section { margin-bottom: 11px; page-break-inside: avoid; }
+  .step-row { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num {
+    flex-shrink: 0; width: 23px; height: 23px; border-radius: 50%;
+    background: #1c4f9c; color: #fff; font-weight: 800; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-content { flex: 1; }
+  h2.step-title { font-size: 13.5px; color: #0a1f44; margin: 1px 0 3px; }
+  .step-content p { margin: 0 0 5px; color: #2b3650; }
+  .step-content ul { margin: 3px 0 5px; padding-left: 18px; color: #2b3650; }
+  .step-content li { margin-bottom: 2px; }
+
+  table.status-table { width: 100%; border-collapse: collapse; margin: 6px 0 3px; font-size: 11.5px; }
+  table.status-table th { text-align: left; background: #eef1f8; color: #0a1f44; padding: 5px 10px; font-weight: 700; }
+  table.status-table td { padding: 5px 10px; border-bottom: 1px solid #eef1f6; color: #2b3650; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-weight: 700; font-size: 11px; }
+  .badge-insp { background: #d99a0022; color: #d99a00; }
+  .badge-mod { background: #1c4f9c22; color: #1c4f9c; }
+  .badge-manut { background: #c6282822; color: #c62828; }
+
+  .email-box {
+    border: 1px solid #dde3ee; border-radius: 10px; padding: 9px 14px; margin-top: 5px; background: #fafbfd;
+  }
+  .email-box .email-title { font-weight: 700; color: #0a1f44; font-size: 11.5px; margin-bottom: 4px; }
+  .email-box ul { margin: 0; padding-left: 18px; font-size: 11px; color: #2b3650; }
+
+  .footer {
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid #eef1f6;
+    font-size: 10px; color: #8a93a6; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <svg width="34" height="34" viewBox="0 0 100 100" aria-hidden="true">
+      <rect width="100" height="100" rx="20" fill="#0a1f44" />
+      <polygon points="50,14 88,50 50,86 12,50" fill="#0b7a3f" />
+      <polygon points="50,26 76,50 50,74 24,50" fill="#ffcc29" />
+      <circle cx="50" cy="50" r="17" fill="#1c4f9c" />
+      <g fill="#f4f6fb" opacity="0.9">
+        <circle cx="50" cy="40" r="1" /><circle cx="58" cy="46" r="1.3" />
+        <circle cx="44" cy="50" r="0.9" /><circle cx="53" cy="57" r="1.1" />
+      </g>
+      <g transform="translate(50 50) rotate(-38) translate(-50 -50)" fill="#f4f6fb" stroke="#0a1f44" stroke-width="1.4" stroke-linejoin="round">
+        <path d="M50 18 L52.3 42 L76 50 L76 53.6 L52.3 48.8 L52.3 62 L60.5 69 L60.5 72 L50 68 L39.5 72 L39.5 69 L47.7 62 L47.7 48.8 L24 53.6 L24 50 L47.7 42 Z" />
+      </g>
+    </svg>
+    <div>
+      <div class="title">AFA-TWIN</div>
+      <div class="subtitle">Gêmeo Digital para Apoio à Decisão em Manutenção Aeronáutica</div>
+    </div>
+  </div>
+
+  <h1 class="doc-title">Como Funciona a Ordem de Serviço (OS)</h1>
+  <p class="doc-intro">Resumo do fluxo completo no aplicativo: da criação de uma nova OS até a mudança
+  automática de status da aeronave e o aviso por e-mail aos administradores.</p>
+
+  <div class="flow">
+    <span class="step">Nova OS criada</span><span class="arrow">→</span>
+    <span class="step">Status da aeronave muda sozinho</span><span class="arrow">→</span>
+    <span class="step">E-mails disparados</span><span class="arrow">→</span>
+    <span class="step">Acompanhamento</span><span class="arrow">→</span>
+    <span class="step">Concluída/Cancelada</span><span class="arrow">→</span>
+    <span class="step">Aeronave volta a Operacional</span>
+  </div>
+
+  <section>
+    <div class="step-row">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h2 class="step-title">Criação de uma OS</h2>
+        <p>Campos obrigatórios: <b>Aeronave</b>, <b>Tipo de Manutenção</b>, <b>Prioridade</b> e
+        <b>Título</b>. A OS referencia um <b>Componente associado</b> (peça específica) <i>ou</i> um
+        <b>Protocolo/Checklist aplicado</b> (inspeção programada da aeronave inteira, ex.: "Inspeção de
+        100 horas") — nunca os dois ao mesmo tempo. O botão "Sugerir título e descrição" preenche esses
+        campos automaticamente a partir do que já foi escolhido, sempre editável depois.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-row">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h2 class="step-title">O status da aeronave muda sozinho</h2>
+        <p>Se a aeronave estava "Operacional", o status muda automaticamente ao salvar a OS — não é um
+        campo separado que alguém precisa lembrar de trocar. O status depende do <b>tipo</b> da OS:</p>
+        <table class="status-table">
+          <tr><th>Tipo da OS</th><th>Status induzido</th></tr>
+          <tr><td>Inspeção de Rotina</td><td><span class="badge badge-insp">Em Inspeção</span></td></tr>
+          <tr><td>Modificação / Modernização</td><td><span class="badge badge-mod">Em Modernização</span></td></tr>
+          <tr><td>Preventiva, Corretiva, Boletim Técnico, Overhaul</td><td><span class="badge badge-manut">Em Manutenção</span></td></tr>
+        </table>
+        <p style="font-size:11.5px;color:#6b7589;margin-top:4px;">Se a aeronave já estiver em qualquer
+        status diferente de "Operacional", a indução não sobrescreve — esse status já tem motivo próprio.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-row">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h2 class="step-title">E-mails disparados na indução</h2>
+        <p>Dois e-mails diferentes saem automaticamente:</p>
+        <div class="email-box">
+          <div class="email-title">📧 Responsáveis vinculados à aeronave</div>
+          <ul><li>Aviso resumido da mudança de status.</li></ul>
+        </div>
+        <div class="email-box" style="margin-top:8px;">
+          <div class="email-title">📧 Os 2 administradores do sistema — sempre, mesmo havendo responsável</div>
+          <ul>
+            <li><b>Dados da OS:</b> número, tipo, prioridade, título, descrição, componente/protocolo, referência técnica, quem abriu e quando.</li>
+            <li><b>Retrato da aeronave no momento:</b> matrícula, modelo, categoria, esquadrão, status (antes → depois), índice de saúde, risco operacional, horas de voo.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-row">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h2 class="step-title">Acompanhamento, conclusão e cancelamento</h2>
+        <p>A OS percorre: <b>Aberta</b> → <b>Em Andamento</b> / <b>Aguardando Peça</b> → <b>Concluída</b>
+        ou <b>Cancelada</b> (status finais — uma vez ali, a OS não pode mais ser editada). Concluir ou
+        cancelar sempre avisa por e-mail os responsáveis vinculados à aeronave; cancelar exige registrar
+        quem cancelou e, se houver, o motivo.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="step-row">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h2 class="step-title">Retorno automático a "Operacional"</h2>
+        <p>Ao concluir ou cancelar uma OS, o sistema verifica se ainda existe outra OS aberta para a
+        mesma aeronave. Se essa era a <b>última</b>, o status volta sozinho para "Operacional" — e os
+        responsáveis recebem o aviso de mudança de status de novo. Enquanto houver qualquer outra OS
+        aberta, a aeronave permanece indisponível.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    AFA-TWIN — Gêmeo Digital para Apoio à Decisão em Manutenção Aeronáutica · Documento gerado em 15/10/2026
+  </div>
+
+</div>
+</body>
+</html>
