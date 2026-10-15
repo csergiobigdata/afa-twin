@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type {
-  Aircraft, Component, Criticality, MaintenanceOrder, MaintenanceType, OrderStatus, Person, ResponsibleGroup,
+  Aircraft, ChecklistTemplate, Component, Criticality, MaintenanceOrder, MaintenanceType, OrderStatus, Person, ResponsibleGroup,
 } from "../api/types";
 import { CriticalityBadge, OrderStatusBadge } from "../components/Badges";
 
@@ -23,16 +23,18 @@ const ACTION_BY_TYPE: Record<MaintenanceType, string> = {
 };
 
 /** Monta uma sugestão de Título/Descrição a partir dos demais campos já
- * preenchidos (Aeronave, Componente, Tipo, Prioridade, Horas de voo) - só
- * preenche quando o usuário clica em "Sugerir" (nunca sobrescreve sozinho),
- * e o texto gerado continua livremente editável depois. */
+ * preenchidos (Aeronave, Componente ou Protocolo/Checklist, Tipo,
+ * Prioridade, Horas de voo) - só preenche quando o usuário clica em
+ * "Sugerir" (nunca sobrescreve sozinho), e o texto gerado continua
+ * livremente editável depois. */
 function buildSuggestion(
-  order: Partial<MaintenanceOrder>, fleet: Aircraft[], components: Component[],
+  order: Partial<MaintenanceOrder>, fleet: Aircraft[], components: Component[], checklists: ChecklistTemplate[],
 ): { title: string; description: string } {
   const aircraft = fleet.find((a) => a.id === order.aircraft_id);
   const component = components.find((c) => c.id === order.component_id);
+  const checklist = !component ? checklists.find((c) => c.id === order.checklist_template_id) : undefined;
   const action = ACTION_BY_TYPE[order.type ?? "Corretiva"] ?? "Manutenção";
-  const subject = component?.name ?? aircraft?.tail_number ?? "aeronave";
+  const subject = component?.name ?? checklist?.name ?? aircraft?.tail_number ?? "aeronave";
 
   const title = `${action} — ${subject}`;
 
@@ -40,7 +42,7 @@ function buildSuggestion(
   sentences.push(
     aircraft
       ? `${action} na aeronave ${aircraft.tail_number} (${aircraft.manufacturer} ${aircraft.model})`
-        + `${component ? `, componente ${component.name}` : ""}.`
+        + `${component ? `, componente ${component.name}` : checklist ? `, conforme protocolo "${checklist.name}"` : ""}.`
       : `${action}${component ? ` no componente ${component.name}` : ""}.`
   );
   sentences.push(`Prioridade ${order.priority ?? "Média"}.`);
@@ -61,6 +63,7 @@ export default function MaintenanceFormPage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [components, setComponents] = useState<Component[]>([]);
   const [groups, setGroups] = useState<ResponsibleGroup[]>([]);
+  const [checklists, setChecklists] = useState<ChecklistTemplate[]>([]);
   const [order, setOrder] = useState<Partial<MaintenanceOrder>>({
     aircraft_id: searchParams.get("aircraft_id") ? Number(searchParams.get("aircraft_id")) : undefined,
     type: "Inspeção de Rotina", priority: "Média", status: "Aberta", title: "",
@@ -74,6 +77,7 @@ export default function MaintenanceFormPage() {
     api.get<Aircraft[]>("/aircraft").then(setFleet);
     api.get<Person[]>("/people").then(setPeople);
     api.get<ResponsibleGroup[]>("/groups").then(setGroups);
+    api.get<ChecklistTemplate[]>("/checklists").then(setChecklists);
   }, []);
 
   useEffect(() => {
@@ -125,6 +129,24 @@ export default function MaintenanceFormPage() {
 
   if (loading) return <p>Carregando…</p>;
 
+  const selectedAircraft = fleet.find((a) => a.id === order.aircraft_id);
+  const checklistsSorted = [...checklists].sort((a, b) => {
+    const aMatch = selectedAircraft && a.aircraft_model === selectedAircraft.model ? 0 : 1;
+    const bMatch = selectedAircraft && b.aircraft_model === selectedAircraft.model ? 0 : 1;
+    return aMatch - bMatch;
+  });
+  const selectedChecklist = checklists.find((c) => c.id === order.checklist_template_id);
+
+  function selectChecklist(checklistId: number | null) {
+    set("checklist_template_id", checklistId);
+    if (checklistId) {
+      const checklist = checklists.find((c) => c.id === checklistId);
+      if (checklist?.reference_doc && !order.reference_doc) {
+        set("reference_doc", checklist.reference_doc);
+      }
+    }
+  }
+
   return (
     <div>
       <Link to="/manutencao/ordens" style={{ fontSize: 13, textDecoration: "none" }}>← Voltar às ordens de serviço</Link>
@@ -163,10 +185,49 @@ export default function MaintenanceFormPage() {
           </div>
           <div className="field">
             <label>Componente associado</label>
-            <select value={order.component_id ?? ""} onChange={(e) => set("component_id", e.target.value ? Number(e.target.value) : null)}>
+            <select
+              value={order.component_id ?? ""} disabled={!!order.checklist_template_id}
+              onChange={(e) => {
+                const componentId = e.target.value ? Number(e.target.value) : null;
+                set("component_id", componentId);
+                if (componentId) set("checklist_template_id", null);
+              }}
+            >
               <option value="">Nenhum / aeronave inteira</option>
               {components.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+          </div>
+          <div className="field">
+            <label>Protocolo/Checklist aplicado</label>
+            <select
+              value={order.checklist_template_id ?? ""} disabled={!!order.component_id}
+              onChange={(e) => selectChecklist(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">Nenhum</option>
+              {checklistsSorted.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.aircraft_model ? ` (${c.aircraft_model})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field field-full" style={{ marginTop: -8 }}>
+            <p style={{ fontSize: 11.5, color: "var(--text-secondary)", margin: 0 }}>
+              <strong>Componente associado</strong> x <strong>Protocolo/Checklist aplicado</strong>: use
+              Componente quando a OS for sobre uma peça específica; use Protocolo/Checklist quando for uma
+              inspeção programada que cobre a aeronave inteira (ex.: "Inspeção de 100 horas") — essa é a
+              prática real da Aeronáutica, inspeções periódicas seguem um checklist fixo, e achados
+              específicos encontrados durante a inspeção podem depois ser vinculados a um componente,
+              editando a OS. Os dois campos são mutuamente exclusivos.
+            </p>
+            {selectedChecklist && selectedChecklist.items.length > 0 && (
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 8, background: "var(--bg-surface-alt)", borderRadius: 6, padding: "8px 10px" }}>
+                <strong>Itens do protocolo "{selectedChecklist.name}":</strong>
+                <ol style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+                  {selectedChecklist.items.map((item, i) => <li key={i}>{item}</li>)}
+                </ol>
+              </div>
+            )}
           </div>
           <div className="field">
             <label>Tipo de Manutenção *</label>
@@ -204,7 +265,7 @@ export default function MaintenanceFormPage() {
               type="button" className="btn btn-outline btn-sm" style={{ alignSelf: "flex-start" }}
               disabled={!order.aircraft_id}
               onClick={() => {
-                const { title, description } = buildSuggestion(order, fleet, components);
+                const { title, description } = buildSuggestion(order, fleet, components, checklists);
                 set("title", title);
                 set("description", description);
               }}

@@ -347,6 +347,8 @@ def notify_os_induction(
         lines.append(f"Descrição: {order.description}")
     if component:
         lines.append(f"Componente associado: {component.name}")
+    elif order.checklist_template:
+        lines.append(f"Protocolo/checklist aplicado: {order.checklist_template.name} (aeronave inteira)")
     if order.reference_doc:
         lines.append(f"Referência técnica: {order.reference_doc}")
     lines.append(f"Aberta por: {opened_by.full_name if opened_by else 'não identificado'}")

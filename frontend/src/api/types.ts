@@ -162,6 +162,7 @@ export interface MaintenanceOrder {
   order_number: string;
   aircraft_id: number;
   component_id?: number | null;
+  checklist_template_id?: number | null;
   type: MaintenanceType;
   priority: Criticality;
   status: OrderStatus;

@@ -102,6 +102,18 @@ já implementadas no piloto:
    "conhecimento tácito".
 7. Toda criação, alteração, inativação e cancelamento relevante fica registrada em uma **trilha de
    auditoria** (quem, quando, o quê), consultável por qualquer usuário autenticado na tela "Auditoria".
+8. **O status da aeronave segue a abertura/encerramento de OS, não o contrário**: na prática real, é a
+   abertura de uma Ordem de Serviço que formaliza a indução de uma aeronave à manutenção, não uma
+   troca de status isolada por quem está no hangar. Abrir uma OS para uma aeronave "Operacional" muda
+   o status dela automaticamente para "Em Manutenção"; o status só volta a "Operacional" quando a
+   **última** OS aberta daquela aeronave é concluída ou cancelada (ver `routers/maintenance.py`). Cada
+   administrador recebe, por e-mail, um boletim de indução com os dados da OS e um retrato da aeronave
+   no momento (status, índice de saúde, risco operacional, horas de voo, categoria).
+9. **Uma OS distingue dois escopos de manutenção, mutuamente exclusivos**: **Componente associado**
+   (a OS é sobre uma peça específica) ou **Protocolo/Checklist aplicado** (a OS é uma inspeção
+   programada que cobre a aeronave inteira, ex.: "Inspeção de 100 horas" — segue um checklist fixo
+   reutilizável, cadastrado em Protocolos). Um achado específico encontrado durante uma inspeção de
+   aeronave inteira pode depois ser vinculado a um componente, editando a OS.
 
 ## 5. O que este piloto conscientemente NÃO cobre ainda
 

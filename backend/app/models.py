@@ -459,6 +459,13 @@ class MaintenanceOrder(Base):
     order_number: Mapped[str] = mapped_column(String(30), unique=True, index=True)
     aircraft_id: Mapped[int] = mapped_column(ForeignKey("aircraft.id"), index=True)
     component_id: Mapped[int | None] = mapped_column(ForeignKey("components.id"), index=True, nullable=True)
+    # Protocolo/checklist aplicado (ver ChecklistTemplate) - prática real da
+    # aeronáutica para inspeções programadas que cobrem a AERONAVE INTEIRA
+    # (sem um componente único): a OS referencia o protocolo que rege a
+    # inspeção (ex.: "Inspeção de 100 horas"), em vez de uma peça específica.
+    # Um achado especifico durante a inspeção pode então apontar
+    # component_id depois, editando a OS (ver docs/04).
+    checklist_template_id: Mapped[int | None] = mapped_column(ForeignKey("checklist_templates.id"), index=True, nullable=True)
 
     type: Mapped[MaintenanceType] = mapped_column(SAEnum(MaintenanceType))
     priority: Mapped[Criticality] = mapped_column(SAEnum(Criticality), default=Criticality.MEDIA)
@@ -491,6 +498,7 @@ class MaintenanceOrder(Base):
 
     aircraft: Mapped["Aircraft"] = relationship(back_populates="maintenance_orders")
     component: Mapped["Component | None"] = relationship()
+    checklist_template: Mapped["ChecklistTemplate | None"] = relationship()
     opened_by: Mapped["Person | None"] = relationship(foreign_keys=[opened_by_id])
     responsible: Mapped["Person | None"] = relationship(foreign_keys=[responsible_id])
     cancelled_by: Mapped["Person | None"] = relationship(foreign_keys=[cancelled_by_id])

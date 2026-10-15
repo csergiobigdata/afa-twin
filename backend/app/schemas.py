@@ -280,6 +280,9 @@ class AircraftGroupAssignmentOut(AircraftGroupAssignmentCreate, ORMModel):
 class MaintenanceOrderBase(BaseModel):
     aircraft_id: int
     component_id: Optional[int] = None
+    checklist_template_id: Optional[int] = Field(
+        None, description="Protocolo/checklist aplicado - inspeções que cobrem a aeronave inteira, sem componente único"
+    )
     type: MaintenanceType
     priority: Criticality = Criticality.MEDIA
     status: OrderStatus = OrderStatus.ABERTA
@@ -303,6 +306,7 @@ class MaintenanceOrderCreate(MaintenanceOrderBase):
 
 class MaintenanceOrderUpdate(BaseModel):
     component_id: Optional[int] = None
+    checklist_template_id: Optional[int] = None
     type: Optional[MaintenanceType] = None
     priority: Optional[Criticality] = None
     status: Optional[OrderStatus] = None

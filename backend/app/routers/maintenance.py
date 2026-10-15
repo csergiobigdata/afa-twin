@@ -74,6 +74,16 @@ def create_order(
     if not aircraft:
         raise HTTPException(400, "Aeronave informada não existe")
     data = payload.model_dump()
+
+    # Se a OS referencia um protocolo/checklist (inspeção de aeronave
+    # inteira) e não veio referência técnica explícita, herda a do próprio
+    # protocolo - mesma prática real de citar o documento que rege a
+    # inspeção (ver ChecklistTemplate.reference_doc).
+    if data.get("checklist_template_id") and not data.get("reference_doc"):
+        checklist = db.get(models.ChecklistTemplate, data["checklist_template_id"])
+        if checklist and checklist.reference_doc:
+            data["reference_doc"] = checklist.reference_doc
+
     order = models.MaintenanceOrder(order_number=_next_order_number(db), **data)
     db.add(order)
 
