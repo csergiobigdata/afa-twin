@@ -19,11 +19,25 @@ def _next_order_number(db: Session) -> str:
     # Formato "AAAA/NNNN" (ex.: "2026/0002") - só o número da OS, sem a
     # sigla "OS-" (removida a pedido do usuário; o próprio módulo já se
     # chama "Ordem de Serviço", a sigla no número era redundante).
+    #
+    # Usa o MAIOR sufixo numérico já usado no ano + 1, não a CONTAGEM de OS
+    # do ano - com qualquer lacuna na numeração (ex.: "2026/0001" nunca
+    # existiu, mas "2026/0002" e "2026/0003" sim), contar géra um número já
+    # usado (count=2 -> "2026/0003", que já existe) e a criação falha com
+    # violação de chave única (`ix_maintenance_orders_order_number`),
+    # confirmado em produção.
     year = dt.datetime.now().year
-    count = db.query(models.MaintenanceOrder).filter(
-        models.MaintenanceOrder.order_number.like(f"{year}/%")
-    ).count()
-    return f"{year}/{count + 1:04d}"
+    prefix = f"{year}/"
+    numbers = db.query(models.MaintenanceOrder.order_number).filter(
+        models.MaintenanceOrder.order_number.like(f"{prefix}%")
+    ).all()
+    max_seq = 0
+    for (number,) in numbers:
+        try:
+            max_seq = max(max_seq, int(number.split("/", 1)[1]))
+        except (IndexError, ValueError):
+            continue
+    return f"{prefix}{max_seq + 1:04d}"
 
 
 @router.get("", response_model=list[schemas.MaintenanceOrderOut])
