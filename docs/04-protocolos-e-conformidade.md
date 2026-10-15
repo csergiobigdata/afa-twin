@@ -103,10 +103,14 @@ já implementadas no piloto:
 7. Toda criação, alteração, inativação e cancelamento relevante fica registrada em uma **trilha de
    auditoria** (quem, quando, o quê), consultável por qualquer usuário autenticado na tela "Auditoria".
 8. **O status da aeronave segue a abertura/encerramento de OS, não o contrário**: na prática real, é a
-   abertura de uma Ordem de Serviço que formaliza a indução de uma aeronave à manutenção, não uma
-   troca de status isolada por quem está no hangar. Abrir uma OS para uma aeronave "Operacional" muda
-   o status dela automaticamente para "Em Manutenção"; o status só volta a "Operacional" quando a
-   **última** OS aberta daquela aeronave é concluída ou cancelada (ver `routers/maintenance.py`). Cada
+   abertura de uma Ordem de Serviço que formaliza a indução de uma aeronave à manutenção/inspeção, não
+   uma troca de status isolada por quem está no hangar - o que muda entre "Em Manutenção" e "Em
+   Inspeção" não é o processo (os dois são formalizados por uma OS do mesmo jeito), é a natureza do
+   trabalho. Abrir uma OS para uma aeronave "Operacional" muda o status dela automaticamente conforme o
+   **tipo** da OS: "Inspeção de Rotina" induz "Em Inspeção"; "Modificação/Modernização" induz "Em
+   Modernização"; os demais tipos (Preventiva Programada, Corretiva, Boletim Técnico, Overhaul) induzem
+   o genérico "Em Manutenção" (ver `_INDUCED_STATUS_BY_TYPE` em `routers/maintenance.py`). O status só
+   volta a "Operacional" quando a **última** OS aberta daquela aeronave é concluída ou cancelada. Cada
    administrador recebe, por e-mail, um boletim de indução com os dados da OS e um retrato da aeronave
    no momento (status, índice de saúde, risco operacional, horas de voo, categoria).
 9. **Uma OS distingue dois escopos de manutenção, mutuamente exclusivos**: **Componente associado**

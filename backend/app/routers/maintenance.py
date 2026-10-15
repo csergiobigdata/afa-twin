@@ -14,6 +14,20 @@ router = APIRouter(
 
 _TERMINAL_STATUSES = (models.OrderStatus.CONCLUIDA, models.OrderStatus.CANCELADA)
 
+# Status de indisponibilidade que uma OS pode induzir automaticamente (ver
+# create_order/update_order abaixo) - na prática real, o que muda entre
+# "Em Manutenção" e "Em Inspeção" não é o processo (os dois são formalizados
+# por uma OS do mesmo jeito), é a NATUREZA do trabalho: uma inspeção
+# programada (ex.: "Inspeção de 100 horas") induz "Em Inspeção"; uma
+# modificação/modernização induz "Em Modernização"; os demais tipos
+# (Preventiva, Corretiva, Boletim Técnico, Overhaul) induzem o genérico
+# "Em Manutenção".
+_INDUCED_STATUS_BY_TYPE: dict[models.MaintenanceType, models.AircraftStatus] = {
+    models.MaintenanceType.INSPECAO_ROTINA: models.AircraftStatus.EM_INSPECAO,
+    models.MaintenanceType.MODIFICACAO: models.AircraftStatus.EM_MODERNIZACAO,
+}
+_INDUCED_STATUSES = (models.AircraftStatus.EM_MANUTENCAO, models.AircraftStatus.EM_INSPECAO, models.AircraftStatus.EM_MODERNIZACAO)
+
 
 def _next_order_number(db: Session) -> str:
     # Formato "AAAA/NNNN" (ex.: "2026/0002") - só o número da OS, sem a
@@ -88,14 +102,15 @@ def create_order(
     db.add(order)
 
     # Prática da aeronáutica (ver docs/04): abrir uma OS é o que formaliza a
-    # indução da aeronave à manutenção - o status não é trocado "a seco" por
-    # quem está no hangar, ele é CONSEQUÊNCIA da OS existir. Só induz
-    # automaticamente a partir de "Operacional"; se já estiver em outro
-    # status de indisponibilidade (Em Inspeção, Em Modernização,
-    # Indisponível), não sobrescreve - esses já têm motivo próprio.
+    # indução da aeronave à manutenção/inspeção - o status não é trocado "a
+    # seco" por quem está no hangar, ele é CONSEQUÊNCIA da OS existir. Só
+    # induz automaticamente a partir de "Operacional"; se já estiver em
+    # outro status de indisponibilidade (Em Inspeção, Em Modernização,
+    # Indisponível), não sobrescreve - esses já têm motivo próprio. O status
+    # induzido depende do TIPO da OS (_INDUCED_STATUS_BY_TYPE acima).
     old_status = aircraft.status
     if aircraft.status == models.AircraftStatus.OPERACIONAL:
-        aircraft.status = models.AircraftStatus.EM_MANUTENCAO
+        aircraft.status = _INDUCED_STATUS_BY_TYPE.get(order.type, models.AircraftStatus.EM_MANUTENCAO)
 
     db.commit()
     db.refresh(order)
@@ -106,8 +121,8 @@ def create_order(
     if aircraft.status != old_status:
         audit.log_action(
             db, actor, "Aeronave", aircraft.id, models.AuditAction.ALTERACAO,
-            f"Aeronave {aircraft.tail_number} induzida à manutenção automaticamente (OS {order.order_number} "
-            f"aberta): status \"{old_status.value}\" → \"{aircraft.status.value}\".",
+            f"Aeronave {aircraft.tail_number} induzida automaticamente (OS {order.order_number} aberta): "
+            f"status \"{old_status.value}\" → \"{aircraft.status.value}\".",
             entity_label=aircraft.tail_number,
         )
         try:
@@ -213,11 +228,12 @@ def update_order(
     # Prática da aeronáutica (ver docs/04): a aeronave só volta a
     # "Operacional" quando a ÚLTIMA OS aberta é encerrada (concluída ou
     # cancelada) - retorno ao serviço, não o fechamento isolado de uma OS
-    # entre várias. Só reverte se o status ainda for o induzido
-    # automaticamente ("Em Manutenção"); se foi trocado manualmente para Em
-    # Inspeção/Em Modernização/Indisponível nesse meio tempo, não mexe -
-    # esse status tem motivo próprio, não cabe a esta OS decidir por ele.
-    if (is_concluding or is_cancelling) and aircraft and aircraft.status == models.AircraftStatus.EM_MANUTENCAO:
+    # entre várias. Só reverte se o status ainda for um dos induzidos
+    # automaticamente por OS (Em Manutenção/Em Inspeção/Em Modernização,
+    # ver _INDUCED_STATUS_BY_TYPE); se foi trocado manualmente para
+    # Indisponível nesse meio tempo, não mexe - esse status tem motivo
+    # próprio, não cabe a esta OS decidir por ele.
+    if (is_concluding or is_cancelling) and aircraft and aircraft.status in _INDUCED_STATUSES:
         still_open = db.query(models.MaintenanceOrder).filter(
             models.MaintenanceOrder.aircraft_id == aircraft.id,
             models.MaintenanceOrder.id != o.id,
