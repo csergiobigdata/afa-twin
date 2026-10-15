@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+import os
+
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import models, security
+from .. import notifications as notifications_service
 from ..database import (
     Base, engine, get_db, sync_missing_columns, sync_missing_indexes, sync_postgres_enum_types,
     reformat_order_numbers, migrate_availability_code_column, cap_max_speed_values,
@@ -11,6 +14,14 @@ from ..seed import ADMIN_PASSWORD_DEFAULT, ADMIN_USERS
 router = APIRouter(prefix="/api/admin", tags=["administração"])
 
 TEST_USER_PASSWORD_DEFAULT = "AfaTwin@2026"
+
+# Autentica o cron diário (abaixo) sem exigir login de usuário: o Vercel
+# Cron injeta automaticamente "Authorization: Bearer <CRON_SECRET>" na
+# chamada quando a variável de ambiente CRON_SECRET está configurada no
+# projeto (ver docs.vercel.com/cron-jobs/manage-cron-jobs#securing-cron-jobs)
+# - sem essa variável configurada, o endpoint fica bloqueado para qualquer
+# chamada (nunca fica aberto por engano).
+CRON_SECRET = os.environ.get("CRON_SECRET", "")
 
 
 @router.post(
@@ -63,3 +74,17 @@ def reset_password(username: str, db: Session = Depends(get_db)):
     user.password_hash, user.password_salt = security.hash_password(new_password)
     db.commit()
     return {"status": "ok", "detail": f"Senha de \"{username}\" redefinida para o padrão."}
+
+
+@router.get("/notify-daily-alerts")
+def notify_daily_alerts(authorization: str | None = Header(None), db: Session = Depends(get_db)):
+    """Disparado automaticamente uma vez por dia pelo Vercel Cron (ver
+    `backend/vercel.json`) - reenvia os alertas de desgaste/vencimento de
+    peça (mesma regra de destinatários do botão manual no Painel) para toda
+    aeronave que ainda não estiver "Em Manutenção", a pedido do usuário:
+    o aviso deve continuar chegando todo dia até que um administrador ou
+    mecânico responsável mude o status da aeronave (ver
+    notifications.send_daily_wear_alert_notifications)."""
+    if not CRON_SECRET or authorization != f"Bearer {CRON_SECRET}":
+        raise HTTPException(401, "Não autorizado")
+    return notifications_service.send_daily_wear_alert_notifications(db)

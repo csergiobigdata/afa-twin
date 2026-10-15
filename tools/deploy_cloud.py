@@ -511,10 +511,17 @@ def main() -> None:
 
     project_id = ensure_vercel_project(vercel_token)
     secret_key = secrets.token_hex(32)
+    # CRON_SECRET: nome exato que o Vercel Cron usa para autenticar
+    # automaticamente suas próprias chamadas (ver backend/vercel.json e
+    # routers/admin.py::notify_daily_alerts) - injeta sozinho o header
+    # "Authorization: Bearer <valor>" quando essa variável existe no
+    # projeto, sem precisar de nenhum código extra aqui.
+    cron_secret = secrets.token_hex(32)
     set_vercel_env(vercel_token, project_id, {
         "AFA_TWIN_DATABASE_URL": database_url,
         "AFA_TWIN_SECRET_KEY": secret_key,
         "AFA_TWIN_ALLOWED_ORIGINS": "*",
+        "CRON_SECRET": cron_secret,
     })
     backend_files = _collect_backend_files()
     print(f"  {len(backend_files)} arquivo(s) do backend preparados para publicação.")

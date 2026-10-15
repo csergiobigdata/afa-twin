@@ -1,6 +1,6 @@
 """
 Envio e histórico de notificações (e-mail / SMS / WhatsApp) para os
-responsáveis vinculados a uma aeronave - usado em dois cenários pedidos
+responsáveis vinculados a uma aeronave - usado em três cenários pedidos
 pelo usuário:
 
 1. Mudança de status da aeronave (ex.: "Em Inspeção" → "Operacional") -
@@ -8,6 +8,10 @@ pelo usuário:
 2. Peça se aproximando (ou já vencida) do período de manutenção preventiva
    (por horas ou por vigência de calendário) - disparado manualmente pelo
    usuário a partir do Painel, com base em `check_pending_part_alerts`.
+3. O mesmo alerta de peça (2), reenviado automaticamente uma vez por dia
+   (cron do Vercel, ver `backend/vercel.json` e `routers/admin.py`) para
+   toda aeronave que ainda não estiver "Em Manutenção" - ver
+   `send_daily_wear_alert_notifications`.
 
 Transparência sobre o que é real e o que é simulado nesta fase piloto:
 
@@ -337,3 +341,47 @@ def check_pending_part_alerts(db: Session) -> list[schemas.PendingPartAlert]:
     severity_rank = {"critico": 0, "atencao": 1, "info": 2}
     results.sort(key=lambda r: severity_rank.get(r.severity, 3))
     return results
+
+
+def send_daily_wear_alert_notifications(db: Session) -> dict:
+    """Reenvia, uma vez por dia (chamado pelo cron do Vercel - ver
+    backend/vercel.json e routers/admin.py::notify_daily_alerts), os
+    alertas de desgaste/vencimento de peça de toda aeronave que AINDA não
+    está "Em Manutenção" - a pedido do usuário, o e-mail deve continuar
+    chegando todo dia até que um administrador ou mecânico responsável mude
+    o status da aeronave para "Em Manutenção" (nesse momento ela some desta
+    lista). Mesma regra de destinatários do envio manual (Painel → "Alertas
+    de Desgaste e Manutenção"): responsáveis vinculados + os 2
+    administradores sempre, com nota explicativa quando não há nenhum
+    responsável vinculado."""
+    fleet = db.query(models.Aircraft).filter(
+        models.Aircraft.status != models.AircraftStatus.EM_MANUTENCAO,
+    ).options(
+        selectinload(models.Aircraft.components), selectinload(models.Aircraft.maintenance_orders),
+    ).all()
+
+    admins = admin_recipients(db)
+    aircraft_notified = 0
+    notifications_sent = 0
+    for aircraft in fleet:
+        part_alerts = [a for a in compute.component_alerts(aircraft) if a.get("component_id")]
+        if not part_alerts:
+            continue
+        recipients = suggested_recipients_for_aircraft(db, aircraft)
+        subject = f"[AFA-TWIN] Alerta diário: {len(part_alerts)} peça(s) próxima(s) do vencimento — {aircraft.tail_number}"
+        message = "\n".join(f"• {a['title']}: {a['detail']}" for a in part_alerts)
+        if not recipients:
+            message = (
+                f"Nenhum responsável está vinculado à aeronave {aircraft.tail_number} no momento "
+                f"(cadastre em Aeronaves → aba Pessoal) - notificando diretamente os administradores "
+                f"do sistema.\n\n" + message
+            )
+        recipients_by_id = {p.id: p for p in recipients}
+        for a in admins:
+            recipients_by_id.setdefault(a.id, a)
+        for r in recipients_by_id.values():
+            send_notification(db, models.NotificationChannel.EMAIL, r, subject, message,
+                               aircraft=aircraft, reason=models.NotificationReason.VENCIMENTO_PECA)
+            notifications_sent += 1
+        aircraft_notified += 1
+    return {"aircraft_notified": aircraft_notified, "notifications_sent": notifications_sent}
