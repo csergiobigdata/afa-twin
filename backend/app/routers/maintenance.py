@@ -56,16 +56,41 @@ def create_order(
     payload: schemas.MaintenanceOrderCreate, db: Session = Depends(get_db),
     actor: models.User = Depends(security.get_current_user),
 ):
-    if not db.get(models.Aircraft, payload.aircraft_id):
+    aircraft = db.get(models.Aircraft, payload.aircraft_id)
+    if not aircraft:
         raise HTTPException(400, "Aeronave informada não existe")
     data = payload.model_dump()
     order = models.MaintenanceOrder(order_number=_next_order_number(db), **data)
     db.add(order)
+
+    # Prática da aeronáutica (ver docs/04): abrir uma OS é o que formaliza a
+    # indução da aeronave à manutenção - o status não é trocado "a seco" por
+    # quem está no hangar, ele é CONSEQUÊNCIA da OS existir. Só induz
+    # automaticamente a partir de "Operacional"; se já estiver em outro
+    # status de indisponibilidade (Em Inspeção, Em Modernização,
+    # Indisponível), não sobrescreve - esses já têm motivo próprio.
+    old_status = aircraft.status
+    if aircraft.status == models.AircraftStatus.OPERACIONAL:
+        aircraft.status = models.AircraftStatus.EM_MANUTENCAO
+
     db.commit()
     db.refresh(order)
     audit.log_action(db, actor, "Ordem de Serviço", order.id, models.AuditAction.CRIACAO,
                       f"OS {order.order_number} criada: \"{order.title}\" ({order.type.value}).",
                       entity_label=order.order_number)
+
+    if aircraft.status != old_status:
+        audit.log_action(
+            db, actor, "Aeronave", aircraft.id, models.AuditAction.ALTERACAO,
+            f"Aeronave {aircraft.tail_number} induzida à manutenção automaticamente (OS {order.order_number} "
+            f"aberta): status \"{old_status.value}\" → \"{aircraft.status.value}\".",
+            entity_label=aircraft.tail_number,
+        )
+        try:
+            notifications_service.notify_status_change(db, aircraft, old_status, aircraft.status)
+        except Exception:
+            pass
+
     return order
 
 
@@ -159,7 +184,37 @@ def update_order(
             f"{f' - motivo: {o.cancellation_reason}' if o.cancellation_reason else ''}.",
             entity_label=o.order_number,
         )
-    elif data and not is_concluding:
+
+    # Prática da aeronáutica (ver docs/04): a aeronave só volta a
+    # "Operacional" quando a ÚLTIMA OS aberta é encerrada (concluída ou
+    # cancelada) - retorno ao serviço, não o fechamento isolado de uma OS
+    # entre várias. Só reverte se o status ainda for o induzido
+    # automaticamente ("Em Manutenção"); se foi trocado manualmente para Em
+    # Inspeção/Em Modernização/Indisponível nesse meio tempo, não mexe -
+    # esse status tem motivo próprio, não cabe a esta OS decidir por ele.
+    if (is_concluding or is_cancelling) and aircraft and aircraft.status == models.AircraftStatus.EM_MANUTENCAO:
+        still_open = db.query(models.MaintenanceOrder).filter(
+            models.MaintenanceOrder.aircraft_id == aircraft.id,
+            models.MaintenanceOrder.id != o.id,
+            models.MaintenanceOrder.status.notin_(list(_TERMINAL_STATUSES)),
+        ).count()
+        if still_open == 0:
+            old_status = aircraft.status
+            aircraft.status = models.AircraftStatus.OPERACIONAL
+            db.commit()
+            audit.log_action(
+                db, actor, "Aeronave", aircraft.id, models.AuditAction.ALTERACAO,
+                f"Aeronave {aircraft.tail_number} retornou ao serviço automaticamente (última OS aberta "
+                f"{'concluída' if is_concluding else 'cancelada'}: {o.order_number}): status "
+                f"\"{old_status.value}\" → \"{aircraft.status.value}\".",
+                entity_label=aircraft.tail_number,
+            )
+            try:
+                notifications_service.notify_status_change(db, aircraft, old_status, aircraft.status)
+            except Exception:
+                pass
+
+    if data and not is_concluding and not is_cancelling:
         audit.log_action(db, actor, "Ordem de Serviço", o.id, models.AuditAction.ALTERACAO,
                           f"OS {o.order_number} alterada: {', '.join(data.keys())}.", entity_label=o.order_number)
 
