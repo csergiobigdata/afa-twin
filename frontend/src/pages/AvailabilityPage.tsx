@@ -10,7 +10,7 @@ import { ROLE_PERMISSIONS } from "../auth/AuthContext";
 import AircraftPicker from "../components/AircraftPicker";
 import AuthorizedConfigSelect from "../components/AuthorizedConfigSelect";
 import AuthorizedConfigSymbol from "../components/AuthorizedConfigSymbol";
-import { AvailabilityCodeBadge } from "../components/Badges";
+import { AvailabilityCodeBadge, StatusBadge } from "../components/Badges";
 import ConfigurationDiagram from "../components/ConfigurationDiagram";
 import SortableTh from "../components/SortableTh";
 import SplashScreen from "../components/SplashScreen";
@@ -74,9 +74,9 @@ const DEFAULT_MANUAL_AIRCRAFT_TAIL = "FAB 5962";
 
 type AvailTab = "quadro" | "cadastro" | "config-autorizadas";
 
-type QuadroSortKey = "aircraft_tail_number" | "aircraft_model" | "code" | "configuration" | "has_subalares" | "reason" | "report_date";
+type QuadroSortKey = "aircraft_tail_number" | "aircraft_model" | "code" | "configuration" | "has_subalares" | "reason" | "report_date" | "aircraft_status";
 
-function quadroSortValue(e: AvailabilityBoardEntry, key: QuadroSortKey): string | number {
+function quadroSortValue(e: AvailabilityBoardEntry, key: QuadroSortKey, fleet: Aircraft[]): string | number {
   switch (key) {
     case "aircraft_tail_number": return e.aircraft_tail_number;
     case "aircraft_model": return e.aircraft_model;
@@ -85,6 +85,7 @@ function quadroSortValue(e: AvailabilityBoardEntry, key: QuadroSortKey): string 
     case "has_subalares": return e.has_subalares ? 1 : 0;
     case "reason": return e.reason ?? "";
     case "report_date": return e.report_date;
+    case "aircraft_status": return fleet.find((a) => a.id === e.aircraft_id)?.status ?? "";
   }
 }
 
@@ -316,8 +317,8 @@ export default function AvailabilityPage() {
       return true;
     })
     .sort((a, b) => {
-      const va = quadroSortValue(a, quadroSortKey);
-      const vb = quadroSortValue(b, quadroSortKey);
+      const va = quadroSortValue(a, quadroSortKey, fleet);
+      const vb = quadroSortValue(b, quadroSortKey, fleet);
       const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb), "pt-BR");
       return quadroSortDir === "asc" ? cmp : -cmp;
     });
@@ -433,6 +434,7 @@ export default function AvailabilityPage() {
                       {canManage && <th style={{ width: 30 }}></th>}
                       <SortableTh label="Aeronave" sortKey="aircraft_tail_number" active={quadroSortKey === "aircraft_tail_number"} dir={quadroSortDir} onClick={toggleQuadroSort} />
                       <SortableTh label="Modelo" sortKey="aircraft_model" active={quadroSortKey === "aircraft_model"} dir={quadroSortDir} onClick={toggleQuadroSort} />
+                      <SortableTh label="Status" sortKey="aircraft_status" active={quadroSortKey === "aircraft_status"} dir={quadroSortDir} onClick={toggleQuadroSort} />
                       <SortableTh label="Código" sortKey="code" active={quadroSortKey === "code"} dir={quadroSortDir} onClick={toggleQuadroSort} />
                       <SortableTh label="Configuração" sortKey="configuration" active={quadroSortKey === "configuration"} dir={quadroSortDir} onClick={toggleQuadroSort} />
                       <SortableTh label="Subalares" sortKey="has_subalares" active={quadroSortKey === "has_subalares"} dir={quadroSortDir} onClick={toggleQuadroSort} />
@@ -469,6 +471,12 @@ export default function AvailabilityPage() {
                           )}
                           <td style={{ fontWeight: 700 }}>{e.aircraft_tail_number}</td>
                           <td style={{ fontSize: 12.5 }}>{e.aircraft_model}</td>
+                          <td>
+                            {(() => {
+                              const status = fleet.find((a) => a.id === e.aircraft_id)?.status;
+                              return status ? <StatusBadge status={status} /> : "—";
+                            })()}
+                          </td>
                           <td><AvailabilityCodeBadge code={e.code} /></td>
                           <td style={{ fontSize: 12.5 }}>{e.configuration ?? "LISO"}</td>
                           <td style={{ fontSize: 12.5 }}>{e.has_subalares ? "Sim" : "—"}</td>
@@ -488,7 +496,7 @@ export default function AvailabilityPage() {
                       );
                     })}
                     {quadroEntries.length === 0 && (
-                      <tr><td colSpan={canManage ? 9 : 7} style={{ color: "var(--text-secondary)" }}>Nenhum lançamento de disponibilidade encontrado.</td></tr>
+                      <tr><td colSpan={canManage ? 10 : 8} style={{ color: "var(--text-secondary)" }}>Nenhum lançamento de disponibilidade encontrado.</td></tr>
                     )}
                   </tbody>
                 </table>
