@@ -112,19 +112,19 @@ export default function AircraftFormPage({ mode }: { mode: "create" | "edit" }) 
         <div className="form-grid">
           <div className="field">
             <label>Matrícula (tail number) *</label>
-            <input required value={form.tail_number ?? ""} onChange={(e) => set("tail_number", e.target.value)} placeholder="FAB 4100" />
+            <input type="text" required value={form.tail_number ?? ""} onChange={(e) => set("tail_number", e.target.value)} placeholder="FAB 4100" />
           </div>
           <div className="field">
             <label>Apelido</label>
-            <input value={form.nickname ?? ""} onChange={(e) => set("nickname", e.target.value)} placeholder="Gripen One" />
+            <input type="text" value={form.nickname ?? ""} onChange={(e) => set("nickname", e.target.value)} placeholder="Gripen One" />
           </div>
           <div className="field">
             <label>Marca / Fabricante *</label>
-            <input required value={form.manufacturer ?? ""} onChange={(e) => set("manufacturer", e.target.value)} placeholder="Saab / Embraer" />
+            <input type="text" required value={form.manufacturer ?? ""} onChange={(e) => set("manufacturer", e.target.value)} placeholder="Saab / Embraer" />
           </div>
           <div className="field">
             <label>Modelo *</label>
-            <input required value={form.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder="F-39E Gripen" />
+            <input type="text" required value={form.model ?? ""} onChange={(e) => set("model", e.target.value)} placeholder="F-39E Gripen" />
           </div>
           <div className="field">
             <label>Categoria *</label>
@@ -144,11 +144,11 @@ export default function AircraftFormPage({ mode }: { mode: "create" | "edit" }) 
         <div className="form-grid">
           <div className="field">
             <label>Esquadrão / Grupo de Aviação</label>
-            <input value={form.squadron ?? ""} onChange={(e) => set("squadron", e.target.value)} placeholder="1º GDA" />
+            <input type="text" value={form.squadron ?? ""} onChange={(e) => set("squadron", e.target.value)} placeholder="1º GDA" />
           </div>
           <div className="field">
             <label>Base Aérea</label>
-            <input value={form.base ?? ""} onChange={(e) => set("base", e.target.value)} placeholder="Base Aérea de Anápolis" />
+            <input type="text" value={form.base ?? ""} onChange={(e) => set("base", e.target.value)} placeholder="Base Aérea de Anápolis" />
           </div>
           <div className="field">
             <label>Ano de fabricação</label>

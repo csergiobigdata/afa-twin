@@ -71,7 +71,7 @@ export default function ChecklistsPage() {
           <div className="form-grid">
             <div className="field field-full">
               <label>Nome do protocolo *</label>
-              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex.: Inspeção de 100 horas - Turboélice" />
+              <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex.: Inspeção de 100 horas - Turboélice" />
             </div>
             <div className="field">
               <label>Modelo de aeronave aplicável</label>
@@ -99,7 +99,7 @@ export default function ChecklistsPage() {
             </div>
             <div className="field field-full">
               <label>Documento de referência</label>
-              <input value={form.reference_doc} onChange={(e) => setForm({ ...form, reference_doc: e.target.value })} placeholder="AMM Cap. 05 / ICA de Manutenção" />
+              <input type="text" value={form.reference_doc} onChange={(e) => setForm({ ...form, reference_doc: e.target.value })} placeholder="AMM Cap. 05 / ICA de Manutenção" />
             </div>
             <div className="field field-full">
               <label>Etapas do checklist (uma por linha)</label>

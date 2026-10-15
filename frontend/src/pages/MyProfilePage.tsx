@@ -106,13 +106,13 @@ export default function MyProfilePage() {
             </div>
             <div className="field" style={{ maxWidth: 90 }}>
               <label>DDD</label>
-              <input value={form.phone_ddd} inputMode="numeric" maxLength={2}
+              <input type="text" value={form.phone_ddd} inputMode="numeric" maxLength={2}
                      onChange={(e) => setForm({ ...form, phone_ddd: e.target.value.replace(/\D/g, "").slice(0, 2) })}
                      placeholder="61" />
             </div>
             <div className="field">
               <label>Telefone</label>
-              <input value={form.phone_number} inputMode="numeric" maxLength={10}
+              <input type="text" value={form.phone_number} inputMode="numeric" maxLength={10}
                      onChange={(e) => setForm({ ...form, phone_number: formatPhone(e.target.value) })}
                      placeholder="99999-9999" />
             </div>

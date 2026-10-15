@@ -92,11 +92,11 @@ export default function AvailabilityCodesPage() {
                     {editingId === c.id ? (
                       <>
                         <td>
-                          <input value={editCode} maxLength={2} onChange={(e) => setEditCode(e.target.value.toUpperCase())}
+                          <input type="text" value={editCode} maxLength={2} onChange={(e) => setEditCode(e.target.value.toUpperCase())}
                                  style={{ width: 60, minHeight: 30, fontSize: 12.5, padding: "4px 8px" }} />
                         </td>
                         <td>
-                          <input value={editDescription} maxLength={40} onChange={(e) => setEditDescription(e.target.value)}
+                          <input type="text" value={editDescription} maxLength={40} onChange={(e) => setEditDescription(e.target.value)}
                                  style={{ width: "100%", minHeight: 30, fontSize: 12.5, padding: "4px 8px" }} />
                         </td>
                         <td style={{ display: "flex", gap: 6 }}>
@@ -126,11 +126,11 @@ export default function AvailabilityCodesPage() {
         <form onSubmit={addCode} style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
           <div className="field" style={{ maxWidth: 100 }}>
             <label>Código (2 letras)</label>
-            <input required maxLength={2} value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())} placeholder="ex.: IS" />
+            <input type="text" required maxLength={2} value={newCode} onChange={(e) => setNewCode(e.target.value.toUpperCase())} placeholder="ex.: IS" />
           </div>
           <div className="field" style={{ flex: "1 1 280px" }}>
             <label>Descrição (até 40 caracteres)</label>
-            <input required maxLength={40} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="ex.: Inspeção" />
+            <input type="text" required maxLength={40} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="ex.: Inspeção" />
           </div>
           <button type="submit" className="btn btn-primary btn-sm" disabled={saving}><PlusIcon /> Adicionar</button>
         </form>

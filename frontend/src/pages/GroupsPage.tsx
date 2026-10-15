@@ -67,11 +67,11 @@ export default function GroupsPage() {
           <div className="form-grid">
             <div className="field">
               <label>Apelido do grupo *</label>
-              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Equipe Gripen Alpha" />
+              <input type="text" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex.: Equipe Gripen Alpha" />
             </div>
             <div className="field field-full">
               <label>Descrição</label>
-              <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex.: Equipe multidisciplinar do F-39E FAB 4100" />
+              <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex.: Equipe multidisciplinar do F-39E FAB 4100" />
             </div>
           </div>
           <button type="submit" className="btn btn-primary btn-sm" style={{ marginTop: 12 }} disabled={saving}>{saving ? "Criando…" : "Criar grupo"}</button>

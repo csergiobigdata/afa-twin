@@ -276,7 +276,7 @@ export default function MaintenanceFormPage() {
           </div>
           <div className="field field-full">
             <label>Título *</label>
-            <input required value={order.title ?? ""} onChange={(e) => set("title", e.target.value)} placeholder="Ex.: Inspeção de 100 horas" />
+            <input type="text" required value={order.title ?? ""} onChange={(e) => set("title", e.target.value)} placeholder="Ex.: Inspeção de 100 horas" />
           </div>
           <div className="field field-full">
             <label>Descrição</label>
@@ -284,7 +284,7 @@ export default function MaintenanceFormPage() {
           </div>
           <div className="field field-full">
             <label>Referência técnica (AMM / ICA / Boletim AD-SB)</label>
-            <input value={order.reference_doc ?? ""} onChange={(e) => set("reference_doc", e.target.value)} placeholder="Ex.: AMM Cap. 05 / SB-F39-2026-014" />
+            <input type="text" value={order.reference_doc ?? ""} onChange={(e) => set("reference_doc", e.target.value)} placeholder="Ex.: AMM Cap. 05 / SB-F39-2026-014" />
           </div>
           <div className="field">
             <label>Equipe envolvida na execução</label>
@@ -295,7 +295,7 @@ export default function MaintenanceFormPage() {
           </div>
           <div className="field">
             <label>Observações sobre a equipe (opcional)</label>
-            <input value={order.team_members ?? ""} onChange={(e) => set("team_members", e.target.value)} placeholder="Ex.: reforço de plantão, apoio externo…" />
+            <input type="text" value={order.team_members ?? ""} onChange={(e) => set("team_members", e.target.value)} placeholder="Ex.: reforço de plantão, apoio externo…" />
           </div>
           {isEdit && (
             <>

@@ -228,7 +228,7 @@ function GeneralTab({ aircraft, flightLogs, people, onReload }: { aircraft: Airc
             </div>
             <div className="field">
               <label>Tipo de missão</label>
-              <input value={mission} onChange={(e) => setMission(e.target.value)} placeholder="Treinamento / Patrulha / Interceptação" />
+              <input type="text" value={mission} onChange={(e) => setMission(e.target.value)} placeholder="Treinamento / Patrulha / Interceptação" />
             </div>
             <div className="field">
               <label>Discrepâncias reportadas</label>
@@ -520,11 +520,11 @@ function ComponentsTab({
         <form onSubmit={submit} className="card" style={{ padding: 18, marginBottom: 16 }}>
           <div className="form-grid">
             <div className="field"><label>Nome do componente *</label>
-              <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Motor / Trem de pouso / Radar…" /></div>
+              <input type="text" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Motor / Trem de pouso / Radar…" /></div>
             <div className="field"><label>Part Number</label>
-              <input value={form.part_number} onChange={(e) => setForm({ ...form, part_number: e.target.value })} /></div>
+              <input type="text" value={form.part_number} onChange={(e) => setForm({ ...form, part_number: e.target.value })} /></div>
             <div className="field"><label>Número de Série</label>
-              <input value={form.serial_number} onChange={(e) => setForm({ ...form, serial_number: e.target.value })} /></div>
+              <input type="text" value={form.serial_number} onChange={(e) => setForm({ ...form, serial_number: e.target.value })} /></div>
             <div className="field"><label>Categoria</label>
               <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as ComponentCategory })}>
                 {COMPONENT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -1086,7 +1086,7 @@ function InspectionsTab({ aircraftId, components, people }: { aircraftId: number
             </div>
             <div className="field">
               <label>Localização</label>
-              <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Ex.: longarina próximo à nervura 7" />
+              <input type="text" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Ex.: longarina próximo à nervura 7" />
             </div>
             <div className="field">
               <label>Severidade</label>
@@ -1096,11 +1096,11 @@ function InspectionsTab({ aircraftId, components, people }: { aircraftId: number
             </div>
             <div className="field">
               <label>Extensão / medida observada</label>
-              <input value={form.extent} onChange={(e) => setForm({ ...form, extent: e.target.value })} placeholder="Ex.: 18mm" />
+              <input type="text" value={form.extent} onChange={(e) => setForm({ ...form, extent: e.target.value })} placeholder="Ex.: 18mm" />
             </div>
             <div className="field">
               <label>Referência AMM</label>
-              <input value={form.amm_reference} onChange={(e) => setForm({ ...form, amm_reference: e.target.value })} placeholder="AMM Cap. 57" />
+              <input type="text" value={form.amm_reference} onChange={(e) => setForm({ ...form, amm_reference: e.target.value })} placeholder="AMM Cap. 57" />
             </div>
             <div className="field">
               <label>Registrado por</label>

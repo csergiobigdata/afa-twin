@@ -86,11 +86,11 @@ export default function PersonForm({
       <div className="form-grid">
         <div className="field field-full">
           <label>Nome completo *</label>
-          <input required value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Ex.: Ten Cel Av Marina Duque Estrada" />
+          <input type="text" required value={form.full_name} onChange={(e) => set("full_name", e.target.value)} placeholder="Ex.: Ten Cel Av Marina Duque Estrada" />
         </div>
         <div className="field">
           <label>Organização</label>
-          <input list="organizacao-options" value={form.organization} onChange={(e) => set("organization", e.target.value)} />
+          <input type="text" list="organizacao-options" value={form.organization} onChange={(e) => set("organization", e.target.value)} />
           <datalist id="organizacao-options">
             {organizations.map((o) => <option key={o} value={o} />)}
           </datalist>
@@ -110,7 +110,7 @@ export default function PersonForm({
         </div>
         <div className="field">
           <label>Matrícula / Identidade funcional</label>
-          <input value={form.registration_number} onChange={(e) => set("registration_number", e.target.value)} placeholder="FAB-000000 / ITA-0000 / EMB-000000" />
+          <input type="text" value={form.registration_number} onChange={(e) => set("registration_number", e.target.value)} placeholder="FAB-000000 / ITA-0000 / EMB-000000" />
         </div>
         <div className="field">
           <label>Especialidade</label>
@@ -142,7 +142,7 @@ export default function PersonForm({
         </div>
         <div className="field" style={{ maxWidth: 90 }}>
           <label>DDD</label>
-          <input
+          <input type="text"
             value={form.phone_ddd} inputMode="numeric" maxLength={2}
             onChange={(e) => set("phone_ddd", e.target.value.replace(/\D/g, "").slice(0, 2))}
             placeholder="61"
@@ -150,7 +150,7 @@ export default function PersonForm({
         </div>
         <div className="field">
           <label>Telefone</label>
-          <input
+          <input type="text"
             value={form.phone_number} inputMode="numeric" maxLength={10}
             onChange={(e) => set("phone_number", formatPhone(e.target.value))}
             placeholder="99999-9999"

@@ -48,7 +48,7 @@ export default function LookupManager({ category, placeholder }: { category: Loo
   return (
     <div>
       <form onSubmit={add} style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        <input value={newValue} onChange={(e) => setNewValue(e.target.value)}
+        <input type="text" value={newValue} onChange={(e) => setNewValue(e.target.value)}
                placeholder={placeholder ?? `Novo item de "${category}"…`} style={{ maxWidth: 340 }} />
         <button type="submit" className="btn btn-primary btn-sm" disabled={saving}><PlusIcon /> Adicionar</button>
       </form>

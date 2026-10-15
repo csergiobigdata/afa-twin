@@ -595,7 +595,7 @@ export default function AvailabilityPage() {
                     </label>
                     <label style={{ ...FIELD_LABEL_STYLE, flex: "1 1 200px" }}>
                       Motivo / Observação
-                      <input value={manualReason} onChange={(e) => setManualReason(e.target.value)} placeholder="ex.: TREM DE POUSO" />
+                      <input type="text" value={manualReason} onChange={(e) => setManualReason(e.target.value)} placeholder="ex.: TREM DE POUSO" />
                     </label>
                     <button type="submit" className="btn btn-primary btn-sm" disabled={manualSaving || !manualAircraftId}>
                       {manualSaving ? "Salvando…" : <><PlusIcon /> Adicionar</>}
