@@ -44,8 +44,11 @@ def sync_schema():
     necessárias (todas as operações internas são aditivas e idempotentes)."""
     Base.metadata.create_all(bind=engine)
     sync_postgres_enum_types()
-    sync_missing_indexes()
+    # Colunas ANTES de índices: um índice numa coluna nova (ex.:
+    # checklist_template_id) falha com "column does not exist" se a coluna
+    # ainda não foi criada - confirmado em produção.
     sync_missing_columns()
+    sync_missing_indexes()
     # Já rodam automaticamente no startup (baratas) - chamadas aqui também
     # para permitir forçar sem esperar um redeploy/reinício.
     reformat_order_numbers()

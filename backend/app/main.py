@@ -107,8 +107,10 @@ def on_startup():
     # conveniência do desenvolvedor.
     if engine.dialect.name != "postgresql":
         sync_postgres_enum_types()
-        sync_missing_indexes()
+        # Colunas ANTES de índices: um índice numa coluna nova falha se a
+        # coluna ainda não existe (ver routers/admin.py::sync_schema).
         sync_missing_columns()
+        sync_missing_indexes()
     # Baratas (poucas linhas/uma consulta de introspecção; viram no-op depois
     # da primeira vez) - seguras no startup automático em qualquer dialeto,
     # ao contrário das três rotinas acima. Ver database.py para cada uma.
