@@ -8,9 +8,22 @@ from ..seed import ADMIN_USERS
 router = APIRouter(prefix="/api/auth", tags=["autenticação"])
 
 
+def _find_user_by_username_or_email(db: Session, identifier: str) -> models.User | None:
+    """A tela de login só pede "Usuário", mas é natural o usuário digitar o
+    e-mail cadastrado por engano (ou por hábito de outros sistemas) - aceita
+    os dois para não travar o acesso por causa disso."""
+    user = db.query(models.User).filter(models.User.username == identifier).first()
+    if user is not None:
+        return user
+    person = db.query(models.Person).filter(models.Person.email == identifier).first()
+    if person is not None:
+        return db.query(models.User).filter(models.User.person_id == person.id).first()
+    return None
+
+
 @router.post("/login", response_model=schemas.TokenResponse)
 def login(payload: schemas.LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.username == payload.username).first()
+    user = _find_user_by_username_or_email(db, payload.username)
     if user is None or not security.verify_password(payload.password, user.password_hash, user.password_salt):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário ou senha inválidos")
     if not user.active:
@@ -32,14 +45,8 @@ def forgot_password(payload: schemas.ForgotPasswordRequest, db: Session = Depend
     seed.ensure_admin_users) para que um deles redefina a senha manualmente.
     Responde com a mesma mensagem genérica mesmo se o usuário não existir,
     para não confirmar/negar quais usuários estão cadastrados; só dispara o
-    e-mail quando o usuário de fato existe. Aceita tanto o username de login
-    quanto o e-mail cadastrado na Pessoa vinculada - a tela de login só pede
-    "Usuário", mas é natural o usuário digitar o e-mail por engano."""
-    user = db.query(models.User).filter(models.User.username == payload.username).first()
-    if user is None:
-        person = db.query(models.Person).filter(models.Person.email == payload.username).first()
-        if person is not None:
-            user = db.query(models.User).filter(models.User.person_id == person.id).first()
+    e-mail quando o usuário de fato existe."""
+    user = _find_user_by_username_or_email(db, payload.username)
     if user is not None:
         admin_emails = {email for _, email, _ in ADMIN_USERS}
         admins = db.query(models.Person).filter(models.Person.email.in_(admin_emails)).all()

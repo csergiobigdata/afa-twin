@@ -95,7 +95,7 @@ export default function LoginPage() {
           {!showForgot ? (
             <form onSubmit={handleSubmit}>
               <div className="field" style={{ marginBottom: 14 }}>
-                <label htmlFor="username">Usuário</label>
+                <label htmlFor="username">Usuário ou e-mail</label>
                 <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)}
                        placeholder="ex.: mecanico" autoComplete="username" required />
               </div>
