@@ -269,6 +269,7 @@ def update_order(
             )
             try:
                 notifications_service.notify_status_change(db, aircraft, old_status, aircraft.status)
+                notifications_service.notify_os_return_to_service(db, o, aircraft, old_status, actor.person)
             except Exception:
                 pass
 

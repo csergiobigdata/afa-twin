@@ -528,6 +528,49 @@ def notify_os_induction(
     ]
 
 
+def notify_os_return_to_service(
+    db: Session, order: models.MaintenanceOrder, aircraft: models.Aircraft,
+    old_status: models.AircraftStatus, closed_by: models.Person | None,
+) -> list[models.Notification]:
+    """Aviso formal aos 2 administradores quando encerrar uma OS (concluir
+    ou cancelar) devolve a aeronave a "Operacional" - evento espelhado de
+    `notify_os_induction` (ver routers/maintenance.py::update_order): só
+    dispara quando essa era a ÚLTIMA OS aberta da aeronave, já com o
+    retrato dela no momento do retorno ao serviço. Complementa o e-mail de
+    conclusão/cancelamento já enviado aos responsáveis vinculados."""
+    health, risk = compute.compute_aircraft_health(aircraft)
+    action = "concluída" if order.status == models.OrderStatus.CONCLUIDA else "cancelada"
+
+    subject = f"[AFA-TWIN] Aeronave retornou ao serviço — OS {order.order_number} ({aircraft.tail_number})"
+    lines = [
+        "ORDEM DE SERVIÇO",
+        f"Número: {order.order_number}",
+        f"Título: {order.title}",
+        f"Situação: {action.capitalize()} (última OS aberta desta aeronave)",
+    ]
+    if order.status == models.OrderStatus.CANCELADA and order.cancellation_reason:
+        lines.append(f"Motivo do cancelamento: {order.cancellation_reason}")
+    lines.append(f"Encerrada por: {closed_by.full_name if closed_by else 'não identificado'}")
+
+    lines += [
+        "",
+        "AERONAVE",
+        f"Matrícula: {aircraft.tail_number}",
+        f"Fabricante/Modelo: {aircraft.manufacturer} {aircraft.model}",
+        f"Status: {old_status.value} → {aircraft.status.value}",
+        f"Índice de Saúde: {health:.0f}%",
+        f"Risco Operacional: {risk}",
+        f"Horas de voo acumuladas: {aircraft.total_flight_hours:.1f}h",
+    ]
+    message = "\n".join(lines)
+
+    return [
+        send_notification(db, models.NotificationChannel.EMAIL, admin, subject, message,
+                           aircraft=aircraft, reason=models.NotificationReason.MUDANCA_STATUS)
+        for admin in admin_recipients(db)
+    ]
+
+
 def check_pending_part_alerts(db: Session) -> list[schemas.PendingPartAlert]:
     """Componentes com vida útil (horas) ou vigência (calendário) próxima do
     vencimento/vencida, em toda a frota, com os responsáveis sugeridos para
