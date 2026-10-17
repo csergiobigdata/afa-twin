@@ -492,6 +492,10 @@ class MaintenanceOrder(Base):
     responsible_id: Mapped[int | None] = mapped_column(ForeignKey("people.id"), index=True, nullable=True)
 
     opened_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc)
+    # Atualizado sozinho (onupdate) a cada UPDATE na linha - inclui a
+    # mudança de status (ex.: quando a OS foi encerrada), não só edições de
+    # texto. Exibido na lista como "Alterado em" (ver MaintenancePage.tsx).
+    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
     due_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     closed_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

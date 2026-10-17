@@ -16,7 +16,7 @@ const PRIORITY_ORDER: Record<string, number> = { "Baixa": 0, "Média": 1, "Alta"
 const OPEN_STATUSES: OrderStatus[] = ["Aberta", "Em Andamento", "Aguardando Peça"];
 const OPEN_FILTER_VALUE = "__OPEN__";
 
-type SortKey = "order_number" | "aircraft" | "type" | "title" | "priority" | "status" | "opened_at";
+type SortKey = "order_number" | "aircraft" | "type" | "title" | "priority" | "status" | "opened_at" | "updated_at";
 
 export default function MaintenancePage() {
   const [searchParams] = useSearchParams();
@@ -53,6 +53,7 @@ export default function MaintenancePage() {
       case "priority": return PRIORITY_ORDER[o.priority] ?? -1;
       case "status": return o.status;
       case "opened_at": return new Date(o.opened_at).getTime();
+      case "updated_at": return new Date(o.updated_at).getTime();
     }
   }
 
@@ -109,6 +110,7 @@ export default function MaintenancePage() {
                 <SortableTh label="Prioridade" sortKey="priority" active={sortKey === "priority"} dir={sortDir} onClick={toggleSort} />
                 <SortableTh label="Status" sortKey="status" active={sortKey === "status"} dir={sortDir} onClick={toggleSort} />
                 <SortableTh label="Aberta em" sortKey="opened_at" active={sortKey === "opened_at"} dir={sortDir} onClick={toggleSort} />
+                <SortableTh label="Alterado em" sortKey="updated_at" active={sortKey === "updated_at"} dir={sortDir} onClick={toggleSort} />
               </tr>
             </thead>
             <tbody>
@@ -121,9 +123,10 @@ export default function MaintenancePage() {
                   <td><CriticalityBadge value={o.priority} /></td>
                   <td><OrderStatusBadge status={o.status} /></td>
                   <td style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>{formatDateTime(o.opened_at)}</td>
+                  <td style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>{formatDateTime(o.updated_at)}</td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={7} style={{ color: "var(--text-secondary)" }}>Nenhuma ordem de serviço encontrada.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={8} style={{ color: "var(--text-secondary)" }}>Nenhuma ordem de serviço encontrada.</td></tr>}
             </tbody>
           </table>
         </div>

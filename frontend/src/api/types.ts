@@ -172,6 +172,7 @@ export interface MaintenanceOrder {
   opened_by_id?: number | null;
   responsible_id?: number | null;
   opened_at: string;
+  updated_at: string;
   due_at?: string | null;
   closed_at?: string | null;
   flight_hours_at_event?: number | null;
