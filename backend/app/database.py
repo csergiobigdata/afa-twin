@@ -216,15 +216,23 @@ def cap_max_speed_values() -> None:
 
 
 def backfill_maintenance_order_updated_at() -> None:
-    """`maintenance_orders.updated_at` é nova e tem `default`/`onupdate` como
-    FUNÇÃO Python (`now_utc`), não um valor escalar - sync_missing_columns()
-    deliberadamente não preenche esse tipo de coluna ao acrescentá-la (ver a
-    docstring lá), então linhas já existentes ficaram com `updated_at NULL`,
-    quebrando a serialização (schemas.MaintenanceOrderOut exige um valor).
-    Preenche com `opened_at` como valor inicial razoável (não existe um
-    histórico real de "última alteração" anterior a esta coluna existir).
-    Barata (um UPDATE condicional; sem linhas depois da primeira vez),
-    idempotente, segura no startup automático em qualquer dialeto."""
+    """`maintenance_orders.updated_at` é nullable no banco de propósito (ver
+    models.py) justamente para que sync_missing_columns() consiga criá-la
+    sozinha num banco já existente - esta rotina só preenche, com
+    `opened_at` como valor inicial razoável, as linhas que a ORM ainda não
+    tocou (não existe um histórico real de "última alteração" anterior a
+    esta coluna existir). Verifica se a coluna já existe antes de tentar
+    (ela só aparece depois de sync_missing_columns() rodar - na primeira
+    vez que esta rotina roda antes dela na mesma inicialização, a coluna
+    ainda não existe; vira no-op nesse caso, sem erro, e pega as linhas na
+    próxima chamada). Barata e idempotente, segura no startup automático em
+    qualquer dialeto."""
+    inspector = inspect(engine)
+    if "maintenance_orders" not in inspector.get_table_names():
+        return
+    columns = {c["name"] for c in inspector.get_columns("maintenance_orders")}
+    if "updated_at" not in columns:
+        return
     with engine.begin() as conn:
         conn.execute(text("UPDATE maintenance_orders SET updated_at = opened_at WHERE updated_at IS NULL"))
 

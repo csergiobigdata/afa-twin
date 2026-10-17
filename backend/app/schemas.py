@@ -329,7 +329,7 @@ class MaintenanceOrderOut(MaintenanceOrderBase, ORMModel):
     id: int
     order_number: str
     opened_at: dt.datetime
-    updated_at: dt.datetime
+    updated_at: Optional[dt.datetime] = None
     closed_at: Optional[dt.datetime] = None
     cancelled_by_id: Optional[int] = None
     cancelled_at: Optional[dt.datetime] = None

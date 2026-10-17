@@ -53,7 +53,7 @@ export default function MaintenancePage() {
       case "priority": return PRIORITY_ORDER[o.priority] ?? -1;
       case "status": return o.status;
       case "opened_at": return new Date(o.opened_at).getTime();
-      case "updated_at": return new Date(o.updated_at).getTime();
+      case "updated_at": return o.updated_at ? new Date(o.updated_at).getTime() : 0;
     }
   }
 
@@ -123,7 +123,7 @@ export default function MaintenancePage() {
                   <td><CriticalityBadge value={o.priority} /></td>
                   <td><OrderStatusBadge status={o.status} /></td>
                   <td style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>{formatDateTime(o.opened_at)}</td>
-                  <td style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>{formatDateTime(o.updated_at)}</td>
+                  <td style={{ fontSize: 12.5, whiteSpace: "nowrap" }}>{o.updated_at ? formatDateTime(o.updated_at) : "—"}</td>
                 </tr>
               ))}
               {filtered.length === 0 && <tr><td colSpan={8} style={{ color: "var(--text-secondary)" }}>Nenhuma ordem de serviço encontrada.</td></tr>}

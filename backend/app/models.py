@@ -495,7 +495,14 @@ class MaintenanceOrder(Base):
     # Atualizado sozinho (onupdate) a cada UPDATE na linha - inclui a
     # mudança de status (ex.: quando a OS foi encerrada), não só edições de
     # texto. Exibido na lista como "Alterado em" (ver MaintenancePage.tsx).
-    updated_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc)
+    # Nullable no BANCO (embora o Python sempre preencha via default/
+    # onupdate) de propósito: sync_missing_columns() pula colunas NOT NULL
+    # sem um default "escalar" utilizável na DDL (default aqui é uma
+    # função) - deixada nullable, a coluna é criada automaticamente num
+    # banco já existente, e database.backfill_maintenance_order_updated_at()
+    # preenche as linhas antigas depois. Confirmado em produção: como NOT
+    # NULL, a coluna nunca chegou a ser criada e toda a API saía fora do ar.
+    updated_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), default=now_utc, onupdate=now_utc, nullable=True)
     due_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     closed_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
