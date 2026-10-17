@@ -218,15 +218,20 @@ def cap_max_speed_values() -> None:
 def backfill_maintenance_order_updated_at() -> None:
     """`maintenance_orders.updated_at` é nullable no banco de propósito (ver
     models.py) justamente para que sync_missing_columns() consiga criá-la
-    sozinha num banco já existente - esta rotina só preenche, com
-    `opened_at` como valor inicial razoável, as linhas que a ORM ainda não
-    tocou (não existe um histórico real de "última alteração" anterior a
-    esta coluna existir). Verifica se a coluna já existe antes de tentar
-    (ela só aparece depois de sync_missing_columns() rodar - na primeira
-    vez que esta rotina roda antes dela na mesma inicialização, a coluna
-    ainda não existe; vira no-op nesse caso, sem erro, e pega as linhas na
-    próxima chamada). Barata e idempotente, segura no startup automático em
-    qualquer dialeto."""
+    sozinha num banco já existente. Preenche com o melhor valor conhecido
+    de "última alteração": `closed_at` ou `cancelled_at` (a OS já tem,
+    nesse caso, um registro real de quando foi encerrada) e só cai para
+    `opened_at` se nenhum dos dois existir. A condição do WHERE cobre dois
+    casos: linha nunca tocada por esta coluna (`updated_at IS NULL`) E
+    linha que já foi backfillada uma vez para `opened_at` antes de a OS ter
+    sido encerrada numa chamada anterior desta mesma rotina (`updated_at =
+    opened_at` mas já existe closed_at/cancelled_at mais recente) - sem essa
+    segunda condição, encerrar uma OS que foi criada antes desta coluna
+    existir de verdade no banco ficava com "Alterado em" igual a "Aberta
+    em" para sempre. Verifica se a coluna já existe antes de tentar (só
+    aparece depois de sync_missing_columns() rodar - nesse caso, no-op sem
+    erro). Barata e idempotente, segura no startup automático em qualquer
+    dialeto."""
     inspector = inspect(engine)
     if "maintenance_orders" not in inspector.get_table_names():
         return
@@ -234,7 +239,12 @@ def backfill_maintenance_order_updated_at() -> None:
     if "updated_at" not in columns:
         return
     with engine.begin() as conn:
-        conn.execute(text("UPDATE maintenance_orders SET updated_at = opened_at WHERE updated_at IS NULL"))
+        conn.execute(text(
+            "UPDATE maintenance_orders "
+            "SET updated_at = COALESCE(closed_at, cancelled_at, opened_at) "
+            "WHERE updated_at IS NULL "
+            "   OR (updated_at = opened_at AND (closed_at IS NOT NULL OR cancelled_at IS NOT NULL))"
+        ))
 
 
 def migrate_availability_code_column() -> None:
