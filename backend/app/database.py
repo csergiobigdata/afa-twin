@@ -215,6 +215,20 @@ def cap_max_speed_values() -> None:
         conn.execute(text("UPDATE aircraft SET max_speed_kmh = 999 WHERE max_speed_kmh > 999"))
 
 
+def backfill_maintenance_order_updated_at() -> None:
+    """`maintenance_orders.updated_at` é nova e tem `default`/`onupdate` como
+    FUNÇÃO Python (`now_utc`), não um valor escalar - sync_missing_columns()
+    deliberadamente não preenche esse tipo de coluna ao acrescentá-la (ver a
+    docstring lá), então linhas já existentes ficaram com `updated_at NULL`,
+    quebrando a serialização (schemas.MaintenanceOrderOut exige um valor).
+    Preenche com `opened_at` como valor inicial razoável (não existe um
+    histórico real de "última alteração" anterior a esta coluna existir).
+    Barata (um UPDATE condicional; sem linhas depois da primeira vez),
+    idempotente, segura no startup automático em qualquer dialeto."""
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE maintenance_orders SET updated_at = opened_at WHERE updated_at IS NULL"))
+
+
 def migrate_availability_code_column() -> None:
     """`availability_updates.code` era um tipo ENUM nativo do Postgres fixo
     (DI/DO/IN definidos em código) - passou a ser VARCHAR(2) livre, validado

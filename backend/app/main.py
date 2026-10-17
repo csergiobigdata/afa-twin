@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from .database import (
     Base, engine, SessionLocal, sync_postgres_enum_types, sync_missing_indexes, sync_missing_columns,
     reformat_order_numbers, migrate_availability_code_column, cap_max_speed_values,
+    backfill_maintenance_order_updated_at,
 )
 from . import seed
 from .routers import (
@@ -117,6 +118,7 @@ def on_startup():
     reformat_order_numbers()
     migrate_availability_code_column()
     cap_max_speed_values()
+    backfill_maintenance_order_updated_at()
     db = SessionLocal()
     try:
         seed.seed_if_empty(db)

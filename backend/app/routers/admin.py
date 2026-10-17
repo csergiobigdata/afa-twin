@@ -8,6 +8,7 @@ from .. import notifications as notifications_service
 from ..database import (
     Base, engine, get_db, sync_missing_columns, sync_missing_indexes, sync_postgres_enum_types,
     reformat_order_numbers, migrate_availability_code_column, cap_max_speed_values,
+    backfill_maintenance_order_updated_at,
 )
 from ..seed import ADMIN_PASSWORD_DEFAULT, ADMIN_USERS
 
@@ -54,6 +55,7 @@ def sync_schema():
     reformat_order_numbers()
     migrate_availability_code_column()
     cap_max_speed_values()
+    backfill_maintenance_order_updated_at()
     return {"status": "ok", "detail": "Tabelas, tipos enum, índices e colunas sincronizados."}
 
 
